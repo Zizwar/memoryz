@@ -2,6 +2,7 @@ import { config } from "./src/config.ts";
 import { initDb } from "./src/db/schema.ts";
 import { handleApiRoute } from "./src/routes/api.ts";
 import { handleMcpRoute } from "./src/routes/mcp.ts";
+import { generateOpenApiSpec } from "./src/routes/openapi.ts";
 import { renderAppHtml } from "./src/ui/html.ts";
 
 // Initialize database schema on startup
@@ -24,23 +25,47 @@ console.log(`
 
 Deno.serve({ port: config.port }, async (req: Request) => {
   const url = new URL(req.url);
+  const path = url.pathname;
 
-  // Static root -> Web Application & Dashboard
-  if (url.pathname === "/" || url.pathname === "/index.html") {
+  // Root Web Application
+  if (path === "/" || path === "/index.html") {
     return new Response(renderAppHtml(), {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }
 
-  // REST API routes
-  if (url.pathname.startsWith("/api/")) {
-    return await handleApiRoute(req, url);
+  // OpenAPI 3.1 & Swagger schema for Mobile Chat Connectors (ChatGPT / LibreChat / Actions)
+  if (path === "/openapi.json" || path === "/swagger.json") {
+    const token =
+      url.searchParams.get("token") ||
+      url.searchParams.get("key") ||
+      url.searchParams.get("api_key") ||
+      "";
+    const spec = generateOpenApiSpec(url.origin, token);
+    return new Response(JSON.stringify(spec, null, 2), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   }
 
-  // MCP protocol routes
-  if (url.pathname.startsWith("/mcp")) {
+  // Remote MCP Connector & SSE & OAuth Discovery routes
+  if (
+    path.startsWith("/mcp") ||
+    path === "/api/mcp" ||
+    path.startsWith("/api/mcp/") ||
+    path === "/sse" ||
+    path.startsWith("/.well-known/")
+  ) {
     return await handleMcpRoute(req, url);
+  }
+
+  // REST API routes
+  if (path.startsWith("/api/")) {
+    return await handleApiRoute(req, url);
   }
 
   return new Response("Not Found", { status: 404 });

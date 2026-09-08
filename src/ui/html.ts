@@ -689,18 +689,55 @@ export function renderAppHtml(): string {
     <!-- Tab 4: Connect & MCP Settings -->
     <div id="tab-connect" style="display:none;">
       <div class="playground-box">
-        <h3 style="font-size: 18px; color: #fff; margin-bottom: 8px;">⚡ دمج بروتوكول MCP مع Cursor و Claude Code والتيرمنال</h3>
+        <h3 style="font-size: 18px; color: #fff; margin-bottom: 8px;">⚡ الربط السريع (موبايل، MCP، تيرمنال، وديسكتوب)</h3>
         <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
-          يمكنك ربط بيئة التطوير الخاصة بك مباشرة بخادم MemoryZ واستخدام الأدوات (<code>store_memory</code>, <code>recall_memory</code>, <code>vault_retrieve</code>) تلقائياً داخل محادثات البرمجة.
+          يمكنك ربط بيئة العمل أو تطبيق الدردشة على الهاتف مباشرة بخادم MemoryZ واستخدام الأدوات (<code>store_memory</code>, <code>recall_memory</code>, <code>vault_retrieve</code>) تلقائياً دون أي تعقيد.
         </p>
 
-        <h4 style="color: var(--primary); margin-bottom: 8px; font-size: 14px;">1. إعداد Cursor (~/.cursor/mcp.json):</h4>
+        <!-- 1. Mobile Single-URL Connector Card -->
+        <div style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid var(--border-glow); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+              <span>📱</span> رابط الموبايل الموحد (Direct Mobile Connector URL)
+            </h4>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">رابط واحد فقط</span>
+          </div>
+          <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.6;">
+            اربط محرك الذاكرة بتطبيق الدردشة على هاتفك (مثل Claude Mobile / LibreChat / OpenWebUI أو أي تطبيق يدعم Remote MCP) عبر <strong>رابط واحد فقط</strong> يحمل المفتاح السري، دون الحاجة لأي ملفات JSON أو إعدادات ديسكتوب:
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" id="mobileConnectorUrlField" class="form-input mono" readonly style="flex: 1; min-width: 260px; background: #060911;">
+            <button class="nav-btn btn-primary" onclick="copyMobileUrl()">نسخ رابط الموبايل 📱📋</button>
+          </div>
+        </div>
+
+        <!-- 2. OpenAPI Connector Card for ChatGPT Custom Actions -->
+        <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+              <span>🤖</span> رابط موصل ChatGPT على الموبايل (OpenAPI Action URL)
+            </h4>
+            <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">OpenAPI 3.1</span>
+          </div>
+          <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.6;">
+            إذا كنت تستخدم ChatGPT على الموبايل وتريد إضافة الذاكرة الحية إلى Custom GPT، فقط انسخ هذا الرابط وضعه في خانة <strong>Actions &rarr; Import from URL</strong>:
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" id="openApiUrlField" class="form-input mono" readonly style="flex: 1; min-width: 260px; background: #060911;">
+            <button class="nav-btn btn-secondary" onclick="copyOpenApiUrl()">نسخ رابط OpenAPI 📋</button>
+          </div>
+        </div>
+
+        <!-- 3. Desktop Cursor Configuration -->
+        <h4 style="color: var(--primary); margin-bottom: 8px; font-size: 14px;">3. إعداد ديسكتوب Cursor (~/.cursor/mcp.json):</h4>
         <pre id="cursorConfigCode" style="background:#060911; padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"></pre>
 
-        <h4 style="color: var(--emerald); margin-bottom: 8px; font-size: 14px;">2. أمر التيرمنال السريع (Deno CLI):</h4>
+        <!-- 4. CLI Examples -->
+        <h4 style="color: var(--emerald); margin-bottom: 8px; font-size: 14px;">4. أمر التيرمنال السريع (Deno CLI):</h4>
         <pre id="cliExampleCode" style="background:#060911; padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"></pre>
 
-        <h4 style="color: var(--purple); margin-bottom: 8px; font-size: 14px;">3. مفتاح واجهة التطبيقات البرمجية الخاص بك (API Key):</h4>
+        <!-- 5. API Key -->
+        <h4 style="color: var(--purple); margin-bottom: 8px; font-size: 14px;">5. مفتاح واجهة التطبيقات البرمجية الخاص بك (API Key):</h4>
         <div style="display: flex; gap: 10px; align-items: center;">
           <input type="text" id="myApiKeyField" class="form-input mono" readonly style="flex:1;">
           <button class="nav-btn btn-secondary" onclick="copyApiKey()">نسخ المفتاح 📋</button>
@@ -941,6 +978,18 @@ export function renderAppHtml(): string {
 
     function updateConnectSnippets(apiKey) {
       const origin = window.location.origin;
+
+      // 1. Mobile Direct URL
+      const mobileUrl = origin + "/mcp?token=" + apiKey;
+      const mobileField = document.getElementById('mobileConnectorUrlField');
+      if (mobileField) mobileField.value = mobileUrl;
+
+      // 2. OpenAPI Direct URL (for ChatGPT Custom Actions / Mobile)
+      const openApiUrl = origin + "/openapi.json?token=" + apiKey;
+      const openApiField = document.getElementById('openApiUrlField');
+      if (openApiField) openApiField.value = openApiUrl;
+
+      // 3. Desktop Cursor Config
       const cursorConfig = {
         "mcpServers": {
           "memoryz": {
@@ -954,6 +1003,18 @@ export function renderAppHtml(): string {
         "deno run -A cli.ts recall --query='test.domain.com' --key=" + apiKey + "\\n\\n" +
         "# Store a memory directly\\n" +
         "deno run -A cli.ts store --type=env --content='Next port 3000' --key=" + apiKey;
+    }
+
+    function copyMobileUrl() {
+      const field = document.getElementById('mobileConnectorUrlField');
+      navigator.clipboard.writeText(field.value);
+      showToast('تم نسخ رابط الموبايل الموحد! ضعه في تطبيق الدردشة مباشرة 📱✨');
+    }
+
+    function copyOpenApiUrl() {
+      const field = document.getElementById('openApiUrlField');
+      navigator.clipboard.writeText(field.value);
+      showToast('تم نسخ رابط OpenAPI! الصقه في خانة Actions في ChatGPT 🤖');
     }
 
     function copyApiKey() {
