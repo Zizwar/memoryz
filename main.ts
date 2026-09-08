@@ -52,13 +52,14 @@ Deno.serve({ port: config.port }, async (req: Request) => {
     });
   }
 
-  // Remote MCP Connector & SSE & OAuth Discovery routes
+  // Remote MCP Connector & SSE & OAuth Discovery & OAuth 2.1 routes
   if (
     path.startsWith("/mcp") ||
     path === "/api/mcp" ||
     path.startsWith("/api/mcp/") ||
     path === "/sse" ||
-    path.startsWith("/.well-known/")
+    path.startsWith("/.well-known/") ||
+    path.startsWith("/oauth")
   ) {
     return await handleMcpRoute(req, url);
   }

@@ -602,6 +602,21 @@ export function renderAppHtml(): string {
 
     <!-- Tab 1: Memories View -->
     <div id="tab-memories">
+      <!-- Direct MCP Quick Bar in Dashboard -->
+      <div id="mcpQuickBar" style="display:none; margin-bottom: 24px; background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15)); border: 1px solid var(--border-glow); border-radius: 16px; padding: 16px 20px; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56,189,248,0.2); display:flex; align-items:center; justify-content:center; font-size: 20px;">⚡</div>
+          <div>
+            <div style="font-weight: 700; color: #fff; font-size: 15px;">رابط MCP المباشر للدردشة والموبايل (Single URL)</div>
+            <div style="font-size: 12px; color: #94a3b8;">انسخ هذا الرابط وضعه في تطبيق المحادثة على الهاتف أو أي عميل MCP للربط الفوري</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex: 1; min-width: 280px; max-width: 580px;">
+          <input type="text" id="dashMcpUrlField" class="form-input mono" readonly style="background: #060911; font-size: 13px;">
+          <button class="nav-btn btn-primary" onclick="copyDashMcpUrl()" style="white-space: nowrap;">نسخ رابط MCP 📋</button>
+        </div>
+      </div>
+
       <!-- Quick Stats -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -964,6 +979,12 @@ export function renderAppHtml(): string {
         newMemoryBtn.style.display = 'inline-flex';
         if (user.role === 'admin') adminTabBtn.style.display = 'inline-flex';
 
+        // Dashboard quick bar
+        const quickBar = document.getElementById('mcpQuickBar');
+        if (quickBar) quickBar.style.display = 'flex';
+        const dashField = document.getElementById('dashMcpUrlField');
+        if (dashField) dashField.value = window.location.origin + "/mcp?token=" + user.api_key;
+
         // Connect tab config
         document.getElementById('myApiKeyField').value = user.api_key;
         updateConnectSnippets(user.api_key);
@@ -973,7 +994,16 @@ export function renderAppHtml(): string {
         authBtn.onclick = openAuthModal;
         newMemoryBtn.style.display = 'none';
         adminTabBtn.style.display = 'none';
+
+        const quickBar = document.getElementById('mcpQuickBar');
+        if (quickBar) quickBar.style.display = 'none';
       }
+    }
+
+    function copyDashMcpUrl() {
+      const field = document.getElementById('dashMcpUrlField');
+      navigator.clipboard.writeText(field.value);
+      showToast('تم نسخ رابط MCP المباشر بنجاح! الصقه في تطبيق الدردشة ⚡📱');
     }
 
     function updateConnectSnippets(apiKey) {

@@ -120,75 +120,88 @@ export const MCP_TOOLS = [
 
 export class McpServer {
   /**
-   * Handle incoming MCP JSON-RPC requests
+   * Handle incoming MCP JSON-RPC requests (stateless & compliant with Claude/ChatGPT)
    */
   static async handleRpc(userId: string, request: any): Promise<any> {
-    const { id, method, params } = request;
+    const { id, method, params } = request || {};
 
-    switch (method) {
-      case "initialize":
+    if (method === "initialize") {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: params?.protocolVersion || "2024-11-05",
+          capabilities: {
+            tools: { listChanged: false },
+          },
+          serverInfo: {
+            name: "MemoryZ",
+            version: "1.0.0",
+          },
+          instructions:
+            "MemoryZ provides persistent living memory across chats and agents. " +
+            "Use 'recall_memory' to search facts, preferences, port configurations, and skills. " +
+            "Use 'store_memory' to remember rules, facts, or instructions. " +
+            "Use 'vault_store' and 'vault_retrieve' for encrypted credentials.",
+        },
+      };
+    }
+
+    if (method === "ping") {
+      return { jsonrpc: "2.0", id, result: {} };
+    }
+
+    // JSON-RPC Notification (notifications/initialized, etc.) -> MUST return null (no response body)
+    if (method === "notifications/initialized" || typeof id === "undefined") {
+      return null;
+    }
+
+    if (method === "tools/list") {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          tools: MCP_TOOLS,
+        },
+      };
+    }
+
+    if (method === "tools/call") {
+      const { name, arguments: args } = params || {};
+      try {
+        const result = await this.executeTool(userId, name, args || {});
         return {
           jsonrpc: "2.0",
           id,
           result: {
-            protocolVersion: "2024-11-05",
-            capabilities: {
-              tools: {},
-            },
-            serverInfo: {
-              name: "MemoryZ Substrate",
-              version: "1.0.0",
-            },
+            content: [
+              {
+                type: "text",
+                text: typeof result === "string" ? result : JSON.stringify(result, null, 2),
+              },
+            ],
           },
         };
-
-      case "tools/list":
-        return {
-          jsonrpc: "2.0",
-          id,
-          result: {
-            tools: MCP_TOOLS,
-          },
-        };
-
-      case "tools/call": {
-        const { name, arguments: args } = params || {};
-        try {
-          const result = await this.executeTool(userId, name, args || {});
-          return {
-            jsonrpc: "2.0",
-            id,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: typeof result === "string" ? result : JSON.stringify(result, null, 2),
-                },
-              ],
-            },
-          };
-        } catch (err) {
-          return {
-            jsonrpc: "2.0",
-            id,
-            error: {
-              code: -32603,
-              message: (err as Error).message,
-            },
-          };
-        }
-      }
-
-      default:
+      } catch (err) {
         return {
           jsonrpc: "2.0",
           id,
           error: {
-            code: -32601,
-            message: `Method '${method}' not found`,
+            code: -32603,
+            message: (err as Error).message,
           },
         };
+      }
     }
+
+    return {
+      jsonrpc: "2.0",
+      id,
+      error: {
+        code: -32601,
+        message: `Method '${method}' not found`,
+      },
+    };
   }
 
   private static async executeTool(userId: string, name: string, args: any): Promise<any> {
