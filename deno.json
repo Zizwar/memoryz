@@ -11,5 +11,12 @@
   "imports": {
     "@libsql/client": "npm:@libsql/client@^0.18.0",
     "@libsql/client/web": "npm:@libsql/client@^0.18.0/web"
+  },
+  "deploy": {
+    "org": "wino",
+    "app": "memoryz"
   }
 }
+
+
+
