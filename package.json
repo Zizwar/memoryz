@@ -1,0 +1,34 @@
+{
+  "name": "memoryz",
+  "version": "1.0.0",
+  "description": "Sovereign Agentic Memory Substrate CLI & MCP Auto-Installer for Claude Code, Cursor, Windsurf",
+  "type": "module",
+  "main": "./bin/memoryz.js",
+  "bin": {
+    "memoryz": "./bin/memoryz.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node ./bin/memoryz.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zizwar/memoryz.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "memory",
+    "agentic-memory",
+    "cursor",
+    "claude-code",
+    "turso",
+    "gemini-embeddings"
+  ],
+  "author": "Zizwar <zizwar@gmail.com>",
+  "license": "MIT"
+}
