@@ -1,7 +1,8 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:@libsql/client@*": "0.18.0"
+    "npm:@libsql/client@*": "0.18.0",
+    "npm:@libsql/client@0.18": "0.18.0"
   },
   "npm": {
     "@libsql/client@0.18.0": {

@@ -26,8 +26,7 @@
     "agentic-memory",
     "cursor",
     "claude-code",
-    "turso",
-    "gemini-embeddings"
+    "windsurf"
   ],
   "author": "Zizwar <zizwar@gmail.com>",
   "license": "MIT"

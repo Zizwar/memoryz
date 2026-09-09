@@ -14,9 +14,12 @@
   },
   "deploy": {
     "org": "wino",
-    "app": "memoryz"
+    "app": "memoryz",
+    "entrypoint": "main.ts"
   }
 }
+
+
 
 
 
