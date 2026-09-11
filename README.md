@@ -1,150 +1,138 @@
-# 🧠 MemoryZ — Sovereign Agentic Memory Substrate
+# MemoryZ
 
-> **ذاكرة حية، سيادية، ومتحركة مع مطورها عبر بيئات العمل والتيرمنال والوكلاء الأذكياء (MCP)**
+Persistent agentic memory substrate and Model Context Protocol (MCP) server for AI coding assistants, autonomous agents, and developer terminal workflows.
 
-MemoryZ هو محرك ذاكرة حية متعدد المنصات (Agentic Memory Substrate) مبني بلغة **TypeScript** ومحرك **Deno**، ومربوط بسحابة **Turso (libSQL)** وتقنيات التضمين الفيكتوري **Google Gemini Embeddings (768-dim)**.
-
-صُمم النظام ليكون بمثابة العمود الفقري المعرفي الذي يرافق المطور في:
-1. **تطبيقات ومحررات الذكاء الاصطناعي** (Cursor, Claude Code, Windsurf, Codex عبر بروتوكول MCP).
-2. **شاشات التيرمنال (CLI)** للاستعلام الفوري وحفظ المتغيرات وتشغيل الأوامر.
-3. **لوحة تحكم تفاعلية (Web UI & Admin Dashboard)** لاستعراض الذكريات الحية، فك تشفير الخزنة، ومتابعة نشاط النظام.
+MemoryZ acts as a persistent memory layer across tools such as **Cursor**, **Claude Code**, **Windsurf**, and custom LLM agents. It combines vector-based semantic retrieval with time-decay scoring, an isolated Zero-Knowledge vault for sensitive credentials, and automated configuration for agent environments.
 
 ---
 
-## 🌟 المزايا والمعمارية الأساسية
+## Key Architecture
 
-### 1. تصنيفات الذاكرة الحية
-- ⚡ **البيئة والبنية التحتية (`env`):** مثل أرقام المنافذ، أوامر PM2، دومينات الاختبار، ومتغيرات النظام.
-- 🎯 **تفضيلات وأسلوب المطور (`preference`):** القواعد البرمجية الصارمة التي يفضلها المطور دون الحاجة لإعادة تكرارها.
-- 🧠 **المهارات وأدوات الوكلاء (`skill`):** خطوات إجرائية وسياقات توجيهية (Agent Prompts) تستدعى تلقائياً عند تنفيذ المهام.
-- 📝 **الملاحظات والمعارف الحرة (`note`):** حقائق وأفكار ومسودات تُفهرس دلالياً.
+### 1. Categorized Memory Atoms
+- `env`: Ports, infrastructure flags, local domains, process managers.
+- `preference`: Developer coding styles, conventions, architectural patterns.
+- `skill`: Multi-step agent workflows, procedures, and prompt directives.
+- `note`: Reference snippets, architectural notes, and documentation pointers.
 
-### 2. البحث الدلالي المعزز بوزن التضاؤل الزمني (Time-Decayed Recall)
-- **768-dim Embeddings:** توليد تمثيل فيكتوري دقيق عبر Gemini (`gemini-embedding-001`).
-- **فهرسة فيكتورية متقدمة على Turso:** `vector_distance_cos` لمطابقة المعنى حتى لو اختلفت المفردات.
-- **معادلة التضاؤل والتعزيز (Recall Decay):**
-  $$\text{decay\_factor} = \exp(-\lambda \times \text{days\_since\_last\_recall})$$
-  $$\text{recall\_score} = \text{recall\_count} \times \text{decay\_factor}$$
-  كل استدعاء ناجح يزيد من عداد الاستدعاء ويحدث توقيت الاسترجاع، مما يمنح الذكريات الحديثة والمكررة أولوية قصوى.
+### 2. Semantic Vector Recall & Time-Decayed Scoring
+- **768-dimensional embeddings** via Google Gemini (`gemini-embedding-001`).
+- **Cosine vector indexing** on Turso Cloud (`libSQL`).
+- **Recency-weighted decay:**
+  $$\text{decay} = e^{-\lambda \times \Delta t}$$
+  $$\text{score} = \text{recall\_count} \times \text{decay}$$
 
-### 3. الخزنة المشفرة المعزولة (Zero-Knowledge Vault)
-- عزل كامل لجدول الأسرار `vault_entries` عن جدول الذكريات.
-- لا تخضع بيانات الخزنة مطلقاً للتضمين الفيكتوري أو البحث الدلالي.
-- تشفير قوي بمعيار **AES-256-GCM** مع اشتقاق مفاتيح **PBKDF2** (100,000 دورة).
-- فك التشفير يتم حصرياً في الذاكرة الحية (RAM) عند التزويد بكلمة المرور، دون حفظ النص الصريح على القرص أو في سجلات الخادم.
+### 3. Zero-Knowledge Secret Vault
+- Isolated `vault_entries` storage.
+- Never indexed by vector embeddings.
+- Client-side **AES-256-GCM** encryption with **PBKDF2** key derivation (100,000 rounds).
+- Secrets decrypted strictly in process memory.
 
-### 4. شبكة العلاقات المعرفية (Knowledge Graph)
-- جدول `memory_links` لربط الذكريات مع تحديد نوع العلاقة:
-  - `depends_on` (يعتمد على)
-  - `context_for` (سياق لـ)
-  - `related` (مرتبط بـ)
-  - `supersedes` (يحل محل)
+### 4. Knowledge Graph Relations
+- `memory_links` table supports semantic graphs: `depends_on`, `context_for`, `related`, and `supersedes`.
 
 ---
 
-## ⚡ التثبيت الفوري في المحررات بنقرة واحدة (NPX Auto-Installer)
+## Quickstart
 
-يمكنك تهيئة وتسجيل خادم MemoryZ تلقائياً في جميع محرراتك الذكية (**Cursor**, **Claude Desktop**, **Claude Code**, **Windsurf**) بأمر واحد فقط:
+### Editor & Agent Setup (One-Line Configurator)
 
 ```bash
-# عبر الحزمة الرسمية
 npx memoryz init --token=<YOUR_API_KEY>
-
-# أو مباشرة من مستودع GitHub
-npx github:Zizwar/memoryz init --token=<YOUR_API_KEY>
 ```
 
-يقوم هذا الأمر تلقائياً بـ:
-1. التحقق من صحة التوكن والاتصال بسحابة MemoryZ Substrate.
-2. اكتشاف المحررات المثبتة على جهازك وتحديث ملفات `mcp.json` الخاصة بها دون الحاجة للتعديل اليدوي.
-3. حفظ التوكن محلياً في `~/.memoryz/config.json` لتمكين أوامر الاستدعاء والتخزين من التيرمنال مباشرة.
+This command:
+1. Validates connection to the MemoryZ Substrate.
+2. Auto-registers the MCP server in `~/.cursor/mcp.json`, Claude Desktop, Claude Code (`~/.claude/mcp.json`), and Windsurf (`~/.codeium/windsurf/mcp_config.json`).
+3. Saves credentials locally in `~/.memoryz/config.json`.
+4. Writes `.agents/skills/memoryz/SKILL.md`, `CLAUDE.md`, and `AGENTS.md`.
 
 ---
 
-## 🚀 التشغيل والتطوير المحلي
+## CLI Reference
 
-### المتطلبات
-- **Deno** (الإصدار 2.0 أو أحدث)
-- حساب وقاعدة بيانات على **Turso Cloud**
-- مفتاح **Gemini API** للتضمين الدلالي
-
-### التثبيت والإعداد
 ```bash
-# 1. استنساخ المستودع
+# Semantic vector recall
+memoryz recall "database ports" --limit=3
+
+# Output XML context block for LLM prompts
+memoryz context "developer preferences"
+
+# Store new memory atom
+memoryz store --type=preference --content="Always use TypeScript strict mode"
+
+# Store via pipe
+echo "Staging runs on port 4000" | memoryz store --type=env --title="staging_port"
+
+# Encrypt secret in vault
+memoryz vault store --key="stripe_key" --secret="sk_live_..." --pass="passphrase"
+
+# Decrypt secret
+memoryz vault get --key="stripe_key" --pass="passphrase"
+
+# Stdio MCP Bridge
+memoryz mcp
+```
+
+---
+
+## Programmatic SDKs
+
+### Node.js / TypeScript
+```javascript
+import { recall, store, getContext } from "memoryz";
+
+const context = await getContext("auth module");
+await store({ type: "preference", content: "Prefer immutable data structures" });
+```
+
+### Python
+```python
+import memoryz
+
+memories = memoryz.recall("production guidelines")
+xml_context = memoryz.get_context("task description")
+memoryz.store("Use port 3333 for staging", memory_type="env")
+```
+
+### Shell / Bash
+```bash
+source <(curl -s https://memoryz.wino.deno.net/client.sh)
+
+memoryz_recall "port"
+memoryz_store "preference" "Use pnpm over npm"
+```
+
+---
+
+## MCP Server Specification
+
+| Tool | Parameters | Description |
+| :--- | :--- | :--- |
+| `recall_memory` | `query`, `type`, `limit` | Semantic vector search across memory atoms |
+| `store_memory` | `type`, `content`, `title` | Persist memory atom with Gemini embedding |
+| `link_memory` | `sourceHash`, `targetHash`, `relation` | Connect memories in the knowledge graph |
+| `vault_store` | `key_name`, `secret_value`, `passphrase` | Encrypt and store secrets in Zero-Knowledge vault |
+| `vault_retrieve` | `key_name`, `passphrase` | Decrypt vault secret in memory |
+| `vault_list` | *(none)* | List stored vault key metadata |
+
+---
+
+## Self-Hosting
+
+### Requirements
+- **Deno** 2.0+
+- **Turso Cloud** database
+- **Gemini API** key
+
+```bash
 git clone https://github.com/Zizwar/memoryz.git
 cd memoryz
-
-# 2. إعداد ملف البيئة
 cp .env.example .env
-# قم بتعبئة بيانات Turso و Gemini و Deno Deploy في ملف .env
-
-# 3. تشغيل السيرفر محلياً
 deno task dev
-# سيعمل السيرفر على: http://localhost:8000
 ```
 
 ---
 
-## 💻 استخدام واجهة التيرمنال (CLI)
+## License
 
-يوفر ملف `cli.ts` تحكماً كاملاً من الطرفية:
-
-```bash
-# استدعاء دلالي ذكي
-deno run -A cli.ts recall --query="تشغيل سيرفر تجريبي"
-
-# تخزين ذاكرة جديدة
-deno run -A cli.ts store --type=env --content="المنفذ 3333 مخصص لـ test.domain.com مع PM2" --title="ports_config"
-
-# تخزين مفتاح سري مشفر في الخزنة
-deno run -A cli.ts vault store --key="key_gemini" --secret="AIzaSy..." --pass="@MySecretPass"
-
-# استرجاع وفك تشفير مفتاح من الخزنة
-deno run -A cli.ts vault get --key="key_gemini" --pass="@MySecretPass"
-
-# سرد المفاتيح المشفرة المخزنة
-deno run -A cli.ts vault list
-```
-
----
-
-## 🔌 ربط بروتوكول MCP مع Cursor و Claude Code
-
-يدعم خادم MemoryZ بروتوكول **Model Context Protocol (MCP)** مباشرة عبر HTTP / SSE و Stdio:
-
-### إعداد Cursor (`~/.cursor/mcp.json`):
-```json
-{
-  "mcpServers": {
-    "memoryz": {
-      "url": "https://<your-deno-deploy-url>/mcp?api_key=<YOUR_API_KEY>"
-    }
-  }
-}
-```
-
-### الأدوات المتاحة للوكلاء (MCP Tools):
-1. `recall_memory`: استرجاع الذكريات بالبحث الدلالي اللحظي وفلترة الأنواع.
-2. `store_memory`: إضافة ذكريات وقواعد جديدة تلقائياً من سياق المحادثة.
-3. `link_memory`: ربط ذكريات ببعضها داخل الرسم المعرفي.
-4. `vault_store`: تشفير وحفظ مفاتيح سرية بناءً على طلب المستخدم.
-5. `vault_retrieve`: فك تشفير المفاتيح عند الحاجة باستخدام كلمة المرور.
-6. `vault_list`: سرد أسماء المفاتيح المتاحة في الخزنة.
-
----
-
-## ☁️ النشر على Deno Deploy
-
-المشروع جاهز تماماً للنشر السحابي بضغطة زر:
-
-```bash
-# نشر مباشر على Deno Deploy
-deno deploy --token=$DENO_DEPLOY_TOKEN --org=$DENO_ORG --app=memoryz --prod
-```
-
----
-
-## 🛡️ الأمان وسيادة البيانات
-- **Zero-Knowledge Architecture:** لا يملك خادم التطبيق ولا قاعدة البيانات وسيلة لقراءة أسرار الخزنة دون كلمة المرور.
-- **Multi-Tenant:** فصل تام للمستخدمين عبر `user_id` مع أرقام تعريفية آمنة ومفاتيح API فردية.
-- **Argon2 / PBKDF2 + AES-GCM:** أحدث معايير التشفير المتوافقة مع الويب والأنظمة الحديثة.
+MIT

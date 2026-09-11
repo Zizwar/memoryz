@@ -9,7 +9,7 @@
     "./cli": "./bin/memoryz.js"
   },
   "bin": {
-    "memoryz": "./bin/memoryz.js"
+    "memoryz": "bin/memoryz.js"
   },
   "files": [
     "bin",
