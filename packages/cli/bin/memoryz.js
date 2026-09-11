@@ -71,13 +71,20 @@ async function readStdin() {
   });
 }
 
-const saved = loadSavedConfig();
-const token = flags.token || flags.key || process.env.MEMORYZ_TOKEN || process.env.MEMORYZ_API_KEY || saved.token;
-const serverUrl = (flags.url || process.env.MEMORYZ_URL || saved.url || DEFAULT_SERVER_URL).replace(/\/$/, "");
-
 // Determine command
 let command = positionals[0] || (flags.token ? "init" : "help");
 if (command === "--help" || command === "-h") command = "help";
+
+const saved = loadSavedConfig();
+const token =
+  flags.token ||
+  flags.apiKey ||
+  flags["api-key"] ||
+  (command !== "vault" ? flags.key : null) ||
+  process.env.MEMORYZ_TOKEN ||
+  process.env.MEMORYZ_API_KEY ||
+  saved.token;
+const serverUrl = (flags.url || process.env.MEMORYZ_URL || saved.url || DEFAULT_SERVER_URL).replace(/\/$/, "");
 
 async function main() {
   switch (command) {
@@ -503,6 +510,22 @@ async function runVault() {
       }
     } else {
       console.error(`\n${c.red}✘ Failed: ${data.error}${c.reset}\n`);
+    }
+  } else if (sub === "delete" || sub === "rm") {
+    const keyName = flags.key || flags.name || positionals[2];
+    if (!keyName) {
+      console.error(`Usage: npx memoryz vault delete --key=<name>`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/vault/${encodeURIComponent(keyName)}`, {
+      method: "DELETE",
+      headers: { "X-API-Key": token },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Deleted '${keyName}' from vault.${c.reset}\n`);
+    } else {
+      console.error(`\n${c.red}✘ Failed: ${data.error || "Delete failed"}${c.reset}\n`);
     }
   } else {
     // List vault handles
