@@ -56,10 +56,11 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
   }
 
-  // Extract User Context from Authorization Header or X-API-Key
+  // Extract User Context from Authorization Header, X-API-Key, or query param (?token=, ?key=)
   let currentUser: User | null = null;
   const authHeader = req.headers.get("Authorization");
   const apiKeyHeader = req.headers.get("X-API-Key");
+  const queryToken = url.searchParams.get("token") || url.searchParams.get("key") || url.searchParams.get("api_key");
 
   if (apiKeyHeader) {
     currentUser = await AuthService.findByApiKey(apiKeyHeader);
@@ -73,6 +74,14 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     } else if (authHeader.startsWith("Key ")) {
       const key = authHeader.substring(4);
       currentUser = await AuthService.findByApiKey(key);
+    }
+  } else if (queryToken) {
+    currentUser = await AuthService.findByApiKey(queryToken);
+    if (!currentUser) {
+      const decoded = await AuthService.verifyToken(queryToken);
+      if (decoded) {
+        currentUser = await AuthService.findById(decoded.sub);
+      }
     }
   }
 

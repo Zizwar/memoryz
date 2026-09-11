@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "description": "Sovereign Agentic Memory Substrate CLI & MCP Auto-Installer for Claude Code, Cursor, Windsurf",
   "type": "module",
-  "main": "./bin/memoryz.js",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./cli": "./bin/memoryz.js"
+  },
   "bin": {
     "memoryz": "./bin/memoryz.js"
   },
   "files": [
     "bin",
+    "index.js",
     "README.md",
     "LICENSE"
   ],

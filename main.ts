@@ -52,6 +52,35 @@ Deno.serve({ port: config.port }, async (req: Request) => {
     });
   }
 
+  // Static micro-clients: Python SDK & Shell helper
+  if (path === "/memoryz.py") {
+    try {
+      const code = await Deno.readTextFile("./packages/python/memoryz.py");
+      return new Response(code, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    } catch (_e) {
+      return new Response("Not Found", { status: 404 });
+    }
+  }
+
+  if (path === "/memoryz.sh" || path === "/client.sh") {
+    try {
+      const code = await Deno.readTextFile("./packages/shell/memoryz.sh");
+      return new Response(code, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    } catch (_e) {
+      return new Response("Not Found", { status: 404 });
+    }
+  }
+
   // Remote MCP Connector & SSE & OAuth Discovery & OAuth 2.1 routes
   if (
     path.startsWith("/mcp") ||

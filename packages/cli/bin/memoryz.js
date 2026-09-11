@@ -57,6 +57,20 @@ function saveConfig(data) {
   } catch (_e) {}
 }
 
+async function readStdin() {
+  if (process.stdin.isTTY) return "";
+  return new Promise((resolve) => {
+    let data = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (chunk) => {
+      data += chunk;
+    });
+    process.stdin.on("end", () => {
+      resolve(data.trim());
+    });
+  });
+}
+
 const saved = loadSavedConfig();
 const token = flags.token || flags.key || process.env.MEMORYZ_TOKEN || process.env.MEMORYZ_API_KEY || saved.token;
 const serverUrl = (flags.url || process.env.MEMORYZ_URL || saved.url || DEFAULT_SERVER_URL).replace(/\/$/, "");
@@ -82,6 +96,14 @@ async function main() {
       await runStore();
       break;
 
+    case "context":
+      await runContext();
+      break;
+
+    case "skill":
+      await runSkill();
+      break;
+
     case "vault":
       await runVault();
       break;
@@ -98,7 +120,7 @@ async function main() {
 }
 
 async function runInit() {
-  console.log(`\n${c.bold}${c.cyan}🧠 MemoryZ — Auto-Configurator & Installer${c.reset}\n`);
+  console.log(`\n${c.bold}${c.cyan}🧠 MemoryZ — Auto-Configurator & Agent Installer${c.reset}\n`);
 
   if (!token) {
     console.error(`${c.red}✘ Error: Missing --token flag.${c.reset}`);
@@ -181,6 +203,9 @@ async function runInit() {
   const projectMcp = path.join(process.cwd(), ".mcp.json");
   updateMcpConfigFile(projectMcp, "Current Project (.mcp.json)");
 
+  // 6. Generate Agent Skill & Rules in current workspace
+  await runSkill(true);
+
   console.log(`\n${c.bold}${c.green}✔ MemoryZ MCP Server successfully registered for:${c.reset}`);
   configured.forEach((item) => console.log(`  ${c.cyan}• ${item}${c.reset}`));
 
@@ -190,7 +215,11 @@ async function runInit() {
 
 async function runRecall() {
   if (!token) {
-    console.error(`${c.red}✘ Error: No token found. Run 'npx memoryz init --token=...' first.${c.reset}`);
+    if (flags.json) {
+      console.log(JSON.stringify({ error: "Missing token. Run 'memoryz init --token=...'" }));
+    } else {
+      console.error(`${c.red}✘ Error: No token found. Run 'npx memoryz init --token=...' first.${c.reset}`);
+    }
     process.exit(1);
   }
   const query = positionals.slice(1).join(" ") || flags.query || "";
@@ -202,7 +231,9 @@ async function runRecall() {
   if (type) url.searchParams.set("type", type);
   url.searchParams.set("limit", String(limit));
 
-  console.log(`\n${c.cyan}⚡ Recalling memories for: "${query || "(all)"}"...${c.reset}\n`);
+  if (!flags.json) {
+    console.log(`\n${c.cyan}⚡ Recalling memories for: "${query || "(all)"}"...${c.reset}\n`);
+  }
 
   try {
     const res = await fetch(url, {
@@ -210,6 +241,11 @@ async function runRecall() {
     });
     const data = await res.json();
     const memories = data.memories || [];
+
+    if (flags.json) {
+      console.log(JSON.stringify(memories, null, 2));
+      return;
+    }
 
     if (memories.length === 0) {
       console.log(`${c.dim}No memories found matching query.${c.reset}\n`);
@@ -223,16 +259,29 @@ async function runRecall() {
       console.log(`  ${m.content}\n`);
     });
   } catch (err) {
-    console.error(`${c.red}Error recalling memories: ${err.message}${c.reset}`);
+    if (flags.json) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.error(`${c.red}Error recalling memories: ${err.message}${c.reset}`);
+    }
   }
 }
 
 async function runStore() {
   if (!token) {
-    console.error(`${c.red}✘ Error: No token found. Run 'npx memoryz init --token=...' first.${c.reset}`);
+    if (flags.json) {
+      console.log(JSON.stringify({ error: "Missing token. Run 'memoryz init --token=...'" }));
+    } else {
+      console.error(`${c.red}✘ Error: No token found. Run 'npx memoryz init --token=...' first.${c.reset}`);
+    }
     process.exit(1);
   }
-  const content = flags.content || positionals.slice(1).join(" ");
+
+  let content = flags.content || positionals.slice(1).join(" ");
+  if (!content) {
+    content = await readStdin();
+  }
+
   const type = flags.type || "note";
   const title = flags.title || undefined;
 
@@ -252,13 +301,150 @@ async function runStore() {
     });
 
     const data = await res.json();
+    if (flags.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
+
     if (res.ok) {
       console.log(`\n${c.green}✔ Memory atom stored successfully! [${data.type}] (Hash: ${data.hash.substring(0, 10)}...)${c.reset}\n`);
     } else {
       console.error(`${c.red}✘ Failed to store memory: ${data.error || "Unknown error"}${c.reset}`);
     }
   } catch (err) {
-    console.error(`${c.red}✘ Network error: ${err.message}${c.reset}`);
+    if (flags.json) {
+      console.log(JSON.stringify({ error: err.message }));
+    } else {
+      console.error(`${c.red}✘ Network error: ${err.message}${c.reset}`);
+    }
+  }
+}
+
+async function runContext() {
+  if (!token) {
+    console.log("<!-- MemoryZ not configured. Run 'memoryz init' -->");
+    return;
+  }
+  const query = positionals.slice(1).join(" ") || flags.query || "";
+  const limit = flags.limit || 5;
+
+  const url = new URL(`${serverUrl}/api/memories/recall`);
+  if (query) url.searchParams.set("query", query);
+  url.searchParams.set("limit", String(limit));
+
+  try {
+    const res = await fetch(url, { headers: { "X-API-Key": token } });
+    const data = await res.json();
+    const memories = data.memories || [];
+
+    if (memories.length === 0) {
+      console.log("<!-- No relevant memories found in substrate -->");
+      return;
+    }
+
+    let out = "<memoryz_context>\n";
+    memories.forEach((m) => {
+      out += `  <memory type="${m.type}" title="${m.title || ""}" recall_score="${m.recall_score || 0}">\n`;
+      out += `    ${m.content.trim()}\n`;
+      out += `  </memory>\n`;
+    });
+    out += "</memoryz_context>";
+    console.log(out);
+  } catch (err) {
+    console.log(`<!-- MemoryZ context error: ${err.message} -->`);
+  }
+}
+
+async function runSkill(quiet = false) {
+  const home = os.homedir();
+  const isGlobal = flags.global || false;
+  const projectAgentsDir = path.join(process.cwd(), ".agents", "skills", "memoryz");
+  const globalAgentsDir = path.join(home, ".agents", "skills", "memoryz");
+  const targetDir = flags["export-dir"] || (isGlobal ? globalAgentsDir : projectAgentsDir);
+  const skillFile = path.join(targetDir, "SKILL.md");
+
+  const skillContent = `---
+name: memoryz
+description: Sovereign Agentic Memory Substrate. Use to automatically recall developer preferences, system environment rules, port allocations, and store new persistent instructions.
+---
+
+# MemoryZ — Sovereign Agentic Memory Substrate
+
+MemoryZ gives you a persistent, living cross-session memory substrate.
+Use it to recall developer preferences and store new knowledge.
+
+## When to Recall Memory
+- Before starting a task: check if the developer has specific rules, preferred tools, ports, or libraries.
+- Execute command in terminal:
+  \`memoryz recall "<task topic>" --json\`
+  OR
+  \`memoryz context "<task topic>"\`
+
+## When to Store Memory
+- When the developer gives instructions or preferences (e.g., "I prefer PM2", "Port 3333 is for test domain").
+- Execute command:
+  \`memoryz store --type=preference --content="<rule text>"\`
+  Types:
+  - \`env\`: Ports, infrastructure, domains, CLI tool choices.
+  - \`preference\`: Coding habits, architectural patterns, styles.
+  - \`skill\`: Multi-step procedure prompts or custom agent workflows.
+  - \`note\`: Facts, URLs, references.
+
+## Secret Vault
+- For credentials and API keys (never store plaintext secrets in notes):
+  \`memoryz vault store --key="<name>" --secret="<val>" --pass="<passphrase>"\`
+  \`memoryz vault get --key="<name>" --pass="<passphrase>"\`
+`;
+
+  try {
+    // 1. Write Project SKILL.md
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+    fs.writeFileSync(skillFile, skillContent, "utf8");
+
+    // 2. Also write Global Agent Skill in ~/.agents/skills/memoryz/SKILL.md
+    try {
+      if (!fs.existsSync(globalAgentsDir)) fs.mkdirSync(globalAgentsDir, { recursive: true });
+      fs.writeFileSync(path.join(globalAgentsDir, "SKILL.md"), skillContent, "utf8");
+    } catch (_e) {}
+
+    // 3. Update or create AGENTS.md in current directory
+    const agentsMd = path.join(process.cwd(), "AGENTS.md");
+    const agentRuleSnippet = `\n## MemoryZ Agent Memory Substrate\nThis project connects to MemoryZ. Use \`memoryz recall "<query>" --json\` to retrieve preferences and \`memoryz store --type=... --content="..."\` to save rules.\n`;
+    if (fs.existsSync(agentsMd)) {
+      const existing = fs.readFileSync(agentsMd, "utf8");
+      if (!existing.includes("MemoryZ Agent Memory Substrate")) {
+        fs.appendFileSync(agentsMd, agentRuleSnippet, "utf8");
+      }
+    } else {
+      fs.writeFileSync(agentsMd, `# Project Agent Rules\n${agentRuleSnippet}`, "utf8");
+    }
+
+    // 4. Update or create CLAUDE.md for Claude Code
+    const claudeMd = path.join(process.cwd(), "CLAUDE.md");
+    const claudeSnippet = `\n# Memory Substrate (MemoryZ)\n- Query past preferences: \`memoryz recall "<query>" --json\`\n- Inject task context: \`memoryz context "<query>"\`\n- Store persistent rules: \`memoryz store --type=preference --content="..."\`\n`;
+    if (fs.existsSync(claudeMd)) {
+      const existing = fs.readFileSync(claudeMd, "utf8");
+      if (!existing.includes("Memory Substrate (MemoryZ)")) {
+        fs.appendFileSync(claudeMd, claudeSnippet, "utf8");
+      }
+    } else {
+      fs.writeFileSync(claudeMd, `# Claude Assistant Guidelines\n${claudeSnippet}`, "utf8");
+    }
+
+    // 5. Update or create .cursorrules for Cursor
+    const cursorRules = path.join(process.cwd(), ".cursorrules");
+    if (!fs.existsSync(cursorRules)) {
+      fs.writeFileSync(cursorRules, `# Cursor AI Rules\nAlways check developer preferences: memoryz recall "<topic>" --json\n`, "utf8");
+    }
+
+    if (!quiet) {
+      console.log(`\n${c.green}✔ Created Agent Skill at: ${skillFile}${c.reset}`);
+      console.log(`${c.green}✔ Created Global Agent Skill at: ${path.join(globalAgentsDir, "SKILL.md")}${c.reset}`);
+      console.log(`${c.green}✔ Injected MemoryZ rules into: ${agentsMd}${c.reset}`);
+      console.log(`${c.green}✔ Injected MemoryZ rules into: ${claudeMd}${c.reset}\n`);
+    }
+  } catch (err) {
+    if (!quiet) console.error(`${c.red}Failed to create skill: ${err.message}${c.reset}`);
   }
 }
 
@@ -282,6 +468,10 @@ async function runVault() {
       body: JSON.stringify({ key_name: keyName, passphrase: pass }),
     });
     const data = await res.json();
+    if (flags.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
     if (res.ok) {
       console.log(`\n${c.green}✔ Decrypted '${keyName}':${c.reset} ${data.secret_value}\n`);
     } else {
@@ -289,7 +479,8 @@ async function runVault() {
     }
   } else if (sub === "store") {
     const keyName = flags.key || positionals[2];
-    const secret = flags.secret || positionals[3];
+    let secret = flags.secret || positionals[3];
+    if (!secret) secret = await readStdin();
     const pass = flags.pass || flags.passphrase || positionals[4];
     if (!keyName || !secret || !pass) {
       console.error(`Usage: npx memoryz vault store --key=<name> --secret=<val> --pass=<passphrase>`);
@@ -301,6 +492,10 @@ async function runVault() {
       body: JSON.stringify({ key_name: keyName, secret_value: secret, passphrase: pass }),
     });
     const data = await res.json();
+    if (flags.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
     if (res.ok) {
       console.log(`\n${c.green}✔ Secret '${keyName}' encrypted and stored in Zero-Knowledge vault!${c.reset}`);
       if (data.recoveryKey) {
@@ -316,6 +511,10 @@ async function runVault() {
     });
     const data = await res.json();
     const keys = data.keys || [];
+    if (flags.json) {
+      console.log(JSON.stringify(keys, null, 2));
+      return;
+    }
     console.log(`\n${c.cyan}🔐 Vault Secrets (${keys.length}):${c.reset}`);
     keys.forEach((k) => console.log(`  • ${k.key_name} ${c.dim}(${new Date(k.created_at * 1000).toLocaleDateString()})${c.reset}`));
     console.log("");
@@ -323,7 +522,6 @@ async function runVault() {
 }
 
 async function runMcpBridge() {
-  // Stdio bridge forwarding to remote MCP HTTP endpoint
   if (!token) {
     process.stderr.write("Error: Missing token for MCP bridge.\n");
     process.exit(1);
@@ -364,11 +562,17 @@ ${c.bold}Usage:${c.reset}
   ${c.green}npx memoryz init --token=<YOUR_TOKEN>${c.reset}
       Auto-detect and register MemoryZ in Cursor, Claude Desktop, Claude Code, Windsurf.
 
-  ${c.green}npx memoryz recall "<query>"${c.reset}
+  ${c.green}npx memoryz recall "<query>" [--json] [--limit=5]${c.reset}
       Semantic vector recall with time-decay scoring.
 
   ${c.green}npx memoryz store --type=env|skill|preference|note --content="..." [--title="..."]${c.reset}
       Store a memory atom with automatic 768-dim Gemini vector embedding.
+
+  ${c.green}npx memoryz context "<query>"${c.reset}
+      Output an XML-formatted context block directly ready for AI prompts.
+
+  ${c.green}npx memoryz skill${c.reset}
+      Export standard agent SKILL.md and inject rules into AGENTS.md.
 
   ${c.green}npx memoryz vault store --key="..." --secret="..." --pass="..."${c.reset}
       Encrypt and store confidential secret in Zero-Knowledge vault.
@@ -382,6 +586,7 @@ ${c.bold}Usage:${c.reset}
 ${c.bold}Options:${c.reset}
   --token=<key>    MemoryZ API Key or JWT token
   --url=<url>      MemoryZ Server URL (default: ${DEFAULT_SERVER_URL})
+  --json           Output raw JSON for scripts and AI tools
 `);
 }
 
