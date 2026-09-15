@@ -5,6 +5,12 @@ export function renderAppHtml(): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MemoryZ v2 — Living Agentic Memory & Task Substrate</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('memoryz_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
   
   <!-- Fonts & Core UI Libraries: Tailwind, DaisyUI 4, FontAwesome 6, Alpine.js -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,6 +77,13 @@ export function renderAppHtml(): string {
         <span x-text="'~' + (totalMemories * 18) + 't'"></span>
       </div>
 
+      <!-- Theme Switcher (Dark / Light Mode) -->
+      <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom"
+              :data-tip="theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'"
+              @click="toggleTheme()">
+        <i class="fa-solid text-xs sm:text-sm" :class="theme === 'dark' ? 'fa-sun text-warning' : 'fa-moon text-primary'"></i>
+      </button>
+
       <!-- User Avatar / Auth Indicator (Minimalist: Icon only, no long text) -->
       <template x-if="currentUser">
         <div class="dropdown dropdown-end">
@@ -107,78 +120,162 @@ export function renderAppHtml(): string {
   <!-- MAIN WRAPPER -->
   <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
 
-    <!-- NAVIGATION TABS (DaisyUI tabs-boxed) -->
-    <div class="flex items-center justify-between gap-2 flex-wrap">
-      <div class="tabs tabs-boxed bg-base-200/90 border border-base-300 p-1 rounded-xl flex-wrap">
-        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
-                :class="{ 'tab-active font-bold': activeTab === 'memories' }"
-                @click="switchTab('memories')">
-          <i class="fa-solid fa-brain text-xs"></i>
-          <span>الذاكرة</span>
-        </button>
+    <!-- NAVIGATION CARDS (Responsive Grid, Mobile-Friendly, No Horizontal Overflow) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+      <!-- 1. الذاكرة الحية -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'memories' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('memories')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'memories' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <span class="badge badge-xs font-mono font-medium"
+                :class="activeTab === 'memories' ? 'badge-primary' : 'badge-ghost'"
+                x-text="totalMemories"></span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">الذاكرة الحية</div>
+          <div class="text-[10px] text-base-content/60 truncate">فيكتور واسترجاع</div>
+        </div>
+      </button>
 
-        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
-                :class="{ 'tab-active font-bold': activeTab === 'tasks' }"
-                @click="switchTab('tasks')">
-          <i class="fa-solid fa-list-check text-xs"></i>
-          <span>المهام والـ TODO</span>
-          <span class="badge badge-xs badge-primary" x-text="tasksCount" x-show="tasksCount > 0"></span>
-        </button>
+      <!-- 2. المهام والـ TODO -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'tasks' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('tasks')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'tasks' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <span class="badge badge-xs font-mono font-medium"
+                :class="activeTab === 'tasks' ? 'badge-primary' : 'badge-ghost'"
+                x-text="tasksCount"></span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">المهام و TODO</div>
+          <div class="text-[10px] text-base-content/60 truncate">شجرة مهام مقتصدة</div>
+        </div>
+      </button>
 
-        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
-                :class="{ 'tab-active font-bold': activeTab === 'context' }"
-                @click="switchTab('context')">
-          <i class="fa-solid fa-boxes-stacked text-xs"></i>
-          <span>السياق والسجلات</span>
-        </button>
+      <!-- 3. السياق والسجلات -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'context' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('context')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'context' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <span class="badge badge-xs badge-ghost font-mono">Pack</span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">السياق والسجلات</div>
+          <div class="text-[10px] text-base-content/60 truncate">Logs وحزم السياق</div>
+        </div>
+      </button>
 
-        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
-                :class="{ 'tab-active font-bold': activeTab === 'agent' }"
-                @click="switchTab('agent')">
-          <i class="fa-solid fa-robot text-xs"></i>
-          <span>المحاكي</span>
-        </button>
+      <!-- 4. المحاكي -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'agent' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('agent')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'agent' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <span class="badge badge-xs badge-ghost font-mono">Sim</span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">محاكي الوكلاء</div>
+          <div class="text-[10px] text-base-content/60 truncate">اختبار الذاكرة الحية</div>
+        </div>
+      </button>
 
-        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
-                :class="{ 'tab-active font-bold': activeTab === 'vault' }"
-                @click="switchTab('vault')">
-          <i class="fa-solid fa-shield-halved text-xs"></i>
-          <span>الخزنة</span>
-        </button>
+      <!-- 5. الخزنة -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'vault' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('vault')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'vault' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <span class="badge badge-xs badge-ghost font-mono">ZK</span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">الخزنة المشفرة</div>
+          <div class="text-[10px] text-base-content/60 truncate">AES-256-GCM</div>
+        </div>
+      </button>
 
-        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
-                :class="{ 'tab-active font-bold': activeTab === 'connect' }"
-                @click="switchTab('connect')">
-          <i class="fa-solid fa-terminal text-xs"></i>
-          <span>الربط و MCP</span>
-        </button>
+      <!-- 6. الربط و MCP -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'connect' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('connect')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'connect' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-terminal"></i>
+          </div>
+          <span class="badge badge-xs badge-ghost font-mono">CLI</span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">الربط و MCP</div>
+          <div class="text-[10px] text-base-content/60 truncate">Cursor و Claude</div>
+        </div>
+      </button>
 
-        <template x-if="currentUser && currentUser.role === 'admin'">
-          <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all text-warning"
-                  :class="{ 'tab-active font-bold': activeTab === 'admin' }"
-                  @click="switchTab('admin')">
-            <i class="fa-solid fa-crown text-xs"></i>
-            <span>المدير</span>
-          </button>
-        </template>
+      <!-- 7. لوحة المدير (مشروطة) -->
+      <template x-if="currentUser && currentUser.role === 'admin'">
+        <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98] col-span-2 sm:col-span-1"
+                :class="activeTab === 'admin' ? 'border-warning bg-warning/10 ring-1 ring-warning' : 'border-base-300 hover:border-warning/40'"
+                @click="switchTab('admin')">
+          <div class="flex items-center justify-between w-full">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+                 :class="activeTab === 'admin' ? 'bg-warning text-warning-content' : 'bg-base-300 text-warning'">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+            <span class="badge badge-xs badge-warning font-mono">Root</span>
+          </div>
+          <div>
+            <div class="font-bold text-xs sm:text-sm tracking-tight text-warning">لوحة المدير</div>
+            <div class="text-[10px] text-base-content/60 truncate">إدارة النظام</div>
+          </div>
+        </button>
+      </template>
+    </div>
+
+    <!-- Active Section Action Header (Compact & Responsive) -->
+    <div class="flex items-center justify-between gap-2 bg-base-200/60 border border-base-300 px-3.5 py-2.5 rounded-xl">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-xs sm:text-sm font-bold text-base-content/90 truncate" x-text="
+          activeTab === 'memories' ? 'الذاكرة الحية والمتجهات (Vector Memories)' :
+          activeTab === 'tasks' ? 'شجرة المهام وتنسيق الوكلاء (Tasks & Multi-Agent TODOs)' :
+          activeTab === 'context' ? 'حزم السياق والسجلات اللحظية (Context Packs & Logs)' :
+          activeTab === 'agent' ? 'محاكي الاسترجاع واستجابة الوكلاء (Agent Simulator)' :
+          activeTab === 'vault' ? 'الخزنة السرية المشفرة (Zero-Knowledge Secret Vault)' :
+          activeTab === 'connect' ? 'تهيئة بروتوكول MCP وأدوات CLI' : 'لوحة إدارة النظام'
+        "></span>
       </div>
 
-      <!-- Quick Action Buttons on Tab Bar -->
-      <div class="flex items-center gap-1.5">
+      <div class="flex items-center gap-1.5 flex-none">
         <template x-if="activeTab === 'memories'">
-          <button class="btn btn-primary btn-sm gap-1 shadow-sm shadow-primary/20" @click="openMemoryModal()">
+          <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openMemoryModal()">
             <i class="fa-solid fa-plus text-xs"></i> <span>ذاكرة جديدة</span>
           </button>
         </template>
 
         <template x-if="activeTab === 'tasks'">
-          <button class="btn btn-success btn-sm text-success-content gap-1 shadow-sm" @click="openTaskModal()">
+          <button class="btn btn-success btn-xs sm:btn-sm text-success-content gap-1 shadow-sm" @click="openTaskModal()">
             <i class="fa-solid fa-plus text-xs"></i> <span>مهمة جديدة</span>
           </button>
         </template>
 
         <template x-if="activeTab === 'vault'">
-          <button class="btn btn-secondary btn-sm gap-1" @click="openVaultModal()">
+          <button class="btn btn-secondary btn-xs sm:btn-sm gap-1" @click="openVaultModal()">
             <i class="fa-solid fa-lock text-xs"></i> <span>مفتاح سري</span>
           </button>
         </template>
@@ -902,6 +999,7 @@ export function renderAppHtml(): string {
       return {
         // State
         activeTab: 'memories',
+        theme: localStorage.getItem('memoryz_theme') || 'dark',
         authToken: localStorage.getItem('mz_token') || '',
         currentUser: null,
         
@@ -976,7 +1074,15 @@ export function renderAppHtml(): string {
           this.showToast('تم النسخ إلى الحافظة 📋');
         },
 
+        toggleTheme() {
+          this.theme = this.theme === 'dark' ? 'light' : 'dark';
+          localStorage.setItem('memoryz_theme', this.theme);
+          document.documentElement.setAttribute('data-theme', this.theme);
+        },
+
         async initApp() {
+          this.theme = localStorage.getItem('memoryz_theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', this.theme);
           if (this.authToken) {
             await this.fetchMe();
           }
