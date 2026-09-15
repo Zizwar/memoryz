@@ -63,38 +63,8 @@ export function renderAppHtml(): string {
       </div>
     </div>
 
-    <!-- Right Actions / Status Bar (Clean: Icon-only indicators to prevent breaking layout) -->
-    <div class="flex-none flex items-center gap-0.5 sm:gap-1.5">
-      <!-- Direct MCP Single URL Copier -->
-      <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="نسخ رابط MCP المباشر"
-              @click="copyDirectMcpUrl()">
-        <i class="fa-solid fa-bolt text-warning text-xs sm:text-sm"></i>
-      </button>
-
-      <!-- Direct Skill File Link Copier (Token-free) -->
-      <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="نسخ رابط Skill (skill.md للوكلاء)"
-              @click="copySkillUrl()">
-        <i class="fa-solid fa-scroll text-accent text-xs sm:text-sm"></i>
-      </button>
-
-      <!-- Documentation Portal (Opens in New Tab) -->
-      <a href="/docs" target="_blank" rel="noopener"
-         class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="دليل التوثيق والربط (Docs)">
-        <i class="fa-solid fa-book-open text-info text-xs sm:text-sm"></i>
-      </a>
-
-      <!-- GitHub Repo Link -->
-      <a href="https://github.com/Zizwar/memoryz" target="_blank" rel="noopener noreferrer"
-         class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="مستودع GitHub">
-        <i class="fa-brands fa-github text-xs sm:text-sm"></i>
-      </a>
-
-      <!-- NPM Package Link -->
-      <a href="https://www.npmjs.com/package/memoryz" target="_blank" rel="noopener noreferrer"
-         class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="حزمة NPM (memoryz)">
-        <i class="fa-brands fa-npm text-sm sm:text-base text-error"></i>
-      </a>
-
+    <!-- Right Actions / Status Bar (Clean & Minimalist: Token + Theme + BigMac Menu) -->
+    <div class="flex-none flex items-center gap-1 sm:gap-2">
       <!-- Token Economy Indicator (Compact) -->
       <div class="badge badge-outline badge-xs sm:badge-sm font-mono gap-1 tooltip tooltip-bottom" data-tip="حالة استهلاك التوكن في الذاكرة الحية">
         <i class="fa-solid fa-microchip text-[10px] text-info"></i>
@@ -108,36 +78,136 @@ export function renderAppHtml(): string {
         <i class="fa-solid text-xs sm:text-sm" :class="theme === 'dark' ? 'fa-sun text-warning' : 'fa-moon text-primary'"></i>
       </button>
 
-      <!-- User Avatar / Auth Indicator (Minimalist: Icon only, no long text) -->
-      <template x-if="currentUser">
-        <div class="dropdown dropdown-end">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-xs sm:btn-sm btn-circle avatar tooltip tooltip-bottom" :data-tip="currentUser.username">
-            <div class="w-7 h-7 rounded-full bg-primary/20 text-primary border border-primary/40 flex items-center justify-center font-bold text-xs uppercase">
+      <!-- BigMac Dropdown Menu (Unified Profile, Quick Actions, Docs & Links) -->
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button"
+             class="btn btn-ghost btn-xs sm:btn-sm gap-1.5 px-2 rounded-xl border border-base-300/80 bg-base-100/40 hover:bg-base-300/60 transition-all"
+             title="القائمة الرئيسية">
+          <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+          <template x-if="currentUser">
+            <div class="w-5 h-5 rounded-full bg-primary/20 text-primary border border-primary/40 flex items-center justify-center font-bold text-[10px] uppercase">
               <span x-text="currentUser.username.substring(0, 2)"></span>
             </div>
-          </div>
-          <ul tabindex="0" class="dropdown-content z-50 menu p-2 shadow-2xl bg-base-200 border border-base-300 rounded-box w-56 text-xs mt-2">
-            <li class="menu-title flex items-center justify-between">
-              <span class="truncate font-semibold" x-text="currentUser.username"></span>
-              <span class="badge badge-primary badge-xs" x-text="currentUser.role"></span>
-            </li>
-            <li><a @click="switchTab('connect')"><i class="fa-solid fa-key"></i> مفتاح API</a></li>
-            <template x-if="currentUser.role === 'admin'">
-              <li><a @click="switchTab('admin')"><i class="fa-solid fa-crown text-warning"></i> لوحة المدير</a></li>
-            </template>
-            <li class="border-t border-base-300 mt-1 pt-1">
-              <a @click="logout()" class="text-error"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
-            </li>
-          </ul>
+          </template>
         </div>
-      </template>
 
-      <template x-if="!currentUser">
-        <button class="btn btn-primary btn-xs sm:btn-sm gap-1.5" @click="openAuthModal('login')">
-          <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
-          <span class="hidden sm:inline">دخول</span>
-        </button>
-      </template>
+        <ul tabindex="0" class="dropdown-content z-50 menu p-2.5 shadow-2xl bg-base-200 border border-base-300 rounded-2xl w-64 text-xs mt-2 space-y-1">
+          <!-- User Profile / Auth Header -->
+          <template x-if="currentUser">
+            <li class="bg-base-300/60 rounded-xl p-2.5 mb-1">
+              <div class="flex items-center justify-between w-full p-0">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="w-7 h-7 rounded-full bg-primary/20 text-primary border border-primary/40 flex items-center justify-center font-bold text-xs uppercase flex-none">
+                    <span x-text="currentUser.username.substring(0, 2)"></span>
+                  </div>
+                  <div class="truncate">
+                    <div class="font-bold text-sm truncate" x-text="currentUser.username"></div>
+                    <div class="text-[10px] text-base-content/60 truncate" x-text="currentUser.email || 'حساب نشط'"></div>
+                  </div>
+                </div>
+                <span class="badge badge-primary badge-xs font-mono font-bold uppercase" x-text="currentUser.role"></span>
+              </div>
+            </li>
+          </template>
+
+          <template x-if="!currentUser">
+            <li class="mb-1">
+              <button class="btn btn-primary btn-sm w-full gap-2 justify-center text-xs" @click="openAuthModal('login')">
+                <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+                <span>تسجيل الدخول / إنشاء حساب</span>
+              </button>
+            </li>
+          </template>
+
+          <!-- System & Account Links -->
+          <template x-if="currentUser">
+            <li>
+              <a @click="switchTab('connect')" class="flex items-center gap-2.5 py-2 rounded-lg">
+                <i class="fa-solid fa-key text-primary text-xs w-4 text-center"></i>
+                <span class="font-medium">مفتاح API والربط</span>
+              </a>
+            </li>
+          </template>
+
+          <template x-if="currentUser && currentUser.role === 'admin'">
+            <li>
+              <a @click="switchTab('admin')" class="flex items-center gap-2.5 py-2 text-warning font-bold rounded-lg">
+                <i class="fa-solid fa-crown text-xs w-4 text-center"></i>
+                <span>لوحة تحكم المدير</span>
+              </a>
+            </li>
+          </template>
+
+          <li class="menu-title text-[10px] text-base-content/50 uppercase tracking-wider pt-1">المصادر والتوثيق</li>
+
+          <!-- Docs -->
+          <li>
+            <a href="/docs" target="_blank" rel="noopener" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-book-open text-info text-xs w-4 text-center"></i>
+                <span class="font-medium">دليل التوثيق (Docs)</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-40"></i>
+            </a>
+          </li>
+
+          <!-- Skill URL Copier -->
+          <li>
+            <a @click="copySkillUrl()" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-scroll text-accent text-xs w-4 text-center"></i>
+                <span>نسخ رابط skill.md</span>
+              </div>
+              <span class="badge badge-ghost badge-xs font-mono">Skill</span>
+            </a>
+          </li>
+
+          <!-- Direct MCP Copier -->
+          <li>
+            <a @click="copyDirectMcpUrl()" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-bolt text-warning text-xs w-4 text-center"></i>
+                <span>نسخ رابط MCP المباشر</span>
+              </div>
+              <span class="badge badge-ghost badge-xs font-mono">SSE</span>
+            </a>
+          </li>
+
+          <li class="menu-title text-[10px] text-base-content/50 uppercase tracking-wider pt-1">المستودعات والحزم</li>
+
+          <!-- GitHub Repo -->
+          <li>
+            <a href="https://github.com/Zizwar/memoryz" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-brands fa-github text-xs w-4 text-center"></i>
+                <span>مستودع GitHub</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-40"></i>
+            </a>
+          </li>
+
+          <!-- NPM Package -->
+          <li>
+            <a href="https://www.npmjs.com/package/memoryz" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-brands fa-npm text-error text-sm w-4 text-center"></i>
+                <span>حزمة NPM (v2.0.0)</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-40"></i>
+            </a>
+          </li>
+
+          <!-- Logout -->
+          <template x-if="currentUser">
+            <li class="border-t border-base-300 mt-1 pt-1">
+              <a @click="logout()" class="text-error flex items-center gap-2.5 py-2 rounded-lg">
+                <i class="fa-solid fa-right-from-bracket text-xs w-4 text-center"></i>
+                <span>تسجيل الخروج</span>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
     </div>
   </header>
 
