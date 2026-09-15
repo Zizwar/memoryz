@@ -64,12 +64,36 @@ export function renderAppHtml(): string {
     </div>
 
     <!-- Right Actions / Status Bar (Clean: Icon-only indicators to prevent breaking layout) -->
-    <div class="flex-none flex items-center gap-1 sm:gap-2">
-      <!-- Direct MCP Single URL Copier (Desktop + Mobile) -->
+    <div class="flex-none flex items-center gap-0.5 sm:gap-1.5">
+      <!-- Direct MCP Single URL Copier -->
       <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="نسخ رابط MCP المباشر"
               @click="copyDirectMcpUrl()">
         <i class="fa-solid fa-bolt text-warning text-xs sm:text-sm"></i>
       </button>
+
+      <!-- Direct Skill File Link Copier (Token-free) -->
+      <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="نسخ رابط Skill (skill.md للوكلاء)"
+              @click="copySkillUrl()">
+        <i class="fa-solid fa-scroll text-accent text-xs sm:text-sm"></i>
+      </button>
+
+      <!-- Documentation Portal (Opens in New Tab) -->
+      <a href="/docs" target="_blank" rel="noopener"
+         class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="دليل التوثيق والربط (Docs)">
+        <i class="fa-solid fa-book-open text-info text-xs sm:text-sm"></i>
+      </a>
+
+      <!-- GitHub Repo Link -->
+      <a href="https://github.com/Zizwar/memoryz" target="_blank" rel="noopener noreferrer"
+         class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="مستودع GitHub">
+        <i class="fa-brands fa-github text-xs sm:text-sm"></i>
+      </a>
+
+      <!-- NPM Package Link -->
+      <a href="https://www.npmjs.com/package/memoryz" target="_blank" rel="noopener noreferrer"
+         class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="حزمة NPM (memoryz)">
+        <i class="fa-brands fa-npm text-sm sm:text-base text-error"></i>
+      </a>
 
       <!-- Token Economy Indicator (Compact) -->
       <div class="badge badge-outline badge-xs sm:badge-sm font-mono gap-1 tooltip tooltip-bottom" data-tip="حالة استهلاك التوكن في الذاكرة الحية">
@@ -747,6 +771,51 @@ export function renderAppHtml(): string {
               <i class="fa-solid fa-copy text-xs"></i>
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- 4. Token-Free Skill File for Autonomous Agents (skill.md) -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold">
+              <i class="fa-solid fa-scroll"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">ملف المهارة لوكلاء الذكاء الاصطناعي (skill.md)</div>
+              <div class="text-[11px] text-base-content/60">ملف توجيهي عام خالٍ تماماً من المفاتيح السرية والـ Tokens لتثبيته في بيئات الوكلاء</div>
+            </div>
+          </div>
+          <span class="badge badge-accent badge-sm font-mono">Agent Skill</span>
+        </div>
+
+        <div class="join w-full">
+          <input type="text" class="input input-sm input-bordered join-item flex-1 mono text-xs bg-base-300"
+                 readonly :value="window.location.origin + '/skill.md'">
+          <a :href="'/skill.md?download=true'" class="btn btn-sm btn-accent join-item gap-1">
+            <i class="fa-solid fa-download text-xs"></i> <span>تحميل</span>
+          </a>
+          <button class="btn btn-sm btn-ghost join-item" @click="copySkillUrl()">
+            <i class="fa-solid fa-copy text-xs"></i>
+          </button>
+        </div>
+
+        <div class="space-y-1.5 pt-1">
+          <div class="text-xs font-semibold">تثبيت سريع في مجلد مهارات الوكيل:</div>
+          <div class="mockup-code text-xs bg-base-300 border border-base-content/10 shadow relative">
+            <pre data-prefix="$"><code>mkdir -p .agents/skills/memoryz && curl -sSL https://memoryz.wino.deno.net/skill.md > .agents/skills/memoryz/SKILL.md</code></pre>
+            <button class="btn btn-ghost btn-xs absolute left-3 top-3 text-base-content/60 hover:text-base-content"
+                    @click="copyText('mkdir -p .agents/skills/memoryz && curl -sSL https://memoryz.wino.deno.net/skill.md > .agents/skills/memoryz/SKILL.md')">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-base-300 flex-wrap gap-2">
+          <span class="text-xs text-base-content/60">تريد تفاصيل أكثر حول الربط بالوكلاء أو الكود؟</span>
+          <a href="/docs" target="_blank" class="btn btn-outline btn-xs sm:btn-sm gap-1.5">
+            <i class="fa-solid fa-book-open text-xs"></i> <span>فتح دليل التوثيق الشامل (Docs)</span>
+          </a>
         </div>
       </div>
     </div>
@@ -1518,6 +1587,12 @@ export function renderAppHtml(): string {
 
         copyDirectMcpUrl() {
           this.copyText(this.getDirectMcpUrl());
+        },
+
+        copySkillUrl() {
+          const origin = window.location.origin;
+          this.copyText(origin + '/skill.md');
+          this.showToast('تم نسخ رابط ملف skill.md المباشر للوكلاء 📜');
         },
 
         // --- ADMIN ---

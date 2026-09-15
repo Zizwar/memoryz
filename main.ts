@@ -4,6 +4,7 @@ import { handleApiRoute } from "./src/routes/api.ts";
 import { handleMcpRoute } from "./src/routes/mcp.ts";
 import { generateOpenApiSpec } from "./src/routes/openapi.ts";
 import { renderAppHtml } from "./src/ui/html.ts";
+import { DEFAULT_SKILL_MD, renderDocsHtml } from "./src/ui/docs.ts";
 
 // Initialize database schema on startup
 try {
@@ -33,6 +34,43 @@ Deno.serve({ port: config.port }, async (req: Request) => {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
+  }
+
+  // Documentation Portal (/docs)
+  if (path === "/docs" || path === "/docs.html") {
+    return new Response(renderDocsHtml(), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  // Public Token-Free Skill File (/skill.md)
+  if (path === "/skill.md" || path === "/SKILL.md") {
+    const isDownload = url.searchParams.get("download") === "true";
+    const disposition = isDownload
+      ? 'attachment; filename="SKILL.md"'
+      : 'inline; filename="SKILL.md"';
+    try {
+      const skillText = await Deno.readTextFile("./.agents/skills/memoryz/SKILL.md");
+      return new Response(skillText, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/markdown; charset=utf-8",
+          "Content-Disposition": disposition,
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (_e) {
+      return new Response(DEFAULT_SKILL_MD, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/markdown; charset=utf-8",
+          "Content-Disposition": disposition,
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
   }
 
   // OpenAPI 3.1 & Swagger schema for Mobile Chat Connectors (ChatGPT / LibreChat / Actions)
