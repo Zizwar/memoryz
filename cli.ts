@@ -4,6 +4,9 @@ import { initDb } from "./src/db/schema.ts";
 import { AuthService } from "./src/services/auth.ts";
 import { MemoryService, MemoryType } from "./src/services/memory.ts";
 import { VaultService } from "./src/services/vault.ts";
+import { TaskService, TaskPriority } from "./src/services/task.ts";
+import { LogService, LogLevel } from "./src/services/log.ts";
+import { ContextService } from "./src/services/context.ts";
 import { McpServer } from "./src/mcp/server.ts";
 
 const args = Deno.args;
@@ -28,18 +31,15 @@ function parseFlags(argsList: string[]): Record<string, string> {
 const flags = parseFlags(args.slice(1));
 
 async function getUserId(): Promise<string> {
-  // If API key passed
   const apiKey = flags["key"] || Deno.env.get("MEMORYZ_API_KEY");
   if (apiKey) {
     const user = await AuthService.findByApiKey(apiKey);
     if (user) return user.id;
   }
-  // Fallback: look for first user or default admin user
   const stats = await AuthService.getPlatformStats();
   if (stats.users && stats.users.length > 0) {
     return stats.users[0].id;
   }
-  // If no user exists, create default admin
   const session = await AuthService.register("admin", "admin@memoryz.local", "MemoryZ@2026");
   console.log(`[MemoryZ] Initialized default user 'admin' (API Key: ${session.user.api_key})`);
   return session.user.id;
@@ -48,6 +48,7 @@ async function getUserId(): Promise<string> {
 await initDb();
 
 switch (command) {
+  // --- Memory Operations ---
   case "store": {
     const type = (flags["type"] as MemoryType) || "note";
     const content = flags["content"] || args[1];
@@ -66,23 +67,213 @@ switch (command) {
     const query = flags["query"] || args[1];
     const type = flags["type"] as MemoryType;
     const limit = flags["limit"] ? parseInt(flags["limit"], 10) : 5;
+    const isCompact = flags["compact"] === "true" || flags["c"] === "true";
+    const isSummary = flags["summary"] === "true";
+    const isJson = flags["json"] === "true";
     const userId = await getUserId();
 
-    console.log(`\x1b[36m⚡ Recalling memories for query: "${query || '(all)'}"\x1b[0m\n`);
     const results = await MemoryService.recall({ userId, query, type, limit });
+
+    if (isJson) {
+      console.log(JSON.stringify(results, null, 2));
+      break;
+    }
 
     if (results.length === 0) {
       console.log("\x1b[90mNo memories found matching query.\x1b[0m");
-    } else {
-      results.forEach((m, idx) => {
-        const badge = `\x1b[35m[${m.type.toUpperCase()}]\x1b[0m`;
-        console.log(`\x1b[1m#${idx + 1} ${badge} ${m.title || m.hash.substring(0, 8)}\x1b[0m (Recall: 🔥 ${m.recall_count}, Score: ⚡ ${m.recall_score})`);
-        console.log(`  \x1b[37m${m.content}\x1b[0m\n`);
+      break;
+    }
+
+    if (isSummary) {
+      console.log(MemoryService.formatSummary(results));
+      break;
+    }
+
+    if (isCompact) {
+      console.log(MemoryService.formatCompact(results));
+      break;
+    }
+
+    console.log(`\x1b[36m⚡ Recalling memories for query: "${query || '(all)'}"\x1b[0m\n`);
+    results.forEach((m, idx) => {
+      const badge = `\x1b[35m[${m.type.toUpperCase()}]\x1b[0m`;
+      console.log(`\x1b[1m#${idx + 1} ${badge} ${m.title || m.hash.substring(0, 8)}\x1b[0m (Recall: 🔥 ${m.recall_count}, Score: ⚡ ${m.recall_score})`);
+      console.log(`  \x1b[37m${m.content}\x1b[0m\n`);
+    });
+    break;
+  }
+
+  // --- Hierarchical Task Operations ---
+  case "task": {
+    const sub = args[1] || "list";
+    const userId = await getUserId();
+
+    if (sub === "add" || sub === "create") {
+      const title = flags["title"] || args[2];
+      if (!title) {
+        console.error("Usage: deno run -A cli.ts task add \"Title\" [--parent=id] [--status=todo] [--priority=medium] [--assignee=agent]");
+        Deno.exit(1);
+      }
+      const parentId = flags["parent"] || flags["parent_id"];
+      const status = flags["status"] || "todo";
+      const priority = (flags["priority"] as TaskPriority) || "medium";
+      const assignee = flags["assignee"];
+      const description = flags["desc"] || flags["description"];
+
+      const task = await TaskService.create({
+        userId,
+        title,
+        parentId,
+        status,
+        priority,
+        assignee,
+        description,
       });
+
+      console.log(`\x1b[32m✔ Task created:\x1b[0m [${task.status}] ${task.title} (ID: \x1b[36m${task.id}\x1b[0m${task.parent_id ? `, Parent: ${task.parent_id}` : ""})`);
+    } else if (sub === "done" || sub === "complete") {
+      const id = args[2] || flags["id"];
+      if (!id) {
+        console.error("Usage: deno run -A cli.ts task done <task_id>");
+        Deno.exit(1);
+      }
+      const updated = await TaskService.update(userId, id, { status: "done" });
+      console.log(`\x1b[32m✔ Task completed:\x1b[0m [✓] ${updated.title} (${updated.id})`);
+    } else if (sub === "update") {
+      const id = args[2] || flags["id"];
+      if (!id) {
+        console.error("Usage: deno run -A cli.ts task update <task_id> [--status=...] [--title=...]");
+        Deno.exit(1);
+      }
+      const updated = await TaskService.update(userId, id, {
+        status: flags["status"],
+        title: flags["title"],
+        description: flags["desc"] || flags["description"],
+        priority: flags["priority"] as TaskPriority,
+        assignee: flags["assignee"],
+        parentId: flags["parent"],
+      });
+      console.log(`\x1b[32m✔ Task updated:\x1b[0m [${updated.status}] ${updated.title}`);
+    } else if (sub === "rm" || sub === "delete") {
+      const id = args[2] || flags["id"];
+      if (!id) {
+        console.error("Usage: deno run -A cli.ts task rm <task_id>");
+        Deno.exit(1);
+      }
+      const cascade = flags["cascade"] !== "false";
+      await TaskService.delete(userId, id, cascade);
+      console.log(`\x1b[32m✔ Task '${id}' deleted.\x1b[0m`);
+    } else {
+      // List tasks
+      const isTree = flags["tree"] === "true" || flags["t"] === "true" || (!flags["compact"] && !flags["json"]);
+      const isJson = flags["json"] === "true";
+      const status = flags["status"];
+
+      if (isJson) {
+        const tasks = await TaskService.list(userId, { status });
+        console.log(JSON.stringify(tasks, null, 2));
+      } else if (isTree) {
+        const tree = await TaskService.getTree(userId, { status });
+        console.log(`\x1b[1m\x1b[36m📋 Hierarchical Task Tree (${tree.length} root tasks):\x1b[0m\n`);
+        const ascii = TaskService.formatTreeAscii(tree);
+        console.log(ascii || "\x1b[90m(No tasks found)\x1b[0m");
+      } else {
+        const tasks = await TaskService.list(userId, { status });
+        console.log(TaskService.formatCompactList(tasks));
+      }
     }
     break;
   }
 
+  // --- Ephemeral Logs ---
+  case "log": {
+    const message = flags["msg"] || flags["message"] || args.slice(1).join(" ");
+    if (!message) {
+      console.error("Usage: deno run -A cli.ts log \"Message text\" [--level=info] [--source=agent]");
+      Deno.exit(1);
+    }
+    const userId = await getUserId();
+    const level = (flags["level"] as LogLevel) || "info";
+    const source = flags["source"] || "cli";
+    const log = await LogService.append({ userId, message, level, source });
+    console.log(`\x1b[32m✔ Logged [${log.level.toUpperCase()}]:\x1b[0m ${log.message}`);
+    break;
+  }
+
+  case "logs": {
+    const userId = await getUserId();
+    const limit = flags["limit"] ? parseInt(flags["limit"], 10) : 25;
+    const source = flags["source"];
+    const level = flags["level"] as LogLevel;
+    const isJson = flags["json"] === "true";
+
+    const logs = await LogService.list(userId, { limit, source, level });
+    if (isJson) {
+      console.log(JSON.stringify(logs, null, 2));
+    } else {
+      console.log(`\x1b[36m📜 Recent Logs (${logs.length}):\x1b[0m\n`);
+      console.log(LogService.formatCompact(logs) || "\x1b[90m(No logs found)\x1b[0m");
+    }
+    break;
+  }
+
+  // --- Token-Budgeted Context Pack ---
+  case "context": {
+    const query = flags["query"] || args[1];
+    const budget = flags["tokens"] ? parseInt(flags["tokens"], 10) : 1200;
+    const format = (flags["format"] as "xml" | "markdown" | "compact") || (flags["compact"] === "true" ? "compact" : "xml");
+    const includeTasks = flags["no-tasks"] !== "true";
+    const includeLogs = flags["logs"] === "true";
+    const userId = await getUserId();
+
+    const pack = await ContextService.buildContextPack({
+      userId,
+      query,
+      tokenBudget: budget,
+      includeTasks,
+      includeLogs,
+      format,
+    });
+
+    console.log(pack.content);
+    break;
+  }
+
+  // --- Context Snapshots ---
+  case "snapshot": {
+    const sub = args[1];
+    const userId = await getUserId();
+
+    if (sub === "save") {
+      const name = flags["name"] || args[2];
+      const content = flags["content"] || args[3];
+      if (!name || !content) {
+        console.error("Usage: deno run -A cli.ts snapshot save <name> <content>");
+        Deno.exit(1);
+      }
+      const snap = await ContextService.saveSnapshot(userId, name, content, flags["desc"]);
+      console.log(`\x1b[32m✔ Saved context snapshot '${snap.name}' (${ContextService.estimateTokens(snap.content)} est. tokens)\x1b[0m`);
+    } else if (sub === "get" || sub === "load") {
+      const name = flags["name"] || args[2];
+      if (!name) {
+        console.error("Usage: deno run -A cli.ts snapshot get <name>");
+        Deno.exit(1);
+      }
+      const snap = await ContextService.getSnapshot(userId, name);
+      if (!snap) {
+        console.error(`Snapshot '${name}' not found.`);
+        Deno.exit(1);
+      }
+      console.log(snap.content);
+    } else {
+      const list = await ContextService.listSnapshots(userId);
+      console.log(`\x1b[36m📦 Context Snapshots (${list.length}):\x1b[0m`);
+      list.forEach((s) => console.log(`  • ${s.name} (${new Date(s.updated_at * 1000).toLocaleString()})`));
+    }
+    break;
+  }
+
+  // --- Zero-Knowledge Vault ---
   case "vault": {
     const sub = args[1];
     const userId = await getUserId();
@@ -120,8 +311,8 @@ switch (command) {
     break;
   }
 
+  // --- Stdio MCP Bridge ---
   case "mcp": {
-    // Stdio MCP transport for direct terminal agents
     const userId = await getUserId();
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -136,9 +327,11 @@ switch (command) {
         try {
           const req = JSON.parse(line);
           const res = await McpServer.handleRpc(userId, req);
-          await Deno.stdout.write(encoder.encode(JSON.stringify(res) + "\n"));
+          if (res !== null) {
+            await Deno.stdout.write(encoder.encode(JSON.stringify(res) + "\n"));
+          }
         } catch (_err) {
-          // ignore parse errors on stdin
+          // ignore parse errors
         }
       }
     }
@@ -148,25 +341,45 @@ switch (command) {
   case "help":
   default:
     console.log(`
-\x1b[1m\x1b[36mMemoryZ CLI — Sovereign Agentic Memory Substrate\x1b[0m
+\x1b[1m\x1b[36mMemoryZ v2 CLI — Sovereign Agentic Memory & Task Substrate\x1b[0m
 
-\x1b[1mCommands:\x1b[0m
-  \x1b[33mrecall\x1b[0m  --query="..." [--type=env|skill|preference|note] [--limit=5]
-          Semantic vector recall with time-decay scoring.
+\x1b[1mTask Management (Hierarchical & Multi-Agent):\x1b[0m
+  \x1b[33mtask list\x1b[0m     [--tree] [--status=active|todo|done] [--json]
+                 Display tasks as an ultra-compact, token-efficient hierarchy tree.
+  \x1b[33mtask add\x1b[0m      "<Title>" [--parent=<id>] [--status=todo] [--priority=medium] [--assignee=agent]
+                 Create a root task or nested child subtask.
+  \x1b[33mtask done\x1b[0m     <task_id>
+                 Quickly mark a task completed.
+  \x1b[33mtask update\x1b[0m   <task_id> [--status=...] [--title=...] [--assignee=...]
+                 Update status, title, assignee, or priority.
+  \x1b[33mtask rm\x1b[0m       <task_id> [--cascade=true]
+                 Delete task and optionally its descendants.
 
-  \x1b[33mstore\x1b[0m   --type=env|skill|preference|note --content="..." [--title="..."]
-          Store a memory atom with automatic 768-dim Gemini vector embedding.
+\x1b[1mMemory Operations:\x1b[0m
+  \x1b[33mrecall\x1b[0m        [--query="..."] [--compact] [--summary] [--limit=5]
+                 Semantic vector recall with time-decay scoring.
+  \x1b[33mstore\x1b[0m         --type=env|skill|preference|note --content="..." [--title="..."]
+                 Store a memory atom with automatic 768-dim Gemini vector embedding.
 
-  \x1b[33mvault\x1b[0m   store --key="<name>" --secret="<val>" --pass="<pass>"
-          Encrypt and store confidential secret in zero-knowledge vault.
+\x1b[1mEphemeral Logs & Scratchpads:\x1b[0m
+  \x1b[33mlog\x1b[0m           "<Message>" [--level=info] [--source=agent]
+                 Fast lightweight logging without heavy embeddings.
+  \x1b[33mlogs\x1b[0m          [--limit=25] [--source=...]
+                 View recent ephemeral agent logs.
 
-  \x1b[33mvault\x1b[0m   get --key="<name>" --pass="<pass>"
-          Decrypt secret on-the-fly in process memory.
+\x1b[1mToken-Budgeted Context Packs & Snapshots:\x1b[0m
+  \x1b[33mcontext\x1b[0m       ["<query>"] [--tokens=1200] [--compact|--markdown]
+                 Generate dense, token-budgeted prompt context (tasks + memories).
+  \x1b[33msnapshot\x1b[0m      save <name> "<content>" | get <name> | list
+                 Save or restore complete context checkpoints.
 
-  \x1b[33mvault\x1b[0m   list
-          List stored secret handles.
+\x1b[1mZero-Knowledge Secret Vault:\x1b[0m
+  \x1b[33mvault\x1b[0m         store --key="<name>" --secret="<val>" --pass="<pass>"
+  \x1b[33mvault\x1b[0m         get --key="<name>" --pass="<pass>"
+  \x1b[33mvault\x1b[0m         list
 
-  \x1b[33mmcp\x1b[0m     Run standard MCP JSON-RPC protocol over stdio for Cursor / Claude Code.
+\x1b[1mMCP Protocol:\x1b[0m
+  \x1b[33mmcp\x1b[0m           Run standard MCP JSON-RPC protocol over stdio for Cursor / Claude Code.
 `);
     break;
 }

@@ -1,13 +1,14 @@
 {
   "name": "memoryz",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "exports": "./main.ts",
   "tasks": {
     "dev": "deno run --allow-net --allow-env --allow-read --watch main.ts",
     "start": "deno run --allow-net --allow-env --allow-read main.ts",
     "cli": "deno run --allow-net --allow-env --allow-read cli.ts",
-    "migrate": "deno run --allow-net --allow-env --allow-read -e 'import { initDb } from \"./src/db/schema.ts\"; await initDb(); console.log(\"Migration finished\");'"
+    "migrate": "deno run --allow-all cli.ts help"
   },
+
   "imports": {
     "@libsql/client": "npm:@libsql/client@^0.18.0",
     "@libsql/client/web": "npm:@libsql/client@^0.18.0/web"

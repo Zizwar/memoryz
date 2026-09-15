@@ -2,9 +2,9 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
   return {
     openapi: "3.1.0",
     info: {
-      title: "MemoryZ Living Agentic Memory",
-      version: "1.0.0",
-      description: "Sovereign Living Memory Substrate for Mobile & Agentic Chat integration. Allows AI assistants to store, recall, and link memories, as well as access the Zero-Knowledge Vault.",
+      title: "MemoryZ v2 Living Agentic Memory & Task Substrate",
+      version: "2.0.0",
+      description: "Sovereign Living Memory & Hierarchical Multi-Agent Task Substrate. Allows AI assistants to store memories, manage hierarchical task trees, append ephemeral logs, and pack token-budgeted prompt context.",
     },
     servers: [
       {
@@ -16,7 +16,7 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
       "/api/memories/recall": {
         post: {
           summary: "Recall Memories",
-          description: "Retrieve relevant memories using Gemini vector semantic search, type filters, and decay-weighted scoring. Call this to check facts, preferences, port configurations, and skills.",
+          description: "Retrieve relevant memories using Gemini vector semantic search, type filters, and decay-weighted scoring. Supports compact token-saving mode.",
           operationId: "recallMemory",
           requestBody: {
             required: true,
@@ -27,7 +27,7 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
                   properties: {
                     query: {
                       type: "string",
-                      description: "Natural language query to semantically match against memory space (e.g. 'ما هو بورت سيرفر الاختبار')",
+                      description: "Natural language query to semantically match against memory space",
                     },
                     type: {
                       type: "string",
@@ -38,6 +38,11 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
                       type: "integer",
                       default: 5,
                       description: "Maximum number of memories to return",
+                    },
+                    format: {
+                      type: "string",
+                      enum: ["compact", "summary", "full"],
+                      description: "Output format: 'compact' saves tokens, 'summary' provides bullets",
                     },
                   },
                   required: ["query"],
@@ -54,21 +59,8 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
                     type: "object",
                     properties: {
                       count: { type: "integer" },
-                      memories: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            hash: { type: "string" },
-                            type: { type: "string" },
-                            title: { type: "string" },
-                            content: { type: "string" },
-                            recall_count: { type: "integer" },
-                            recall_score: { type: "number" },
-                            score: { type: "number" },
-                          },
-                        },
-                      },
+                      formatted: { type: "string" },
+                      memories: { type: "array", items: { type: "object" } },
                     },
                   },
                 },
@@ -117,6 +109,140 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
               description: "Memory created successfully",
             },
           },
+        },
+      },
+      "/api/tasks": {
+        get: {
+          summary: "List Tasks / Hierarchical Tree",
+          description: "Retrieve multi-agent tasks. Set format=tree for an ultra-compact token-saving tree representation.",
+          operationId: "listTasks",
+          parameters: [
+            { name: "status", in: "query", schema: { type: "string" } },
+            { name: "parent_id", in: "query", schema: { type: "string" } },
+            { name: "format", in: "query", schema: { type: "string", enum: ["tree", "compact", "json"] } },
+          ],
+          responses: {
+            "200": { description: "Tasks list or tree" },
+          },
+        },
+        post: {
+          summary: "Create Task / Subtask",
+          description: "Create a hierarchical task or subtask with flexible status and agent assignment.",
+          operationId: "createTask",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    parent_id: { type: "string" },
+                    description: { type: "string" },
+                    status: { type: "string", default: "todo" },
+                    priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
+                    assignee: { type: "string" },
+                  },
+                  required: ["title"],
+                },
+              },
+            },
+          },
+          responses: {
+            "201": { description: "Task created" },
+          },
+        },
+      },
+      "/api/tasks/{id}": {
+        put: {
+          summary: "Update Task",
+          description: "Update task status (e.g. 'done'), title, priority, or assignee.",
+          operationId: "updateTask",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string" },
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    priority: { type: "string" },
+                    assignee: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": { description: "Task updated" },
+          },
+        },
+        delete: {
+          summary: "Delete Task",
+          description: "Delete task and optionally cascade delete all child subtasks.",
+          operationId: "deleteTask",
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string" } },
+            { name: "cascade", in: "query", schema: { type: "boolean", default: true } },
+          ],
+          responses: {
+            "200": { description: "Task deleted" },
+          },
+        },
+      },
+      "/api/logs": {
+        post: {
+          summary: "Append Ephemeral Log",
+          description: "Fast lightweight log append without vector embedding latency.",
+          operationId: "appendLog",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" },
+                    level: { type: "string", enum: ["info", "warn", "error", "debug", "trace"] },
+                    source: { type: "string" },
+                  },
+                  required: ["message"],
+                },
+              },
+            },
+          },
+          responses: { "201": { description: "Log appended" } },
+        },
+        get: {
+          summary: "List Recent Logs",
+          operationId: "listLogs",
+          responses: { "200": { description: "Recent logs" } },
+        },
+      },
+      "/api/context/pack": {
+        post: {
+          summary: "Generate Context Pack",
+          description: "Build a token-budgeted dense prompt context bundle merging active tasks and relevant memories.",
+          operationId: "getContextPack",
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    query: { type: "string" },
+                    token_budget: { type: "integer", default: 1200 },
+                    include_tasks: { type: "boolean", default: true },
+                    format: { type: "string", enum: ["xml", "markdown", "compact"] },
+                  },
+                },
+              },
+            },
+          },
+          responses: { "200": { description: "Packed context" } },
         },
       },
       "/api/vault/retrieve": {

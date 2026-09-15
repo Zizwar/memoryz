@@ -1,6 +1,9 @@
 import { AuthService, User } from "../services/auth.ts";
 import { MemoryService, MemoryType, RelationType } from "../services/memory.ts";
 import { VaultService } from "../services/vault.ts";
+import { TaskService, TaskPriority } from "../services/task.ts";
+import { LogService, LogLevel } from "../services/log.ts";
+import { ContextService } from "../services/context.ts";
 
 export async function handleApiRoute(req: Request, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -31,7 +34,7 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
 
   // Health check
   if (path === "/api/health") {
-    return json({ status: "ok", service: "MemoryZ Substrate", timestamp: Date.now() });
+    return json({ status: "ok", service: "MemoryZ Substrate v2", timestamp: Date.now() });
   }
 
   // Auth: Register
@@ -103,21 +106,28 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     return json(stats);
   }
 
-  // Memories: Recall
+  // ==========================================
+  // 1. Memories Endpoints
+  // ==========================================
+
+  // Recall
   if (path === "/api/memories/recall" && (method === "POST" || method === "GET")) {
     try {
       let query: string | undefined;
       let type: MemoryType | undefined;
       let limit = 10;
+      let format: string | undefined;
 
       if (method === "POST") {
         const body = await req.json();
         query = body.query;
         type = body.type;
+        format = body.format;
         if (body.limit) limit = parseInt(body.limit, 10);
       } else {
         query = url.searchParams.get("query") || undefined;
         type = (url.searchParams.get("type") as MemoryType) || undefined;
+        format = url.searchParams.get("format") || undefined;
         const limParam = url.searchParams.get("limit");
         if (limParam) limit = parseInt(limParam, 10);
       }
@@ -129,13 +139,34 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         limit,
       });
 
+      if (format === "compact") {
+        return json({
+          count: memories.length,
+          formatted: MemoryService.formatCompact(memories),
+          items: memories.map((m) => ({
+            hash: m.hash,
+            type: m.type,
+            title: m.title,
+            snippet: m.content.length > 150 ? m.content.substring(0, 150) + "..." : m.content,
+            recall_score: m.recall_score,
+          })),
+        });
+      }
+
+      if (format === "summary") {
+        return json({
+          count: memories.length,
+          summary: MemoryService.formatSummary(memories),
+        });
+      }
+
       return json({ count: memories.length, memories });
     } catch (err) {
       return json({ error: (err as Error).message }, 500);
     }
   }
 
-  // Memories: List / Store
+  // List / Store
   if (path === "/api/memories") {
     if (method === "GET") {
       const type = (url.searchParams.get("type") as MemoryType) || undefined;
@@ -161,7 +192,7 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
   }
 
-  // Memories: Link
+  // Link
   if (path === "/api/memories/link" && method === "POST") {
     try {
       const body = await req.json();
@@ -178,8 +209,8 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
   }
 
-  // Memories: Single item (PUT / DELETE)
-  if (path.startsWith("/api/memories/")) {
+  // Single memory item (PUT / DELETE)
+  if (path.startsWith("/api/memories/") && !path.includes("/recall")) {
     const hash = path.replace("/api/memories/", "");
     if (method === "PUT") {
       try {
@@ -202,6 +233,256 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       return json({ success });
     }
   }
+
+  // ==========================================
+  // 2. Hierarchical Tasks & Multi-Agent TODOs
+  // ==========================================
+
+  // Tasks: Tree View
+  if (path === "/api/tasks/tree" && method === "GET") {
+    try {
+      const status = url.searchParams.get("status") || undefined;
+      const format = url.searchParams.get("format") || "json";
+      const tree = await TaskService.getTree(currentUser.id, { status });
+
+      if (format === "ascii" || format === "text") {
+        return new Response(TaskService.formatTreeAscii(tree), {
+          status: 200,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
+      }
+
+      return json({ tree, total_roots: tree.length });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Tasks: List / Create
+  if (path === "/api/tasks") {
+    if (method === "GET") {
+      try {
+        const status = url.searchParams.get("status") || undefined;
+        const parentId = url.searchParams.get("parent_id") || undefined;
+        const assignee = url.searchParams.get("assignee") || undefined;
+        const format = url.searchParams.get("format") || "json";
+        const limitParam = url.searchParams.get("limit");
+        const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+
+        if (format === "tree") {
+          const tree = await TaskService.getTree(currentUser.id, { status });
+          return json({ tree, total_roots: tree.length, ascii: TaskService.formatTreeAscii(tree) });
+        }
+
+        const tasks = await TaskService.list(currentUser.id, {
+          status,
+          parentId,
+          assignee,
+          limit,
+        });
+
+        if (format === "compact") {
+          return json({
+            count: tasks.length,
+            formatted: TaskService.formatCompactList(tasks),
+            tasks,
+          });
+        }
+
+        return json({ count: tasks.length, tasks });
+      } catch (err) {
+        return json({ error: (err as Error).message }, 500);
+      }
+    }
+
+    if (method === "POST") {
+      try {
+        const body = await req.json();
+        const task = await TaskService.create({
+          userId: currentUser.id,
+          title: body.title,
+          parentId: body.parent_id,
+          description: body.description,
+          status: body.status,
+          priority: body.priority as TaskPriority,
+          assignee: body.assignee,
+          metadata: body.metadata,
+          orderIndex: body.order_index,
+        });
+        return json(task, 201);
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+  }
+
+  // Tasks: Single item (GET / PUT / DELETE)
+  if (path.startsWith("/api/tasks/") && path !== "/api/tasks/tree") {
+    const taskId = path.replace("/api/tasks/", "");
+
+    if (method === "GET") {
+      const task = await TaskService.get(currentUser.id, taskId);
+      if (!task) return json({ error: "Task not found" }, 404);
+      return json(task);
+    }
+
+    if (method === "PUT") {
+      try {
+        const body = await req.json();
+        const updated = await TaskService.update(currentUser.id, taskId, {
+          title: body.title,
+          parentId: body.parent_id,
+          description: body.description,
+          status: body.status,
+          priority: body.priority as TaskPriority,
+          assignee: body.assignee,
+          metadata: body.metadata,
+          orderIndex: body.order_index,
+        });
+        return json(updated);
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+
+    if (method === "DELETE") {
+      const cascade = url.searchParams.get("cascade") !== "false";
+      const success = await TaskService.delete(currentUser.id, taskId, cascade);
+      return json({ success });
+    }
+  }
+
+  // ==========================================
+  // 3. Ephemeral Logs & Scratchpad
+  // ==========================================
+  if (path === "/api/logs") {
+    if (method === "GET") {
+      try {
+        const level = (url.searchParams.get("level") as LogLevel) || undefined;
+        const source = url.searchParams.get("source") || undefined;
+        const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+        const format = url.searchParams.get("format") || "json";
+
+        const logs = await LogService.list(currentUser.id, { level, source, limit });
+        if (format === "compact") {
+          return json({
+            count: logs.length,
+            formatted: LogService.formatCompact(logs),
+            logs,
+          });
+        }
+        return json({ count: logs.length, logs });
+      } catch (err) {
+        return json({ error: (err as Error).message }, 500);
+      }
+    }
+
+    if (method === "POST") {
+      try {
+        const body = await req.json();
+        const log = await LogService.append({
+          userId: currentUser.id,
+          message: body.message,
+          level: body.level as LogLevel,
+          source: body.source,
+          metadata: body.metadata,
+        });
+        return json(log, 201);
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+  }
+
+  // ==========================================
+  // 4. Token-Budgeted Context & Snapshots
+  // ==========================================
+
+  // Dynamic Context Pack
+  if (path === "/api/context/pack" && (method === "GET" || method === "POST")) {
+    try {
+      let query: string | undefined;
+      let tokenBudget = 1200;
+      let includeTasks = true;
+      let includeLogs = false;
+      let format: "xml" | "markdown" | "compact" = "xml";
+
+      if (method === "POST") {
+        const body = await req.json();
+        query = body.query;
+        if (body.token_budget) tokenBudget = parseInt(body.token_budget, 10);
+        if (body.include_tasks !== undefined) includeTasks = body.include_tasks;
+        if (body.include_logs !== undefined) includeLogs = body.include_logs;
+        if (body.format) format = body.format;
+      } else {
+        query = url.searchParams.get("query") || undefined;
+        const budgetParam = url.searchParams.get("tokens") || url.searchParams.get("token_budget");
+        if (budgetParam) tokenBudget = parseInt(budgetParam, 10);
+        if (url.searchParams.get("include_tasks") === "false") includeTasks = false;
+        if (url.searchParams.get("include_logs") === "true") includeLogs = true;
+        const fmtParam = url.searchParams.get("format");
+        if (fmtParam === "markdown" || fmtParam === "compact" || fmtParam === "xml") {
+          format = fmtParam;
+        }
+      }
+
+      const pack = await ContextService.buildContextPack({
+        userId: currentUser.id,
+        query,
+        tokenBudget,
+        includeTasks,
+        includeLogs,
+        format,
+      });
+
+      return json(pack);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Context Snapshots: List / Save
+  if (path === "/api/context/snapshots") {
+    if (method === "GET") {
+      const snapshots = await ContextService.listSnapshots(currentUser.id);
+      return json({ count: snapshots.length, snapshots });
+    }
+
+    if (method === "POST") {
+      try {
+        const body = await req.json();
+        const snap = await ContextService.saveSnapshot(
+          currentUser.id,
+          body.name,
+          body.content,
+          body.description,
+          body.metadata
+        );
+        return json(snap, 201);
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+  }
+
+  // Context Snapshots: Single item
+  if (path.startsWith("/api/context/snapshots/")) {
+    const snapName = decodeURIComponent(path.replace("/api/context/snapshots/", ""));
+    if (method === "GET") {
+      const snap = await ContextService.getSnapshot(currentUser.id, snapName);
+      if (!snap) return json({ error: "Snapshot not found" }, 404);
+      return json(snap);
+    }
+
+    if (method === "DELETE") {
+      const success = await ContextService.deleteSnapshot(currentUser.id, snapName);
+      return json({ success });
+    }
+  }
+
+  // ==========================================
+  // 5. Zero-Knowledge Secret Vault
+  // ==========================================
 
   // Vault: List / Store
   if (path === "/api/vault") {

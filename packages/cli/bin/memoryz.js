@@ -93,6 +93,21 @@ async function main() {
       await runInit();
       break;
 
+    case "task":
+    case "tasks":
+      await runTask();
+      break;
+
+    case "log":
+    case "logs":
+      await runLog();
+      break;
+
+    case "snapshot":
+    case "snapshots":
+      await runSnapshot();
+      break;
+
     case "recall":
     case "search":
       await runRecall();
@@ -125,6 +140,7 @@ async function main() {
       break;
   }
 }
+
 
 async function runInit() {
   console.log(`\n${c.bold}${c.cyan}🧠 MemoryZ — Auto-Configurator & Agent Installer${c.reset}\n`);
@@ -220,7 +236,232 @@ async function runInit() {
   console.log(`\n${c.green}✨ Done! Your AI assistants (Claude, Cursor, Windsurf) can now store & recall memories automatically.${c.reset}\n`);
 }
 
+async function runTask() {
+
+  if (!token) {
+    console.error(`${c.red}✘ Error: No token found. Run 'npx memoryz init --token=...' first.${c.reset}`);
+    process.exit(1);
+  }
+  const sub = positionals[1] || (flags.tree ? "list" : "list");
+
+  if (sub === "add" || sub === "create") {
+    const title = flags.title || positionals.slice(2).join(" ");
+    if (!title) {
+      console.error(`${c.red}✘ Usage: npx memoryz task add "Title" [--parent=id] [--status=todo] [--priority=medium] [--assignee=agent]${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": token },
+      body: JSON.stringify({
+        title,
+        parent_id: flags.parent || flags.parentId,
+        status: flags.status || "todo",
+        priority: flags.priority || "medium",
+        assignee: flags.assignee,
+        description: flags.desc || flags.description,
+      }),
+    });
+    const data = await res.json();
+    if (flags.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Task created:${c.reset} [${data.status}] ${data.title} (${c.cyan}${data.id}${c.reset}${data.parent_id ? `, Parent: ${data.parent_id}` : ""})\n`);
+    } else {
+      console.error(`${c.red}✘ Failed to create task: ${data.error}${c.reset}`);
+    }
+  } else if (sub === "done" || sub === "complete") {
+    const id = flags.id || positionals[2];
+    if (!id) {
+      console.error(`${c.red}✘ Usage: npx memoryz task done <task_id>${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/tasks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-API-Key": token },
+      body: JSON.stringify({ status: "done" }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Task completed:${c.reset} [✓] ${data.title} (${data.id})\n`);
+    } else {
+      console.error(`${c.red}✘ Failed: ${data.error}${c.reset}`);
+    }
+  } else if (sub === "update") {
+    const id = flags.id || positionals[2];
+    if (!id) {
+      console.error(`${c.red}✘ Usage: npx memoryz task update <task_id> [--status=...] [--title=...]${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/tasks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-API-Key": token },
+      body: JSON.stringify({
+        status: flags.status,
+        title: flags.title,
+        description: flags.desc || flags.description,
+        priority: flags.priority,
+        assignee: flags.assignee,
+        parent_id: flags.parent,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Task updated:${c.reset} [${data.status}] ${data.title}\n`);
+    } else {
+      console.error(`${c.red}✘ Failed: ${data.error}${c.reset}`);
+    }
+  } else if (sub === "rm" || sub === "delete") {
+    const id = flags.id || positionals[2];
+    if (!id) {
+      console.error(`${c.red}✘ Usage: npx memoryz task rm <task_id>${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/tasks/${id}?cascade=${flags.cascade !== false}`, {
+      method: "DELETE",
+      headers: { "X-API-Key": token },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Task '${id}' deleted.${c.reset}\n`);
+    } else {
+      console.error(`${c.red}✘ Failed: ${data.error}${c.reset}`);
+    }
+  } else {
+    // List / Tree
+    const url = new URL(`${serverUrl}/api/tasks`);
+    if (flags.status) url.searchParams.set("status", flags.status);
+    if (flags.parent) url.searchParams.set("parent_id", flags.parent);
+    if (flags.assignee) url.searchParams.set("assignee", flags.assignee);
+    if (flags.tree || (!flags.compact && !flags.json)) {
+      url.searchParams.set("format", "tree");
+    } else if (flags.compact) {
+      url.searchParams.set("format", "compact");
+    }
+
+    const res = await fetch(url, { headers: { "X-API-Key": token } });
+    const data = await res.json();
+
+    if (flags.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
+
+    if (data.ascii) {
+      console.log(`\n${c.bold}${c.cyan}📋 Hierarchical Task Tree (${data.total_roots} roots):${c.reset}\n`);
+      console.log(data.ascii || `${c.dim}(No tasks found)${c.reset}`);
+      console.log("");
+    } else if (data.formatted) {
+      console.log(`\n${data.formatted}\n`);
+    } else if (data.tasks) {
+      data.tasks.forEach((t) => {
+        console.log(`• [${t.status}] ${t.title} (${t.id})`);
+      });
+    }
+  }
+}
+
+async function runLog() {
+  if (!token) {
+    console.error(`${c.red}✘ Error: No token found.${c.reset}`);
+    process.exit(1);
+  }
+  const sub = positionals[1];
+  if (sub === "list" || command === "logs") {
+    const url = new URL(`${serverUrl}/api/logs`);
+    if (flags.limit) url.searchParams.set("limit", String(flags.limit));
+    if (flags.level) url.searchParams.set("level", flags.level);
+    if (flags.source) url.searchParams.set("source", flags.source);
+    if (flags.compact || !flags.json) url.searchParams.set("format", "compact");
+
+    const res = await fetch(url, { headers: { "X-API-Key": token } });
+    const data = await res.json();
+    if (flags.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
+    console.log(`\n${c.cyan}📜 Recent Ephemeral Logs (${data.count || 0}):${c.reset}\n`);
+    console.log(data.formatted || `${c.dim}(No logs)${c.reset}\n`);
+  } else {
+    const message = flags.msg || flags.message || positionals.slice(1).join(" ");
+    if (!message) {
+      console.error(`${c.red}✘ Usage: npx memoryz log "Message" [--level=info] [--source=agent]${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/logs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": token },
+      body: JSON.stringify({
+        message,
+        level: flags.level || "info",
+        source: flags.source || "cli",
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Logged [${data.level.toUpperCase()}]:${c.reset} ${data.message}\n`);
+    } else {
+      console.error(`${c.red}✘ Failed to log: ${data.error}${c.reset}`);
+    }
+  }
+}
+
+async function runSnapshot() {
+  if (!token) {
+    console.error(`${c.red}✘ Error: No token found.${c.reset}`);
+    process.exit(1);
+  }
+  const sub = positionals[1];
+  if (sub === "save") {
+    const name = flags.name || positionals[2];
+    const content = flags.content || positionals.slice(3).join(" ");
+    if (!name || !content) {
+      console.error(`${c.red}✘ Usage: npx memoryz snapshot save <name> <content>${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/context/snapshots`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": token },
+      body: JSON.stringify({ name, content, description: flags.desc }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(`\n${c.green}✔ Context snapshot '${data.name}' saved successfully!${c.reset}\n`);
+    } else {
+      console.error(`${c.red}✘ Failed: ${data.error}${c.reset}`);
+    }
+  } else if (sub === "get" || sub === "load") {
+    const name = flags.name || positionals[2];
+    if (!name) {
+      console.error(`${c.red}✘ Usage: npx memoryz snapshot get <name>${c.reset}`);
+      process.exit(1);
+    }
+    const res = await fetch(`${serverUrl}/api/context/snapshots/${encodeURIComponent(name)}`, {
+      headers: { "X-API-Key": token },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      console.log(data.content);
+    } else {
+      console.error(`${c.red}✘ ${data.error || "Not found"}${c.reset}`);
+    }
+  } else {
+    const res = await fetch(`${serverUrl}/api/context/snapshots`, {
+      headers: { "X-API-Key": token },
+    });
+    const data = await res.json();
+    console.log(`\n${c.cyan}📦 Context Snapshots (${data.count || 0}):${c.reset}`);
+    (data.snapshots || []).forEach((s) => {
+      console.log(`  • ${s.name} ${c.dim}(${new Date(s.updated_at * 1000).toLocaleDateString()})${c.reset}`);
+    });
+    console.log("");
+  }
+}
+
 async function runRecall() {
+
   if (!token) {
     if (flags.json) {
       console.log(JSON.stringify({ error: "Missing token. Run 'memoryz init --token=...'" }));
@@ -579,30 +820,50 @@ async function runMcpBridge() {
 
 function showHelp() {
   console.log(`
-${c.bold}${c.cyan}MemoryZ CLI — Sovereign Agentic Memory Substrate${c.reset}
+${c.bold}${c.cyan}MemoryZ v2 CLI — Sovereign Agentic Memory & Task Substrate${c.reset}
 
-${c.bold}Usage:${c.reset}
+${c.bold}Setup & Integration:${c.reset}
   ${c.green}npx memoryz init --token=<YOUR_TOKEN>${c.reset}
       Auto-detect and register MemoryZ in Cursor, Claude Desktop, Claude Code, Windsurf.
 
-  ${c.green}npx memoryz recall "<query>" [--json] [--limit=5]${c.reset}
-      Semantic vector recall with time-decay scoring.
+${c.bold}Hierarchical Task & Multi-Agent TODOs:${c.reset}
+  ${c.green}npx memoryz task list [--tree] [--status=active|todo|done]${c.reset}
+      Display tasks as an ultra-compact, token-efficient hierarchy tree.
+  ${c.green}npx memoryz task add "<Title>" [--parent=<id>] [--status=todo] [--priority=medium]${c.reset}
+      Create a root task or nested child subtask.
+  ${c.green}npx memoryz task done <task_id>${c.reset}
+      Mark task completed.
+  ${c.green}npx memoryz task update <task_id> [--status=...] [--title=...]${c.reset}
+      Update task status, priority, or assignee.
+  ${c.green}npx memoryz task rm <task_id>${c.reset}
+      Delete task and its subtasks.
 
+${c.bold}Living Memory & Vector Recall:${c.reset}
+  ${c.green}npx memoryz recall "<query>" [--compact] [--limit=5]${c.reset}
+      Semantic vector recall with time-decay scoring.
   ${c.green}npx memoryz store --type=env|skill|preference|note --content="..." [--title="..."]${c.reset}
       Store a memory atom with automatic 768-dim Gemini vector embedding.
 
-  ${c.green}npx memoryz context "<query>"${c.reset}
-      Output an XML-formatted context block directly ready for AI prompts.
+${c.bold}Ephemeral Logs & Scratchpads:${c.reset}
+  ${c.green}npx memoryz log "<Message>" [--level=info] [--source=agent]${c.reset}
+      Fast lightweight logging without heavy embeddings.
+  ${c.green}npx memoryz logs [--limit=25]${c.reset}
+      View recent ephemeral agent logs.
 
-  ${c.green}npx memoryz skill${c.reset}
-      Export standard agent SKILL.md and inject rules into AGENTS.md.
+${c.bold}Context Packs & Working Snapshots:${c.reset}
+  ${c.green}npx memoryz context "<query>" [--tokens=1200] [--compact]${c.reset}
+      Dense, token-budgeted prompt context block (active tasks + memories).
+  ${c.green}npx memoryz snapshot save <name> "<content>"${c.reset}
+      Save complete context checkpoints to restore later.
+  ${c.green}npx memoryz snapshot get <name>${c.reset}
+      Restore saved context checkpoint.
 
+${c.bold}Zero-Knowledge Secret Vault:${c.reset}
   ${c.green}npx memoryz vault store --key="..." --secret="..." --pass="..."${c.reset}
-      Encrypt and store confidential secret in Zero-Knowledge vault.
-
   ${c.green}npx memoryz vault get --key="..." --pass="..."${c.reset}
-      Decrypt secret on-the-fly in process memory.
+  ${c.green}npx memoryz vault list${c.reset}
 
+${c.bold}MCP Transport:${c.reset}
   ${c.green}npx memoryz mcp${c.reset}
       Run stdio bridge for local agent integration.
 
@@ -610,8 +871,10 @@ ${c.bold}Options:${c.reset}
   --token=<key>    MemoryZ API Key or JWT token
   --url=<url>      MemoryZ Server URL (default: ${DEFAULT_SERVER_URL})
   --json           Output raw JSON for scripts and AI tools
+  --compact        Ultra-compact output format to save LLM tokens
 `);
 }
+
 
 main().catch((err) => {
   console.error(`${c.red}Fatal: ${err.message}${c.reset}`);

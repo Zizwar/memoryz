@@ -45,6 +45,7 @@ export interface RecallQueryParams {
   type?: MemoryType;
   limit?: number;
   threshold?: number;
+  format?: "full" | "compact" | "summary";
 }
 
 export class MemoryService {
@@ -417,5 +418,26 @@ export class MemoryService {
       created_at: Number(row.created_at),
       updated_at: Number(row.updated_at),
     }));
+  }
+
+  /**
+   * Format memories into compact single-line strings to minimize token usage
+   */
+  static formatCompact(memories: MemoryNode[]): string {
+    return memories
+      .map((m, idx) => {
+        const title = m.title ? `"${m.title}"` : m.hash.substring(0, 8);
+        return `#${idx + 1} [${m.type.toUpperCase()}] ${title}: ${m.content.trim().replace(/\s+/g, " ")}`;
+      })
+      .join("\n");
+  }
+
+  /**
+   * Format memories into bullet points for agent prompts
+   */
+  static formatSummary(memories: MemoryNode[]): string {
+    return memories
+      .map((m) => `• [${m.type.toUpperCase()}] ${m.title ? m.title + ": " : ""}${m.content.trim()}`)
+      .join("\n");
   }
 }

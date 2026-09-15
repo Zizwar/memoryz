@@ -1,7 +1,7 @@
 {
   "name": "memoryz",
-  "version": "1.0.1",
-  "description": "Sovereign Agentic Memory Substrate CLI & MCP Auto-Installer for Claude Code, Cursor, Windsurf",
+  "version": "2.0.0",
+  "description": "Sovereign Agentic Memory & Hierarchical Task Substrate CLI & MCP Auto-Installer",
   "type": "module",
   "main": "./index.js",
   "exports": {

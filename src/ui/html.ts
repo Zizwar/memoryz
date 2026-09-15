@@ -1,1553 +1,1443 @@
 export function renderAppHtml(): string {
   return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MemoryZ — Sovereign Agentic Memory Substrate</title>
+  <title>MemoryZ v2 — Living Agentic Memory & Task Substrate</title>
+  
+  <!-- Fonts & Core UI Libraries: Tailwind, DaisyUI 4, FontAwesome 6, Alpine.js -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Tajawal', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    :root {
-      --bg-dark: #090d16;
-      --bg-card: rgba(18, 26, 43, 0.75);
-      --bg-card-hover: rgba(26, 38, 64, 0.85);
-      --border: rgba(56, 189, 248, 0.15);
-      --border-glow: rgba(56, 189, 248, 0.4);
-      --primary: #38bdf8;
-      --primary-glow: #0284c7;
-      --emerald: #10b981;
-      --amber: #f59e0b;
-      --purple: #a855f7;
-      --rose: #f43f5e;
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
-        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 60%);
-      color: var(--text-main);
-      font-family: 'Tajawal', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-      line-height: 1.6;
-    }
-
-    code, pre, .mono {
-      font-family: 'Fira Code', monospace;
-      direction: ltr;
-      text-align: left;
-    }
-
-    /* Container */
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px 20px 80px;
-    }
-
-    /* Navigation */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 24px;
-      margin-bottom: 32px;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-    }
-
-    .brand-logo {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      color: #040813;
-      font-size: 22px;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-    }
-
-    .brand-title {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      background: linear-gradient(to right, #fff, #93c5fd);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .brand-badge {
-      font-size: 11px;
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--primary);
-      padding: 2px 8px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      font-weight: 600;
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .nav-btn {
-      padding: 8px 16px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-      font-family: inherit;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-    }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #0369a1, #1d4ed8);
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--primary);
-    }
-
-    /* Tabs */
-    .tabs-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 12px;
-      overflow-x: auto;
-    }
-
-    .tab-item {
-      padding: 10px 20px;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      border: none;
-      font-family: inherit;
-    }
-
-    .tab-item.active {
-      color: var(--primary);
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid var(--border);
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--border-glow);
-    }
-
-    .stat-title {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .stat-sub {
-      font-size: 12px;
-      color: var(--emerald);
-      margin-top: 4px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* Search & Filter Toolbar */
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 24px;
-      background: var(--bg-card);
-      padding: 16px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-    }
-
-    .search-box {
-      flex: 1;
-      min-width: 280px;
-      position: relative;
-    }
-
-    .search-input {
-      width: 100%;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--border);
-      padding: 12px 16px 12px 42px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 15px;
-      outline: none;
-      transition: all 0.2s;
-      font-family: inherit;
-    }
-    .search-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-
-    .type-pills {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .pill-btn {
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text-muted);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: inherit;
-    }
-    .pill-btn:hover {
-      border-color: var(--primary);
-      color: #fff;
-    }
-    .pill-btn.active {
-      background: var(--primary);
-      color: #040813;
-      border-color: var(--primary);
-      font-weight: 700;
-    }
-
-    /* Memory Cards */
-    .memories-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 18px;
-    }
-
-    .memory-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 22px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .memory-card:hover {
-      border-color: var(--border-glow);
-      background: var(--bg-card-hover);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-
-    .memory-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
-
-    .badge {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 8px;
-      letter-spacing: 0.5px;
-    }
-
-    .badge-env { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-    .badge-preference { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-skill { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-    .badge-note { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-
-    .memory-title {
-      font-size: 17px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 8px;
-    }
-
-    .memory-content {
-      font-size: 14px;
-      color: #cbd5e1;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin-bottom: 16px;
-      flex-grow: 1;
-    }
-
-    .memory-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-top: 14px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .recall-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-    }
-
-    .card-actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .action-icon-btn {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-muted);
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .action-icon-btn:hover {
-      color: #fff;
-      border-color: var(--primary);
-      background: rgba(56, 189, 248, 0.1);
-    }
-
-    /* Playground / Chat / Simulator */
-    .playground-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 24px;
-      margin-top: 24px;
-    }
-
-    .terminal-window {
-      background: #060911;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 16px;
-      font-family: 'Fira Code', monospace;
-      min-height: 240px;
-      max-height: 380px;
-      overflow-y: auto;
-      margin-top: 16px;
-      font-size: 13px;
-      direction: ltr;
-      text-align: left;
-    }
-
-    .terminal-line {
-      margin-bottom: 6px;
-      word-break: break-all;
-    }
-    .t-cyan { color: #38bdf8; }
-    .t-green { color: #34d399; }
-    .t-amber { color: #fbbf24; }
-    .t-purple { color: #c084fc; }
-    .t-muted { color: #64748b; }
-
-    /* Modals */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      z-index: 999;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .modal-overlay.active {
-      display: flex;
-    }
-
-    .modal-card {
-      background: #0f172a;
-      border: 1px solid var(--border-glow);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 520px;
-      padding: 28px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-      animation: modalIn 0.2s ease-out;
-    }
-
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .modal-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 18px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .form-input, .form-select, .form-textarea {
-      width: 100%;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-      border-color: var(--primary);
-    }
-
-    .form-textarea {
-      resize: vertical;
-      min-height: 90px;
-    }
-
-    /* Vault styling */
-    .vault-banner {
-      background: linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(168, 85, 247, 0.1));
-      border: 1px solid rgba(244, 63, 94, 0.25);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 20px;
-      font-size: 13px;
-      color: #fecdd3;
-    }
-
-    /* Admin Table */
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 14px;
-      font-size: 13px;
-    }
-    .data-table th {
-      text-align: right;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--text-muted);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .data-table td {
-      padding: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      color: #cbd5e1;
-    }
-
-    /* Toast */
-    #toast {
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      background: #0f172a;
-      border: 1px solid var(--primary);
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #fff;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-    #toast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    [x-cloak] { display: none !important; }
+    body { font-family: 'Tajawal', sans-serif; }
+    .mono { font-family: 'Fira Code', monospace; direction: ltr; text-align: left; }
+    .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: oklch(var(--bc) / 0.18); border-radius: 4px; }
   </style>
 </head>
-<body>
 
-  <div class="container">
-    <!-- Header -->
-    <header>
-      <a href="/" class="brand">
-        <div class="brand-logo">Z</div>
-        <div>
-          <div class="brand-title">MemoryZ</div>
-          <span class="brand-badge">Sovereign Living Memory Substrate</span>
-        </div>
-      </a>
+<body class="min-h-screen bg-base-100 text-base-content flex flex-col antialiased selection:bg-primary selection:text-primary-content"
+      x-data="memoryzApp()"
+      x-init="initApp()"
+      x-cloak>
 
-      <div class="nav-actions">
-        <span id="userStatus" style="font-size: 13px; color: var(--text-muted);">جاري التحقق...</span>
-        <button id="authBtn" class="nav-btn btn-secondary" onclick="openAuthModal()">دخول / تسجيل</button>
-        <button id="newMemoryBtn" class="nav-btn btn-primary" onclick="openNewMemoryModal()" style="display:none;">+ إضافة ذاكرة</button>
+  <!-- TOP NAVBAR -->
+  <header class="navbar bg-base-200/90 backdrop-blur border-b border-base-300 sticky top-0 z-40 px-3 sm:px-6 h-14 min-h-14">
+    <!-- Brand -->
+    <div class="flex-1 flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center font-black shadow-md shadow-primary/20 text-sm">
+        <i class="fa-solid fa-brain"></i>
       </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <div class="tabs-bar">
-      <button class="tab-item active" onclick="switchTab('memories')">🧠 مستودع الذاكرة الحية</button>
-      <button class="tab-item" onclick="switchTab('agent')">🤖 محاكي استدعاء الوكلاء (Agent Simulator)</button>
-      <button class="tab-item" onclick="switchTab('vault')">🔐 الخزنة المشفرة (Zero-Knowledge Vault)</button>
-      <button class="tab-item" onclick="switchTab('connect')">⚡ ربط الـ MCP والتيرمنال</button>
-      <button id="adminTabBtn" class="tab-item" onclick="switchTab('admin')" style="display: none;">👑 لوحة تحكم المدير</button>
+      <div class="flex items-center gap-1.5">
+        <span class="text-base sm:text-lg font-black tracking-tight">Memory<span class="text-primary">Z</span></span>
+        <span class="badge badge-primary badge-xs font-mono font-bold tracking-wider">v2</span>
+      </div>
     </div>
 
-    <!-- Tab 1: Memories View -->
-    <div id="tab-memories">
-      <!-- Direct MCP Quick Bar in Dashboard -->
-      <div id="mcpQuickBar" style="display:none; margin-bottom: 24px; background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15)); border: 1px solid var(--border-glow); border-radius: 16px; padding: 16px 20px; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(56,189,248,0.2); display:flex; align-items:center; justify-content:center; font-size: 20px;">⚡</div>
+    <!-- Right Actions / Status Bar (Clean: Icon-only indicators to prevent breaking layout) -->
+    <div class="flex-none flex items-center gap-1 sm:gap-2">
+      <!-- Direct MCP Single URL Copier (Desktop + Mobile) -->
+      <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle tooltip tooltip-bottom" data-tip="نسخ رابط MCP المباشر"
+              @click="copyDirectMcpUrl()">
+        <i class="fa-solid fa-bolt text-warning text-xs sm:text-sm"></i>
+      </button>
+
+      <!-- Token Economy Indicator (Compact) -->
+      <div class="badge badge-outline badge-xs sm:badge-sm font-mono gap-1 tooltip tooltip-bottom" data-tip="حالة استهلاك التوكن في الذاكرة الحية">
+        <i class="fa-solid fa-microchip text-[10px] text-info"></i>
+        <span x-text="'~' + (totalMemories * 18) + 't'"></span>
+      </div>
+
+      <!-- User Avatar / Auth Indicator (Minimalist: Icon only, no long text) -->
+      <template x-if="currentUser">
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-xs sm:btn-sm btn-circle avatar tooltip tooltip-bottom" :data-tip="currentUser.username">
+            <div class="w-7 h-7 rounded-full bg-primary/20 text-primary border border-primary/40 flex items-center justify-center font-bold text-xs uppercase">
+              <span x-text="currentUser.username.substring(0, 2)"></span>
+            </div>
+          </div>
+          <ul tabindex="0" class="dropdown-content z-50 menu p-2 shadow-2xl bg-base-200 border border-base-300 rounded-box w-56 text-xs mt-2">
+            <li class="menu-title flex items-center justify-between">
+              <span class="truncate font-semibold" x-text="currentUser.username"></span>
+              <span class="badge badge-primary badge-xs" x-text="currentUser.role"></span>
+            </li>
+            <li><a @click="switchTab('connect')"><i class="fa-solid fa-key"></i> مفتاح API</a></li>
+            <template x-if="currentUser.role === 'admin'">
+              <li><a @click="switchTab('admin')"><i class="fa-solid fa-crown text-warning"></i> لوحة المدير</a></li>
+            </template>
+            <li class="border-t border-base-300 mt-1 pt-1">
+              <a @click="logout()" class="text-error"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+            </li>
+          </ul>
+        </div>
+      </template>
+
+      <template x-if="!currentUser">
+        <button class="btn btn-primary btn-xs sm:btn-sm gap-1.5" @click="openAuthModal('login')">
+          <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+          <span class="hidden sm:inline">دخول</span>
+        </button>
+      </template>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+
+    <!-- NAVIGATION TABS (DaisyUI tabs-boxed) -->
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <div class="tabs tabs-boxed bg-base-200/90 border border-base-300 p-1 rounded-xl flex-wrap">
+        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
+                :class="{ 'tab-active font-bold': activeTab === 'memories' }"
+                @click="switchTab('memories')">
+          <i class="fa-solid fa-brain text-xs"></i>
+          <span>الذاكرة</span>
+        </button>
+
+        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
+                :class="{ 'tab-active font-bold': activeTab === 'tasks' }"
+                @click="switchTab('tasks')">
+          <i class="fa-solid fa-list-check text-xs"></i>
+          <span>المهام والـ TODO</span>
+          <span class="badge badge-xs badge-primary" x-text="tasksCount" x-show="tasksCount > 0"></span>
+        </button>
+
+        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
+                :class="{ 'tab-active font-bold': activeTab === 'context' }"
+                @click="switchTab('context')">
+          <i class="fa-solid fa-boxes-stacked text-xs"></i>
+          <span>السياق والسجلات</span>
+        </button>
+
+        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
+                :class="{ 'tab-active font-bold': activeTab === 'agent' }"
+                @click="switchTab('agent')">
+          <i class="fa-solid fa-robot text-xs"></i>
+          <span>المحاكي</span>
+        </button>
+
+        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
+                :class="{ 'tab-active font-bold': activeTab === 'vault' }"
+                @click="switchTab('vault')">
+          <i class="fa-solid fa-shield-halved text-xs"></i>
+          <span>الخزنة</span>
+        </button>
+
+        <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all"
+                :class="{ 'tab-active font-bold': activeTab === 'connect' }"
+                @click="switchTab('connect')">
+          <i class="fa-solid fa-terminal text-xs"></i>
+          <span>الربط و MCP</span>
+        </button>
+
+        <template x-if="currentUser && currentUser.role === 'admin'">
+          <button class="tab tab-sm sm:tab-md gap-1.5 font-medium transition-all text-warning"
+                  :class="{ 'tab-active font-bold': activeTab === 'admin' }"
+                  @click="switchTab('admin')">
+            <i class="fa-solid fa-crown text-xs"></i>
+            <span>المدير</span>
+          </button>
+        </template>
+      </div>
+
+      <!-- Quick Action Buttons on Tab Bar -->
+      <div class="flex items-center gap-1.5">
+        <template x-if="activeTab === 'memories'">
+          <button class="btn btn-primary btn-sm gap-1 shadow-sm shadow-primary/20" @click="openMemoryModal()">
+            <i class="fa-solid fa-plus text-xs"></i> <span>ذاكرة جديدة</span>
+          </button>
+        </template>
+
+        <template x-if="activeTab === 'tasks'">
+          <button class="btn btn-success btn-sm text-success-content gap-1 shadow-sm" @click="openTaskModal()">
+            <i class="fa-solid fa-plus text-xs"></i> <span>مهمة جديدة</span>
+          </button>
+        </template>
+
+        <template x-if="activeTab === 'vault'">
+          <button class="btn btn-secondary btn-sm gap-1" @click="openVaultModal()">
+            <i class="fa-solid fa-lock text-xs"></i> <span>مفتاح سري</span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 1: MEMORIES VIEW -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'memories'" class="space-y-4">
+      <!-- Search & Filter Controls -->
+      <div class="card bg-base-200 border border-base-300 p-3 sm:p-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+          <div class="join flex-1">
+            <span class="join-item bg-base-300 border border-base-300 px-3 flex items-center text-base-content/50">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" class="input input-sm sm:input-md input-bordered join-item flex-1 focus:outline-none"
+                   placeholder="بحث دلالي بالذكاء الاصطناعي (Gemini 768-dim)..."
+                   x-model="memoryQuery"
+                   @keyup.enter="searchMemories()">
+            <button class="btn btn-sm sm:btn-md btn-primary join-item gap-1" @click="searchMemories()">
+              <span x-show="!loadingMemories">بحث</span>
+              <span class="loading loading-spinner loading-xs" x-show="loadingMemories"></span>
+            </button>
+          </div>
+
+          <!-- Type filter pills -->
+          <div class="join join-horizontal overflow-x-auto scrollbar-thin">
+            <button class="btn btn-xs sm:btn-sm join-item" :class="memoryFilter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="setMemoryFilter('all')">الكل</button>
+            <button class="btn btn-xs sm:btn-sm join-item" :class="memoryFilter === 'env' ? 'btn-primary' : 'btn-ghost'" @click="setMemoryFilter('env')">بيئة (env)</button>
+            <button class="btn btn-xs sm:btn-sm join-item" :class="memoryFilter === 'preference' ? 'btn-primary' : 'btn-ghost'" @click="setMemoryFilter('preference')">تفضيل</button>
+            <button class="btn btn-xs sm:btn-sm join-item" :class="memoryFilter === 'skill' ? 'btn-primary' : 'btn-ghost'" @click="setMemoryFilter('skill')">مهارة</button>
+            <button class="btn btn-xs sm:btn-sm join-item" :class="memoryFilter === 'note' ? 'btn-primary' : 'btn-ghost'" @click="setMemoryFilter('note')">ملاحظة</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memories Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        <template x-for="m in filteredMemories" :key="m.hash">
+          <div class="card bg-base-200 border border-base-300 hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
+            <div class="card-body p-4 flex flex-col justify-between gap-2.5">
+              <!-- Card Header -->
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="badge badge-sm font-semibold uppercase tracking-wider"
+                        :class="{
+                          'badge-info text-info-content': m.type === 'env',
+                          'badge-accent text-accent-content': m.type === 'preference',
+                          'badge-primary text-primary-content': m.type === 'skill',
+                          'badge-secondary text-secondary-content': m.type === 'note'
+                        }"
+                        x-text="m.type"></span>
+                  <span class="font-bold text-sm text-base-content truncate max-w-[200px]" x-text="m.title || m.hash.substring(0, 8)"></span>
+                </div>
+                <div class="flex items-center gap-1 opacity-80">
+                  <span class="badge badge-ghost badge-xs font-mono gap-1" title="مرات الاستدعاء">
+                    <i class="fa-solid fa-fire text-amber-500 text-[10px]"></i>
+                    <span x-text="m.recall_count"></span>
+                  </span>
+                  <button class="btn btn-ghost btn-xs btn-square text-error" @click="deleteMemory(m.hash)" title="حذف">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Content -->
+              <p class="text-xs sm:text-sm text-base-content/80 whitespace-pre-wrap leading-relaxed" x-text="m.content"></p>
+
+              <!-- Footer Meta -->
+              <div class="flex items-center justify-between pt-2 border-t border-base-300/60 text-[11px] text-base-content/50 font-mono">
+                <span x-text="'#' + m.hash.substring(0, 8)"></span>
+                <span x-text="formatDate(m.created_at)"></span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div x-show="filteredMemories.length === 0 && !loadingMemories" class="card bg-base-200 border border-base-300 p-8 text-center text-base-content/60">
+        <i class="fa-solid fa-box-open text-3xl mb-2 text-base-content/30"></i>
+        <span>لا توجد ذكريات تطابق هذا البحث أو التصنيف.</span>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 2: HIERARCHICAL TASKS & MULTI-AGENT TODOS -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'tasks'" class="space-y-4">
+      <!-- Status Filter Bar -->
+      <div class="card bg-base-200 border border-base-300 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-success/20 text-success flex items-center justify-center font-bold">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
           <div>
-            <div style="font-weight: 700; color: #fff; font-size: 15px;">رابط MCP المباشر للدردشة والموبايل (Single URL)</div>
-            <div style="font-size: 12px; color: #94a3b8;">انسخ هذا الرابط وضعه في تطبيق المحادثة على الهاتف أو أي عميل MCP للربط الفوري</div>
-          </div>
-        </div>
-        <div style="display: flex; gap: 8px; flex: 1; min-width: 280px; max-width: 580px;">
-          <input type="text" id="dashMcpUrlField" class="form-input mono" readonly style="background: #060911; font-size: 13px;">
-          <button class="nav-btn btn-primary" onclick="copyDashMcpUrl()" style="white-space: nowrap;">نسخ رابط MCP 📋</button>
-        </div>
-      </div>
-
-      <!-- Quick Stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-title">إجمالي الذكريات الحية <span>📦</span></div>
-          <div id="statTotalMemories" class="stat-value">0</div>
-          <div class="stat-sub"><span>✓</span> مفهرسة فيكتورياً (768-dim)</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">ذاكرة البيئة والتفضيلات <span>⚙️</span></div>
-          <div id="statEnvPrefs" class="stat-value">0</div>
-          <div class="stat-sub"><span>⚡</span> استدعاء دائم للأوامر والبورتات</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">المهارات والقواعد (Skills) <span>🎯</span></div>
-          <div id="statSkills" class="stat-value">0</div>
-          <div class="stat-sub"><span>💡</span> أدوات سياقية جاهزة للوكلاء</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">الخزنة المشفرة (Vault) <span>🛡️</span></div>
-          <div id="statVault" class="stat-value">0</div>
-          <div class="stat-sub"><span>🔒</span> تشفير AES-256-GCM معزول</div>
-        </div>
-      </div>
-
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="search-box">
-          <input type="text" id="searchInput" class="search-input" placeholder="بحث دلالي ذكي بالمعنى أو الكلمات المفتاحية..." onkeyup="handleSearch(event)">
-          <span class="search-icon">🔍</span>
-        </div>
-        <div class="type-pills">
-          <button class="pill-btn active" onclick="filterType('all', this)">الكل</button>
-          <button class="pill-btn" onclick="filterType('env', this)">بيئة العمل (Env)</button>
-          <button class="pill-btn" onclick="filterType('preference', this)">التفضيلات (Preference)</button>
-          <button class="pill-btn" onclick="filterType('skill', this)">المهارات (Skill)</button>
-          <button class="pill-btn" onclick="filterType('note', this)">الملاحظات (Note)</button>
-        </div>
-      </div>
-
-      <!-- Memory Cards Grid -->
-      <div id="memoriesGrid" class="memories-grid">
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-          جاري تحميل الذكريات من Turso Cloud...
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 2: Agent Simulator / Chat Playground -->
-    <div id="tab-agent" style="display:none;">
-      <div class="playground-box">
-        <h3 style="font-size: 18px; color: #fff; margin-bottom: 8px;">🤖 محاكي تدفق الوكلاء التفاعلي (Live Agent Context Stream)</h3>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
-          اكتب أي طلب كما تطلبه تماماً من Cursor أو Claude Code أو الـ Terminal (مثلاً: "شغل لي سيرفر تجريبي" أو "تفضيل PM2" أو "ما هو بورت الاختبار").
-          سيقوم المحرك بالبحث الدلالي اللحظي واسترجاع الذاكرة وتعزيز أوزانها!
-        </p>
-
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="agentPromptInput" class="search-input" style="flex: 1;" placeholder="اكتب استعلامك الذكي لاختبار الاستدعاء الدلالي...">
-          <button class="nav-btn btn-primary" onclick="simulateAgentRecall()">استدعاء الذاكرة ⚡</button>
-        </div>
-
-        <div id="agentTerminal" class="terminal-window">
-          <div class="terminal-line t-cyan">// MemoryZ Agent Substrate Initialized...</div>
-          <div class="terminal-line t-muted">// Type a prompt above to simulate Cursor / Claude Code semantic recall.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 3: Zero-Knowledge Vault -->
-    <div id="tab-vault" style="display:none;">
-      <div class="vault-banner">
-        <strong>🛡️ بروتوكول الخزنة المشفرة المعزولة:</strong> المفاتيح والبيانات الحساسة تُشفر محلياً ولا تُرسل مطلقاً لنموذج التضمين (Embeddings). يتم التخزين بـ AES-256-GCM ولا تُفك الشفرة إلا في الذاكرة الحية (RAM) عند التزويد بكلمة المرور.
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="font-size: 18px; color: #fff;">المفاتيح والأسرار المخزنة في الخزنة</h3>
-        <button class="nav-btn btn-primary" onclick="openNewVaultModal()">+ إضافة مفتاح سري جديد</button>
-      </div>
-
-      <div id="vaultGrid" class="memories-grid">
-        <!-- Vault cards populated via JS -->
-      </div>
-    </div>
-
-    <!-- Tab 4: Connect & MCP Settings -->
-    <div id="tab-connect" style="display:none;">
-      <div class="playground-box">
-        <h3 style="font-size: 18px; color: #fff; margin-bottom: 8px;">⚡ الربط السريع (موبايل، MCP، تيرمنال، وديسكتوب)</h3>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
-          يمكنك ربط بيئة العمل أو تطبيق الدردشة على الهاتف مباشرة بخادم MemoryZ واستخدام الأدوات (<code>store_memory</code>, <code>recall_memory</code>, <code>vault_retrieve</code>) تلقائياً دون أي تعقيد.
-        </p>
-
-        <!-- 1. Mobile Single-URL Connector Card -->
-        <div style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid var(--border-glow); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <h4 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-              <span>📱</span> رابط الموبايل الموحد (Direct Mobile Connector URL)
-            </h4>
-            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">رابط واحد فقط</span>
-          </div>
-          <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.6;">
-            اربط محرك الذاكرة بتطبيق الدردشة على هاتفك (مثل Claude Mobile / LibreChat / OpenWebUI أو أي تطبيق يدعم Remote MCP) عبر <strong>رابط واحد فقط</strong> يحمل المفتاح السري، دون الحاجة لأي ملفات JSON أو إعدادات ديسكتوب:
-          </p>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="mobileConnectorUrlField" class="form-input mono" readonly style="flex: 1; min-width: 260px; background: #060911;">
-            <button class="nav-btn btn-primary" onclick="copyMobileUrl()">نسخ رابط الموبايل 📱📋</button>
+            <div class="font-bold text-sm">شجرة المهام وتنسيق الوكلاء</div>
+            <div class="text-[11px] text-base-content/60">بنية هرمية تدعم التفريع لأي عمق مع استهلاك توكن ضئيل جداً</div>
           </div>
         </div>
 
-        <!-- 2. OpenAPI Connector Card for ChatGPT Custom Actions -->
-        <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <h4 style="color: #fff; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-              <span>🤖</span> رابط موصل ChatGPT على الموبايل (OpenAPI Action URL)
-            </h4>
-            <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">OpenAPI 3.1</span>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <select class="select select-sm select-bordered w-full sm:w-auto text-xs" x-model="taskStatusFilter" @change="loadTasks()">
+            <option value="">جميع الحالات</option>
+            <option value="active">النشطة (Active)</option>
+            <option value="todo">في الانتظار (todo)</option>
+            <option value="in_progress">قيد التنفيذ (in_progress)</option>
+            <option value="done">المكتملة (done)</option>
+            <option value="blocked">المعلقة (blocked)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Task Hierarchy List -->
+      <div class="card bg-base-200 border border-base-300 p-4 shadow-sm space-y-2.5">
+        <template x-for="t in taskTree" :key="t.id">
+          <div class="space-y-2">
+            <!-- Root Task Card -->
+            <div class="p-3 rounded-xl border border-base-300 bg-base-100/60 hover:bg-base-100 transition-colors flex items-start justify-between gap-3"
+                 :class="{ 'opacity-60': isTaskDone(t.status) }">
+              <div class="flex items-start gap-3 flex-1 min-w-0">
+                <input type="checkbox" class="checkbox checkbox-sm checkbox-primary mt-0.5"
+                       :checked="isTaskDone(t.status)"
+                       @change="toggleTaskStatus(t)">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-sm text-base-content truncate"
+                          :class="{ 'line-through text-base-content/50': isTaskDone(t.status) }"
+                          x-text="t.title"></span>
+                    <span class="badge badge-xs font-mono" :class="getTaskBadgeClass(t.status)" x-text="t.status"></span>
+                    <span class="badge badge-outline badge-xs font-mono" x-text="t.priority"></span>
+                    <template x-if="t.assignee">
+                      <span class="badge badge-ghost badge-xs gap-1 font-mono">
+                        <i class="fa-solid fa-robot text-[9px] text-primary"></i>
+                        <span x-text="'@' + t.assignee"></span>
+                      </span>
+                    </template>
+                  </div>
+                  <template x-if="t.description">
+                    <p class="text-xs text-base-content/70 mt-1 leading-relaxed" x-text="t.description"></p>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Task Actions -->
+              <div class="flex items-center gap-1 flex-none">
+                <button class="btn btn-ghost btn-xs btn-square tooltip tooltip-bottom" data-tip="إضافة مهمة فرعية" @click="openTaskModal(t.id)">
+                  <i class="fa-solid fa-folder-plus text-xs text-primary"></i>
+                </button>
+                <button class="btn btn-ghost btn-xs btn-square tooltip tooltip-bottom text-error" data-tip="حذف المهمة" @click="deleteTask(t.id)">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Subtasks (Children) -->
+            <template x-if="t.children && t.children.length > 0">
+              <div class="mr-6 pr-3 border-r-2 border-primary/30 space-y-2">
+                <template x-for="sub in t.children" :key="sub.id">
+                  <div class="p-2.5 rounded-lg border border-base-300 bg-base-100/40 hover:bg-base-100 transition-colors flex items-start justify-between gap-2"
+                       :class="{ 'opacity-60': isTaskDone(sub.status) }">
+                    <div class="flex items-start gap-2.5 flex-1 min-w-0">
+                      <input type="checkbox" class="checkbox checkbox-xs checkbox-primary mt-0.5"
+                             :checked="isTaskDone(sub.status)"
+                             @change="toggleTaskStatus(sub)">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="text-xs font-semibold" :class="{ 'line-through text-base-content/50': isTaskDone(sub.status) }" x-text="sub.title"></span>
+                          <span class="badge badge-xs font-mono" :class="getTaskBadgeClass(sub.status)" x-text="sub.status"></span>
+                          <template x-if="sub.assignee">
+                            <span class="badge badge-ghost badge-xs gap-1 font-mono">
+                              <i class="fa-solid fa-robot text-[9px] text-primary"></i>
+                              <span x-text="'@' + sub.assignee"></span>
+                            </span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                    <button class="btn btn-ghost btn-xs btn-square text-error" @click="deleteTask(sub.id)">
+                      <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </template>
           </div>
-          <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.6;">
-            إذا كنت تستخدم ChatGPT على الموبايل وتريد إضافة الذاكرة الحية إلى Custom GPT، فقط انسخ هذا الرابط وضعه في خانة <strong>Actions &rarr; Import from URL</strong>:
-          </p>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="openApiUrlField" class="form-input mono" readonly style="flex: 1; min-width: 260px; background: #060911;">
-            <button class="nav-btn btn-secondary" onclick="copyOpenApiUrl()">نسخ رابط OpenAPI 📋</button>
+        </template>
+
+        <div x-show="taskTree.length === 0 && !loadingTasks" class="p-8 text-center text-base-content/60">
+          <i class="fa-solid fa-clipboard-check text-3xl mb-2 text-base-content/30"></i>
+          <div>لا توجد مهام مسجلة بعد. أنشئ مهمة جديدة لتوجيه الوكلاء!</div>
+        </div>
+      </div>
+
+      <!-- AI Token-Optimized Tree Preview (Visual proof of token economy) -->
+      <div class="card bg-base-200 border border-base-300 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2 text-xs font-bold text-primary">
+            <i class="fa-solid fa-code"></i>
+            <span>الصيغة الشجرية فائقة الضغط لاستدعاء النماذج (ASCII Tree Format)</span>
+          </div>
+          <button class="btn btn-ghost btn-xs gap-1" @click="copyText(taskAsciiPreview)">
+            <i class="fa-solid fa-copy text-xs"></i> <span>نسخ</span>
+          </button>
+        </div>
+        <pre class="bg-base-300 p-3 rounded-lg text-xs mono text-base-content/80 overflow-x-auto max-h-44" x-text="taskAsciiPreview || '(لا توجد مهام)'"></pre>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 3: CONTEXT PACKS & EPHEMERAL LOGS -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'context'" class="space-y-4">
+      <!-- 1. Context Pack Generator -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-info/20 text-info flex items-center justify-center font-bold">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <div class="font-bold text-sm">مولّد حزم السياق المضغوطة (Token-Budgeted Context Pack)</div>
+            <div class="text-[11px] text-base-content/60">يدمج المهام المتبقية والذكريات المطابقة بدقة دون كسر نافذة السياق</div>
           </div>
         </div>
 
-        <!-- 3. Desktop Cursor Configuration -->
-        <h4 style="color: var(--primary); margin-bottom: 8px; font-size: 14px;">3. إعداد ديسكتوب Cursor (~/.cursor/mcp.json):</h4>
-        <pre id="cursorConfigCode" style="background:#060911; padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"></pre>
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+          <input type="text" class="input input-sm input-bordered sm:col-span-6"
+                 placeholder="موضوع أو مهمة الوكيل (مثلاً: مصادقة المستخدم)..."
+                 x-model="contextQuery"
+                 @keyup.enter="generateContextPack()">
 
-        <!-- 4. CLI Examples -->
-        <h4 style="color: var(--emerald); margin-bottom: 8px; font-size: 14px;">4. أمر التيرمنال السريع (Deno CLI):</h4>
-        <pre id="cliExampleCode" style="background:#060911; padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"></pre>
+          <select class="select select-sm select-bordered sm:col-span-3 text-xs" x-model="contextFormat">
+            <option value="xml">صيغة XML (للنصوص والبرومبت)</option>
+            <option value="markdown">صيغة Markdown</option>
+            <option value="compact">نص فائق الضغط (Compact)</option>
+          </select>
 
-        <!-- 5. API Key -->
-        <h4 style="color: var(--purple); margin-bottom: 8px; font-size: 14px;">5. مفتاح واجهة التطبيقات البرمجية الخاص بك (API Key):</h4>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <input type="text" id="myApiKeyField" class="form-input mono" readonly style="flex:1;">
-          <button class="nav-btn btn-secondary" onclick="copyApiKey()">نسخ المفتاح 📋</button>
+          <input type="number" class="input input-sm input-bordered sm:col-span-2 font-mono text-center"
+                 placeholder="ميزانية التوكن"
+                 x-model="contextBudget">
+
+          <button class="btn btn-sm btn-primary sm:col-span-1 gap-1" @click="generateContextPack()">
+            <span x-show="!loadingContext">توليد</span>
+            <span class="loading loading-spinner loading-xs" x-show="loadingContext"></span>
+          </button>
+        </div>
+
+        <!-- Result Box -->
+        <div x-show="contextResult" class="space-y-2 pt-2">
+          <div class="flex items-center justify-between text-xs font-mono text-base-content/70">
+            <span x-text="contextStats"></span>
+            <button class="btn btn-ghost btn-xs gap-1" @click="copyText(contextResult)">
+              <i class="fa-solid fa-copy text-xs"></i> <span>نسخ الحزمة</span>
+            </button>
+          </div>
+          <pre class="bg-base-300 p-3 rounded-lg text-xs mono text-base-content/90 overflow-x-auto max-h-60" x-text="contextResult"></pre>
+        </div>
+      </div>
+
+      <!-- 2. Ephemeral Logs & Scratchpad -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-warning/20 text-warning flex items-center justify-center font-bold">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">السجلات المؤقتة وتتبعات الوكلاء (Ephemeral Logs)</div>
+              <div class="text-[11px] text-base-content/60">بيانات وتتبعات سريعة بدون تكلفة فيكتور وبدون استهلاك لكوتة التضمين</div>
+            </div>
+          </div>
+
+          <div class="join">
+            <input type="text" class="input input-sm input-bordered join-item w-48 sm:w-64 text-xs"
+                   placeholder="تسجيل لوغ أو ملاحظة سريعة..."
+                   x-model="quickLogMessage"
+                   @keyup.enter="appendQuickLog()">
+            <button class="btn btn-sm btn-secondary join-item gap-1" @click="appendQuickLog()">
+              <i class="fa-solid fa-plus text-xs"></i> <span>تسجيل</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Logs stream -->
+        <div class="bg-base-300/80 rounded-xl p-3 border border-base-300 font-mono text-xs max-h-56 overflow-y-auto scrollbar-thin space-y-1.5">
+          <template x-for="log in logsList" :key="log.id">
+            <div class="flex items-start gap-2 leading-relaxed">
+              <span class="text-base-content/40 text-[10px]" x-text="formatTime(log.created_at)"></span>
+              <span class="badge badge-xs uppercase font-bold"
+                    :class="{
+                      'badge-error': log.level === 'error',
+                      'badge-warning': log.level === 'warn',
+                      'badge-info': log.level === 'info',
+                      'badge-ghost': log.level === 'debug'
+                    }"
+                    x-text="log.level"></span>
+              <span class="text-primary text-xs" x-text="'[' + log.source + ']'"></span>
+              <span class="text-base-content/90 flex-1 truncate" x-text="log.message"></span>
+            </div>
+          </template>
+          <div x-show="logsList.length === 0" class="text-center py-4 text-base-content/40">
+            (لا توجد سجلات مؤقتة مسجلة)
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Tab 5: Admin Dashboard -->
-    <div id="tab-admin" style="display:none;">
-      <div class="playground-box">
-        <h3 style="font-size: 18px; color: #fff; margin-bottom: 8px;">👑 لوحة القيادة والعمليات للمدير (MemoryZ Control Plane)</h3>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">إحصائيات النظام الشاملة، النشاط، ومراقبة مستخدمي المنصة.</p>
+    <!-- ============================================================= -->
+    <!-- TAB 4: AGENT SIMULATOR -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'agent'" class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-4">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+          <div class="font-bold text-sm">محاكي استدعاء الوكلاء الذكية (Agent Recall Stream)</div>
+          <div class="text-[11px] text-base-content/60">محاكاة حية لكيفية استرجاع Cursor وClaude Code للذاكرة وتعزيز أوزانها اللحظية</div>
+        </div>
+      </div>
 
-        <div id="adminStatsOverview" class="stats-grid" style="margin-bottom: 24px;"></div>
+      <div class="join w-full">
+        <input type="text" class="input input-sm sm:input-md input-bordered join-item flex-1 focus:outline-none"
+               placeholder="جرب كتابة: ما هو بورت الاختبار أو تفضيل تنسيق الكود..."
+               x-model="simulatorQuery"
+               @keyup.enter="runSimulator()">
+        <button class="btn btn-sm sm:btn-md btn-primary join-item gap-1" @click="runSimulator()">
+          <span x-show="!loadingSimulator">استدعاء ⚡</span>
+          <span class="loading loading-spinner loading-xs" x-show="loadingSimulator"></span>
+        </button>
+      </div>
 
-        <h4 style="color: #fff; font-size: 16px; margin-bottom: 12px;">قائمة الحسابات والمستخدمين النشطين:</h4>
-        <div style="overflow-x: auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>المعرف</th>
-                <th>اسم المستخدم</th>
-                <th>البريد الإلكتروني</th>
-                <th>الرتبة</th>
-                <th>عدد الذكريات</th>
-                <th>تاريخ الانضمام</th>
-              </tr>
-            </thead>
-            <tbody id="adminUsersTableBody"></tbody>
-          </table>
+      <!-- Simulator Recall Results -->
+      <div x-show="simulatorResults.length > 0" class="space-y-3 pt-2">
+        <div class="text-xs font-bold text-base-content/70">الذكريات المسترجعة والمعززة:</div>
+        <div class="grid grid-cols-1 gap-2.5">
+          <template x-for="r in simulatorResults" :key="r.hash">
+            <div class="p-3 bg-base-100 rounded-lg border border-primary/30 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-primary" x-text="r.title || r.hash.substring(0, 8)"></span>
+                <span class="badge badge-sm badge-success font-mono gap-1">
+                  <i class="fa-solid fa-bolt text-[10px]"></i>
+                  <span x-text="'Score: ' + (r.recall_score || 0)"></span>
+                </span>
+              </div>
+              <p class="text-xs text-base-content/80" x-text="r.content"></p>
+            </div>
+          </template>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Modal: Auth (Login / Register) -->
-  <div id="authModal" class="modal-overlay">
-    <div class="modal-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 id="authModalTitle" class="modal-title" style="margin-bottom: 0;">تسجيل الدخول إلى MemoryZ</h3>
-        <button onclick="closeAuthModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">&times;</button>
+    <!-- ============================================================= -->
+    <!-- TAB 5: ZERO-KNOWLEDGE VAULT -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'vault'" class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-error/20 text-error flex items-center justify-center font-bold">
+            <i class="fa-solid fa-vault"></i>
+          </div>
+          <div>
+            <div class="font-bold text-sm">الخزنة المشفرة بانعدام المعرفة (Zero-Knowledge Secret Vault)</div>
+            <div class="text-[11px] text-base-content/60">تشفير AES-256-GCM للبيانات الحساسة والمفاتيح السرية مع عزل تام عن الفيكتور</div>
+          </div>
+        </div>
+
+        <button class="btn btn-sm btn-error text-error-content gap-1 shadow-sm" @click="openVaultModal()">
+          <i class="fa-solid fa-plus text-xs"></i> <span>تشفير سر جديد</span>
+        </button>
       </div>
 
-      <div class="tabs-bar" style="margin-bottom: 16px;">
-        <button id="authTabLogin" class="tab-item active" onclick="setAuthMode('login')">تسجيل الدخول</button>
-        <button id="authTabRegister" class="tab-item" onclick="setAuthMode('register')">إنشاء حساب جديد</button>
+      <!-- Vault Keys List -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        <template x-for="k in vaultKeys" :key="k.key_name">
+          <div class="card bg-base-100 border border-base-300 p-3.5 flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-sm text-base-content truncate" x-text="k.key_name"></span>
+              <span class="badge badge-outline badge-xs font-mono">AES-GCM</span>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-base-300 text-xs">
+              <button class="btn btn-primary btn-xs gap-1" @click="openDecryptModal(k.key_name)">
+                <i class="fa-solid fa-unlock-keyhole text-[11px]"></i> <span>فك التشفير</span>
+              </button>
+              <button class="btn btn-ghost btn-xs btn-square text-error" @click="deleteVaultKey(k.key_name)">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </template>
       </div>
 
-      <form id="authForm" onsubmit="handleAuthSubmit(event)">
-        <div id="authUsernameGroup" class="form-group" style="display:none;">
-          <label class="form-label">اسم المستخدم</label>
-          <input type="text" id="authUsername" class="form-input" placeholder="مثال: ibrahim">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">البريد الإلكتروني أو اسم الحساب</label>
-          <input type="text" id="authEmail" class="form-input" placeholder="user@example.com" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">كلمة المرور</label>
-          <input type="password" id="authPassword" class="form-input" placeholder="••••••••" required>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button type="button" class="nav-btn btn-secondary" onclick="closeAuthModal()">إلغاء</button>
-          <button type="submit" id="authSubmitBtn" class="nav-btn btn-primary">دخول</button>
-        </div>
-      </form>
+      <div x-show="vaultKeys.length === 0 && !loadingVault" class="p-8 text-center text-base-content/60">
+        <i class="fa-solid fa-lock text-3xl mb-2 text-base-content/30"></i>
+        <div>لا توجد مفاتيح مشفرة مخزنة حالياً في الخزنة.</div>
+      </div>
     </div>
-  </div>
 
-  <!-- Modal: New Memory -->
-  <div id="memoryModal" class="modal-overlay">
-    <div class="modal-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 id="memoryModalTitle" class="modal-title" style="margin-bottom: 0;">إضافة ذرة ذاكرة جديدة</h3>
-        <button onclick="closeMemoryModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">&times;</button>
+    <!-- ============================================================= -->
+    <!-- TAB 6: CONNECT & MCP SETTINGS -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'connect'" class="space-y-4">
+      <!-- 1. Direct Single-URL Remote MCP Connector (Perfect for Mobile / Web LLMs) -->
+      <div class="card bg-gradient-to-br from-primary/10 via-base-200 to-base-200 border border-primary/30 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary text-primary-content flex items-center justify-center font-bold">
+              <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">رابط MCP المباشر للموبايل والويب (Single URL Remote MCP)</div>
+              <div class="text-[11px] text-base-content/60">رابط واحد متكامل يدعم Claude Mobile وChatGPT وLibreChat دون الحاجة لملفات محلية</div>
+            </div>
+          </div>
+          <span class="badge badge-primary badge-sm font-mono">Streamable HTTP</span>
+        </div>
+
+        <div class="join w-full">
+          <input type="text" class="input input-sm input-bordered join-item flex-1 mono text-xs bg-base-300"
+                 readonly :value="getDirectMcpUrl()">
+          <button class="btn btn-sm btn-primary join-item gap-1" @click="copyText(getDirectMcpUrl())">
+            <i class="fa-solid fa-copy text-xs"></i> <span>نسخ</span>
+          </button>
+        </div>
       </div>
 
-      <form onsubmit="handleSaveMemory(event)">
-        <input type="hidden" id="editMemoryHash">
+      <!-- 2. OpenAPI 3.1 Connector for ChatGPT Mobile Custom Actions -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-secondary/20 text-secondary flex items-center justify-center font-bold">
+              <i class="fa-solid fa-plug"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">رابط موصل ChatGPT Actions (OpenAPI 3.1)</div>
+              <div class="text-[11px] text-base-content/60">الصقه في Actions &rarr; Import from URL في Custom GPT</div>
+            </div>
+          </div>
+        </div>
 
-        <div class="form-group">
-          <label class="form-label">نوع الذاكرة</label>
-          <select id="memoryType" class="form-select">
-            <option value="env">بيئة العمل وأوامر النظام (Env / Infra)</option>
-            <option value="preference">تفضيل المطور والقواعد (Preference)</option>
-            <option value="skill">مهارة وأداة وكيل (Skill / Prompt)</option>
-            <option value="note">ملاحظة ومعلومة حرة (Note / Fact)</option>
+        <div class="join w-full">
+          <input type="text" class="input input-sm input-bordered join-item flex-1 mono text-xs bg-base-300"
+                 readonly :value="getOpenApiUrl()">
+          <button class="btn btn-sm btn-secondary join-item gap-1" @click="copyText(getOpenApiUrl())">
+            <i class="fa-solid fa-copy text-xs"></i> <span>نسخ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Desktop Cursor & Terminal Configuration -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-base-300 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-terminal"></i>
+          </div>
+          <div>
+            <div class="font-bold text-sm">إعداد أجهزة الديسكتوب (Cursor / Claude Code / CLI)</div>
+            <div class="text-[11px] text-base-content/60">أمر التثبيت التلقائي والتكوين عبر الطرفية</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-xs font-semibold">تثبيت وإعداد تلقائي فوري:</div>
+          <div class="join w-full">
+            <input type="text" class="input input-sm input-bordered join-item flex-1 mono text-xs bg-base-300"
+                   readonly :value="'npx memoryz init --token=' + (currentUser?.api_key || 'YOUR_TOKEN')">
+            <button class="btn btn-sm btn-ghost join-item" @click="copyText('npx memoryz init --token=' + (currentUser?.api_key || 'YOUR_TOKEN'))">
+              <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 7: ADMIN CONTROL PLANE -->
+    <!-- ============================================================= -->
+    <template x-if="currentUser && currentUser.role === 'admin'">
+      <div x-show="activeTab === 'admin'" class="space-y-4">
+        <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-warning/20 text-warning flex items-center justify-center font-bold">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">لوحة تحكم المدير (MemoryZ Control Plane)</div>
+              <div class="text-[11px] text-base-content/60">إحصائيات المنصة، مستخدمي النظام، ومراقبة النشاط</div>
+            </div>
+          </div>
+
+          <!-- Quick Stats Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="stat bg-base-100 rounded-xl border border-base-300 p-3">
+              <div class="stat-title text-xs">إجمالي المستخدمين</div>
+              <div class="stat-value text-lg text-primary" x-text="adminStats.total_users || 0"></div>
+            </div>
+            <div class="stat bg-base-100 rounded-xl border border-base-300 p-3">
+              <div class="stat-title text-xs">إجمالي الذكريات</div>
+              <div class="stat-value text-lg text-secondary" x-text="adminStats.total_memories || 0"></div>
+            </div>
+            <div class="stat bg-base-100 rounded-xl border border-base-300 p-3">
+              <div class="stat-title text-xs">أسرار الخزنة</div>
+              <div class="stat-value text-lg text-accent" x-text="adminStats.total_vault_entries || 0"></div>
+            </div>
+            <div class="stat bg-base-100 rounded-xl border border-base-300 p-3">
+              <div class="stat-title text-xs">حجم الفهارس</div>
+              <div class="stat-value text-lg text-info">768d</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <!-- ============================================================= -->
+  <!-- MODALS (DaisyUI standard modal dialogs) -->
+  <!-- ============================================================= -->
+
+  <!-- Modal: Memory Form (New / Edit) -->
+  <dialog class="modal" :class="{ 'modal-open': modals.memory }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-lg">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-brain text-primary"></i>
+        <span>إضافة ذرة ذاكرة جديدة</span>
+      </h3>
+      <form @submit.prevent="saveMemory()" class="space-y-3 text-xs">
+        <div class="form-control">
+          <label class="label"><span class="label-text">نوع الذاكرة</span></label>
+          <select class="select select-sm select-bordered" x-model="formMemory.type">
+            <option value="env">بيئة العمل وأوامر النظام (env)</option>
+            <option value="preference">تفضيل المطور والقواعد (preference)</option>
+            <option value="skill">مهارة وأداة وكيل (skill)</option>
+            <option value="note">ملاحظة ومعلومة حرة (note)</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">العنوان أو المعرف (اختياري)</label>
-          <input type="text" id="memoryTitle" class="form-input" placeholder="مثال: dev_ports_and_pm2">
+        <div class="form-control">
+          <label class="label"><span class="label-text">العنوان (اختياري)</span></label>
+          <input type="text" class="input input-sm input-bordered" placeholder="مثلاً: staging_database_port" x-model="formMemory.title">
         </div>
 
-        <div class="form-group">
-          <label class="form-label">محتوى الذاكرة (سيتم توليد تمثيل دلالي 768-dim له فورياً)</label>
-          <textarea id="memoryContent" class="form-textarea" placeholder="مثال: يفضل المطور استخدام PM2 بدلاً من Docker، والمنفذ 3333 محجوز لـ test.domain.com" required></textarea>
+        <div class="form-control">
+          <label class="label"><span class="label-text">محتوى الذاكرة (سيتم توليد تمثيل فيكتور 768-dim)</span></label>
+          <textarea class="textarea textarea-sm textarea-bordered h-24" placeholder="المعرفة أو القاعدة التي تريد للوكلاء تذكرها دائماً..." required x-model="formMemory.content"></textarea>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button type="button" class="nav-btn btn-secondary" onclick="closeMemoryModal()">إلغاء</button>
-          <button type="submit" class="nav-btn btn-primary">حفظ الذاكرة</button>
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.memory = false">إلغاء</button>
+          <button type="submit" class="btn btn-primary btn-sm">حفظ الذاكرة</button>
         </div>
       </form>
     </div>
-  </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.memory = false"><button>إغلاق</button></form>
+  </dialog>
 
-  <!-- Modal: Vault Store -->
-  <div id="vaultModal" class="modal-overlay">
-    <div class="modal-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 class="modal-title" style="margin-bottom: 0;">تشفير وحفظ مفتاح في الخزنة</h3>
-        <button onclick="closeVaultModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">&times;</button>
+  <!-- Modal: Task Form (New / Subtask) -->
+  <dialog class="modal" :class="{ 'modal-open': modals.task }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-lg">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-success"></i>
+        <span x-text="formTask.parent_id ? 'إضافة مهمة فرعية (Subtask)' : 'إضافة مهمة جديدة'"></span>
+      </h3>
+      <form @submit.prevent="saveTask()" class="space-y-3 text-xs">
+        <div class="form-control">
+          <label class="label"><span class="label-text">عنوان المهمة</span></label>
+          <input type="text" class="input input-sm input-bordered" placeholder="مثلاً: كتابة وتجهيز اختبارات الوحدة..." required x-model="formTask.title">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="form-control">
+            <label class="label"><span class="label-text">الحالة</span></label>
+            <select class="select select-sm select-bordered" x-model="formTask.status">
+              <option value="todo">في الانتظار (todo)</option>
+              <option value="in_progress">قيد التنفيذ (in_progress)</option>
+              <option value="done">مكتملة (done)</option>
+              <option value="blocked">معلقة (blocked)</option>
+            </select>
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">الأولوية</span></label>
+            <select class="select select-sm select-bordered" x-model="formTask.priority">
+              <option value="medium">متوسطة</option>
+              <option value="high">مرتفعة</option>
+              <option value="urgent">عاجلة</option>
+              <option value="low">منخفضة</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">الوكيل المسند إليه (Assignee)</span></label>
+          <input type="text" class="input input-sm input-bordered font-mono" placeholder="مثلاً: cursor, claude, architect" x-model="formTask.assignee">
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">تفاصيل / متطلبات المهمة</span></label>
+          <textarea class="textarea textarea-sm textarea-bordered h-20" placeholder="خطوات الإنجاز، شروط القبول، أو روابط مرجعية..." x-model="formTask.description"></textarea>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.task = false">إلغاء</button>
+          <button type="submit" class="btn btn-success btn-sm text-success-content">حفظ المهمة</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.task = false"><button>إغلاق</button></form>
+  </dialog>
+
+  <!-- Modal: Vault Store Form -->
+  <dialog class="modal" :class="{ 'modal-open': modals.vault }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-md">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-lock text-error"></i>
+        <span>تشفير سر في الخزنة (Zero-Knowledge)</span>
+      </h3>
+      <form @submit.prevent="saveVaultSecret()" class="space-y-3 text-xs">
+        <div class="form-control">
+          <label class="label"><span class="label-text">اسم المفتاح (Identifier)</span></label>
+          <input type="text" class="input input-sm input-bordered font-mono" placeholder="مثلاً: key_gemini أو db_password" required x-model="formVault.key_name">
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">القيمة السرية المراد تشفيرها</span></label>
+          <textarea class="textarea textarea-sm textarea-bordered font-mono h-20" placeholder="sk_live_... أو السر الخاص بك" required x-model="formVault.secret_value"></textarea>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">كلمة مرور التشفير (Client Passphrase)</span></label>
+          <input type="password" class="input input-sm input-bordered" placeholder="لا يتم حفظها في الخادم مطلقاً" required x-model="formVault.passphrase">
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.vault = false">إلغاء</button>
+          <button type="submit" class="btn btn-error btn-sm text-error-content">تشفير وحفظ</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.vault = false"><button>إغلاق</button></form>
+  </dialog>
+
+  <!-- Modal: Decrypt Secret Form -->
+  <dialog class="modal" :class="{ 'modal-open': modals.decrypt }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-md">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-unlock-keyhole text-primary"></i>
+        <span x-text="'فك تشفير: ' + decryptKeyName"></span>
+      </h3>
+      <form @submit.prevent="retrieveVaultSecret()" class="space-y-3 text-xs">
+        <div class="form-control">
+          <label class="label"><span class="label-text">أدخل كلمة مرور التشفير (Passphrase)</span></label>
+          <input type="password" class="input input-sm input-bordered" required x-model="decryptPassphrase">
+        </div>
+
+        <div x-show="decryptedResult" class="space-y-1.5 pt-2">
+          <div class="label"><span class="label-text text-success font-bold">القيمة المفكوكة في الذاكرة الحية (RAM):</span></div>
+          <div class="join w-full">
+            <input type="text" class="input input-sm input-bordered join-item flex-1 mono text-xs" readonly :value="decryptedResult">
+            <button type="button" class="btn btn-sm btn-ghost join-item" @click="copyText(decryptedResult)">
+              <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.decrypt = false">إغلاق</button>
+          <button type="submit" class="btn btn-primary btn-sm">فك التشفير 🔓</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.decrypt = false"><button>إغلاق</button></form>
+  </dialog>
+
+  <!-- Modal: Auth (Login / Register) -->
+  <dialog class="modal" :class="{ 'modal-open': modals.auth }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-sm">
+      <div class="tabs tabs-boxed mb-3 p-1">
+        <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': authMode === 'login' }" @click="authMode = 'login'">دخول</a>
+        <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': authMode === 'register' }" @click="authMode = 'register'">حساب جديد</a>
       </div>
 
-      <form onsubmit="handleSaveVault(event)">
-        <div class="form-group">
-          <label class="form-label">اسم المفتاح (Key Identifier)</label>
-          <input type="text" id="vaultKeyName" class="form-input mono" placeholder="مثال: key_gemini أو aws_token" required>
+      <form @submit.prevent="submitAuth()" class="space-y-3 text-xs">
+        <template x-if="authMode === 'register'">
+          <div class="form-control">
+            <label class="label"><span class="label-text">اسم المستخدم</span></label>
+            <input type="text" class="input input-sm input-bordered" required x-model="authForm.username">
+          </div>
+        </template>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text" x-text="authMode === 'register' ? 'البريد الإلكتروني' : 'اسم المستخدم أو البريد'"></span></label>
+          <input type="text" class="input input-sm input-bordered" required x-model="authForm.identifier">
         </div>
 
-        <div class="form-group">
-          <label class="form-label">القيمة السرية (Secret Value)</label>
-          <input type="password" id="vaultSecretValue" class="form-input mono" placeholder="القيمة السرية المراد تشفيرها" required>
+        <div class="form-control">
+          <label class="label"><span class="label-text">كلمة المرور</span></label>
+          <input type="password" class="input input-sm input-bordered" required x-model="authForm.password">
         </div>
 
-        <div class="form-group">
-          <label class="form-label">كلمة مرور التشفير الخاصة بك (Passphrase)</label>
-          <input type="password" id="vaultPassphrase" class="form-input" placeholder="كلمة المرور المشتق منها مفتاح AES" required>
-          <small style="color: var(--text-muted); font-size: 11px;">لن يتم حفظ كلمة المرور على السيرفر أبداً.</small>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button type="button" class="nav-btn btn-secondary" onclick="closeVaultModal()">إلغاء</button>
-          <button type="submit" class="nav-btn btn-primary">تشفير وحفظ</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Decrypt Secret Prompt -->
-  <div id="decryptModal" class="modal-overlay">
-    <div class="modal-card">
-      <h3 class="modal-title">فك تشفير المفتاح السري</h3>
-      <div id="decryptKeyLabel" style="color: var(--primary); margin-bottom: 14px; font-weight: 700;"></div>
-
-      <form onsubmit="handleDecryptVault(event)">
-        <input type="hidden" id="decryptTargetKeyName">
-        <div class="form-group">
-          <label class="form-label">أدخل كلمة مرور الخزنة (Passphrase)</label>
-          <input type="password" id="decryptPassphraseInput" class="form-input" placeholder="كلمة المرور" required>
-        </div>
-
-        <div id="decryptedResultBox" style="display:none; background:#060911; padding:14px; border-radius:10px; border:1px solid var(--emerald); margin-bottom:14px;">
-          <div style="font-size: 12px; color: var(--emerald); margin-bottom: 4px;">تم فك التشفير بنجاح (في ذاكرة المتصفح فقط):</div>
-          <div id="decryptedResultText" class="mono" style="word-break:break-all; color:#fff;"></div>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-          <button type="button" class="nav-btn btn-secondary" onclick="closeDecryptModal()">إغلاق</button>
-          <button type="submit" id="decryptSubmitBtn" class="nav-btn btn-primary">فك التشفير الآن</button>
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.auth = false">إلغاء</button>
+          <button type="submit" class="btn btn-primary btn-sm" x-text="authMode === 'register' ? 'إنشاء الحساب' : 'تسجيل الدخول'"></button>
         </div>
       </form>
     </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.auth = false"><button>إغلاق</button></form>
+  </dialog>
+
+  <!-- Toast Notification (Minimalist) -->
+  <div class="toast toast-end toast-bottom z-50 pointer-events-none" x-show="toast.show" x-transition>
+    <div class="alert alert-info py-2 px-4 shadow-lg text-xs font-semibold gap-2">
+      <i class="fa-solid fa-circle-check text-success"></i>
+      <span x-text="toast.message"></span>
+    </div>
   </div>
 
-  <div id="toast"></div>
-
+  <!-- ALPINE.JS COMPONENT APPLICATION LOGIC -->
   <script>
-    // State
-    let authToken = localStorage.getItem('mz_token') || '';
-    let currentUser = null;
-    let currentFilter = 'all';
-    let authMode = 'login';
+    function memoryzApp() {
+      return {
+        // State
+        activeTab: 'memories',
+        authToken: localStorage.getItem('mz_token') || '',
+        currentUser: null,
+        
+        // Memories
+        memories: [],
+        memoryFilter: 'all',
+        memoryQuery: '',
+        loadingMemories: false,
+        totalMemories: 0,
+        
+        // Tasks
+        tasks: [],
+        taskTree: [],
+        tasksCount: 0,
+        taskAsciiPreview: '',
+        taskStatusFilter: '',
+        loadingTasks: false,
+        
+        // Context & Logs
+        contextQuery: '',
+        contextFormat: 'xml',
+        contextBudget: 1200,
+        contextResult: '',
+        contextStats: '',
+        loadingContext: false,
+        logsList: [],
+        quickLogMessage: '',
+        
+        // Simulator
+        simulatorQuery: '',
+        simulatorResults: [],
+        loadingSimulator: false,
+        
+        // Vault
+        vaultKeys: [],
+        loadingVault: false,
+        decryptKeyName: '',
+        decryptPassphrase: '',
+        decryptedResult: '',
+        
+        // Admin
+        adminStats: {},
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.innerText = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
+        // Modals
+        modals: {
+          memory: false,
+          task: false,
+          vault: false,
+          decrypt: false,
+          auth: false,
+        },
+        
+        // Forms
+        formMemory: { type: 'preference', title: '', content: '' },
+        formTask: { parent_id: '', title: '', status: 'todo', priority: 'medium', assignee: '', description: '' },
+        formVault: { key_name: '', secret_value: '', passphrase: '' },
+        authMode: 'login',
+        authForm: { username: '', identifier: '', password: '' },
 
-    // Init App
-    async function init() {
-      if (authToken) {
-        await checkCurrentUser();
-      } else {
-        updateAuthUI(null);
-      }
-      loadMemories();
-    }
+        // Toast
+        toast: { show: false, message: '' },
 
-    async function checkCurrentUser() {
-      try {
-        const res = await fetch('/api/auth/me', {
-          headers: { 'Authorization': 'Bearer ' + authToken }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          currentUser = data.user;
-          updateAuthUI(currentUser);
-        } else {
-          logout();
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
+        showToast(msg) {
+          this.toast.message = msg;
+          this.toast.show = true;
+          setTimeout(() => { this.toast.show = false; }, 3000);
+        },
 
-    function updateAuthUI(user) {
-      const userStatus = document.getElementById('userStatus');
-      const authBtn = document.getElementById('authBtn');
-      const newMemoryBtn = document.getElementById('newMemoryBtn');
-      const adminTabBtn = document.getElementById('adminTabBtn');
+        async copyText(txt) {
+          if (!txt) return;
+          await navigator.clipboard.writeText(txt);
+          this.showToast('تم النسخ إلى الحافظة 📋');
+        },
 
-      if (user) {
-        userStatus.innerHTML = 'مرحباً، <strong style="color:var(--primary);">' + user.username + '</strong>' + (user.role === 'admin' ? ' 👑' : '');
-        authBtn.innerText = 'خروج';
-        authBtn.onclick = logout;
-        newMemoryBtn.style.display = 'inline-flex';
-        if (user.role === 'admin') adminTabBtn.style.display = 'inline-flex';
-
-        // Dashboard quick bar
-        const quickBar = document.getElementById('mcpQuickBar');
-        if (quickBar) quickBar.style.display = 'flex';
-        const dashField = document.getElementById('dashMcpUrlField');
-        if (dashField) dashField.value = window.location.origin + "/mcp?token=" + user.api_key;
-
-        // Connect tab config
-        document.getElementById('myApiKeyField').value = user.api_key;
-        updateConnectSnippets(user.api_key);
-      } else {
-        userStatus.innerText = 'وضع القراءة أو الزائر';
-        authBtn.innerText = 'دخول / تسجيل';
-        authBtn.onclick = openAuthModal;
-        newMemoryBtn.style.display = 'none';
-        adminTabBtn.style.display = 'none';
-
-        const quickBar = document.getElementById('mcpQuickBar');
-        if (quickBar) quickBar.style.display = 'none';
-      }
-    }
-
-    function copyDashMcpUrl() {
-      const field = document.getElementById('dashMcpUrlField');
-      navigator.clipboard.writeText(field.value);
-      showToast('تم نسخ رابط MCP المباشر بنجاح! الصقه في تطبيق الدردشة ⚡📱');
-    }
-
-    function updateConnectSnippets(apiKey) {
-      const origin = window.location.origin;
-
-      // 1. Mobile Direct URL
-      const mobileUrl = origin + "/mcp?token=" + apiKey;
-      const mobileField = document.getElementById('mobileConnectorUrlField');
-      if (mobileField) mobileField.value = mobileUrl;
-
-      // 2. OpenAPI Direct URL (for ChatGPT Custom Actions / Mobile)
-      const openApiUrl = origin + "/openapi.json?token=" + apiKey;
-      const openApiField = document.getElementById('openApiUrlField');
-      if (openApiField) openApiField.value = openApiUrl;
-
-      // 3. Desktop Cursor Config
-      const cursorConfig = {
-        "mcpServers": {
-          "memoryz": {
-            "url": origin + "/mcp?api_key=" + apiKey
+        async initApp() {
+          if (this.authToken) {
+            await this.fetchMe();
           }
-        }
-      };
-      document.getElementById('cursorConfigCode').innerText = JSON.stringify(cursorConfig, null, 2);
-      document.getElementById('cliExampleCode').innerText = 
-        "# CLI Quick Recall Query\\n" +
-        "deno run -A cli.ts recall --query='test.domain.com' --key=" + apiKey + "\\n\\n" +
-        "# Store a memory directly\\n" +
-        "deno run -A cli.ts store --type=env --content='Next port 3000' --key=" + apiKey;
-    }
+          await this.loadMemories();
+          await this.loadTasks();
+        },
 
-    function copyMobileUrl() {
-      const field = document.getElementById('mobileConnectorUrlField');
-      navigator.clipboard.writeText(field.value);
-      showToast('تم نسخ رابط الموبايل الموحد! ضعه في تطبيق الدردشة مباشرة 📱✨');
-    }
+        switchTab(tab) {
+          this.activeTab = tab;
+          if (tab === 'memories') this.loadMemories();
+          if (tab === 'tasks') this.loadTasks();
+          if (tab === 'context') this.loadLogs();
+          if (tab === 'vault') this.loadVaultKeys();
+          if (tab === 'admin') this.loadAdminStats();
+        },
 
-    function copyOpenApiUrl() {
-      const field = document.getElementById('openApiUrlField');
-      navigator.clipboard.writeText(field.value);
-      showToast('تم نسخ رابط OpenAPI! الصقه في خانة Actions في ChatGPT 🤖');
-    }
+        // --- AUTH ---
+        async fetchMe() {
+          try {
+            const res = await fetch('/api/auth/me', {
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.currentUser = data.user;
+            } else {
+              this.logout();
+            }
+          } catch (_e) {}
+        },
 
-    function copyApiKey() {
-      const field = document.getElementById('myApiKeyField');
-      navigator.clipboard.writeText(field.value);
-      showToast('تم نسخ مفتاح API بنجاح! 📋');
-    }
+        openAuthModal(mode = 'login') {
+          this.authMode = mode;
+          this.modals.auth = true;
+        },
 
-    function logout() {
-      authToken = '';
-      currentUser = null;
-      localStorage.removeItem('mz_token');
-      updateAuthUI(null);
-      loadMemories();
-      showToast('تم تسجيل الخروج');
-    }
+        async submitAuth() {
+          const endpoint = this.authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+          const payload = this.authMode === 'register'
+            ? { username: this.authForm.username, email: this.authForm.identifier, password: this.authForm.password }
+            : { identifier: this.authForm.identifier, password: this.authForm.password };
 
-    // Tabs
-    function switchTab(tabId) {
-      const tabs = ['memories', 'agent', 'vault', 'connect', 'admin'];
-      tabs.forEach(t => {
-        const el = document.getElementById('tab-' + t);
-        if (el) el.style.display = (t === tabId) ? 'block' : 'none';
-      });
-
-      document.querySelectorAll('.tab-item').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      event.currentTarget.classList.add('active');
-
-      if (tabId === 'vault') loadVaultKeys();
-      if (tabId === 'admin') loadAdminStats();
-    }
-
-    // Load Memories
-    async function loadMemories(query = '') {
-      const grid = document.getElementById('memoriesGrid');
-      if (!authToken) {
-        grid.innerHTML = \`
-          <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px;">
-            <div style="font-size: 40px; margin-bottom: 12px;">🔐</div>
-            <h3 style="color:#fff; margin-bottom: 8px;">يرجى تسجيل الدخول أو إنشاء حساب</h3>
-            <p style="color:var(--text-muted); margin-bottom: 16px;">لكي تتمكن من استعراض ذكرياتك الحية وحفظها واستدعائها عبر النماذج الذكية.</p>
-            <button class="nav-btn btn-primary" onclick="openAuthModal()">دخول / تسجيل الآن</button>
-          </div>
-        \`;
-        return;
-      }
-
-      let url = '/api/memories/recall';
-      const params = new URLSearchParams();
-      if (query) params.append('query', query);
-      if (currentFilter !== 'all') params.append('type', currentFilter);
-      url += '?' + params.toString();
-
-      try {
-        const res = await fetch(url, {
-          headers: { 'Authorization': 'Bearer ' + authToken }
-        });
-        const data = await res.json();
-        const memories = data.memories || [];
-
-        // Update stats
-        document.getElementById('statTotalMemories').innerText = memories.length;
-        document.getElementById('statEnvPrefs').innerText = memories.filter(m => m.type === 'env' || m.type === 'preference').length;
-        document.getElementById('statSkills').innerText = memories.filter(m => m.type === 'skill').length;
-
-        if (memories.length === 0) {
-          grid.innerHTML = \`
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-              لا توجد ذكريات مطابقة حالياً. أضف ذاكرتك الأولى لتبدأ!
-            </div>
-          \`;
-          return;
-        }
-
-        grid.innerHTML = memories.map(m => renderMemoryCard(m)).join('');
-      } catch (err) {
-        console.error(err);
-        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--rose);">حدث خطأ أثناء تحميل البيانات</div>';
-      }
-    }
-
-    function renderMemoryCard(m) {
-      const badgeClass = 'badge-' + m.type;
-      const typeLabel = {
-        'env': 'بيئة عمل (Env)',
-        'preference': 'تفضيل (Preference)',
-        'skill': 'مهارة (Skill)',
-        'note': 'ملاحظة (Note)'
-      }[m.type] || m.type;
-
-      const dateStr = new Date(m.created_at * 1000).toLocaleDateString('ar-EG');
-      const scoreStr = m.recall_score ? parseFloat(m.recall_score).toFixed(2) : '0';
-
-      return \`
-        <div class="memory-card">
-          <div>
-            <div class="memory-header">
-              <span class="badge \${badgeClass}">\${typeLabel}</span>
-              <div class="recall-badge">
-                <span>🔥 \${m.recall_count || 0} استدعاء</span>
-                <span>⚡ \${scoreStr}</span>
-              </div>
-            </div>
-            \${m.title ? \`<div class="memory-title">\${escapeHtml(m.title)}</div>\` : ''}
-            <div class="memory-content">\${escapeHtml(m.content)}</div>
-          </div>
-
-          <div>
-            \${m.links && m.links.length > 0 ? \`
-              <div style="margin-bottom: 12px; display:flex; flex-wrap:wrap; gap:4px;">
-                \${m.links.map(l => \`<span style="font-size:11px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; color:var(--primary);">🔗 \${l.relation_type}: \${escapeHtml(l.target_title || l.target_hash.substring(0,8))}</span>\`).join('')}
-              </div>
-            \` : ''}
-
-            <div class="memory-footer">
-              <span>\${dateStr}</span>
-              <div class="card-actions">
-                <button class="action-icon-btn" title="تعديل الذاكرة" onclick="editMemory('\${m.hash}', '\${escapeAttr(m.title || '')}', '\${escapeAttr(m.content)}', '\${m.type}')">✏️</button>
-                <button class="action-icon-btn" title="حذف" onclick="deleteMemory('\${m.hash}')">🗑️</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      \`;
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    function escapeAttr(str) {
-      if (!str) return '';
-      return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    // Search & Filter
-    let searchTimeout;
-    function handleSearch(e) {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        loadMemories(e.target.value.trim());
-      }, 250);
-    }
-
-    function filterType(type, btn) {
-      currentFilter = type;
-      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadMemories(document.getElementById('searchInput').value.trim());
-    }
-
-    // Memory Modals & Actions
-    function openNewMemoryModal() {
-      document.getElementById('memoryModalTitle').innerText = 'إضافة ذرة ذاكرة جديدة';
-      document.getElementById('editMemoryHash').value = '';
-      document.getElementById('memoryTitle').value = '';
-      document.getElementById('memoryContent').value = '';
-      document.getElementById('memoryModal').classList.add('active');
-    }
-
-    function editMemory(hash, title, content, type) {
-      document.getElementById('memoryModalTitle').innerText = 'تعديل الذاكرة';
-      document.getElementById('editMemoryHash').value = hash;
-      document.getElementById('memoryTitle').value = title;
-      document.getElementById('memoryContent').value = content;
-      document.getElementById('memoryType').value = type;
-      document.getElementById('memoryModal').classList.add('active');
-    }
-
-    function closeMemoryModal() {
-      document.getElementById('memoryModal').classList.remove('active');
-    }
-
-    async function handleSaveMemory(e) {
-      e.preventDefault();
-      const hash = document.getElementById('editMemoryHash').value;
-      const type = document.getElementById('memoryType').value;
-      const title = document.getElementById('memoryTitle').value.trim();
-      const content = document.getElementById('memoryContent').value.trim();
-
-      try {
-        let res;
-        if (hash) {
-          res = await fetch('/api/memories/' + hash, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + authToken
-            },
-            body: JSON.stringify({ title, content })
-          });
-        } else {
-          res = await fetch('/api/memories', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + authToken
-            },
-            body: JSON.stringify({ type, title, content })
-          });
-        }
-
-        if (res.ok) {
-          closeMemoryModal();
-          showToast(hash ? 'تم تعديل الذاكرة بنجاح' : 'تم حفظ الذاكرة وتوليد التضمين 768-dim ✨');
-          loadMemories();
-        } else {
-          const err = await res.json();
-          alert(err.error || 'حدث خطأ');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function deleteMemory(hash) {
-      if (!confirm('هل أنت متأكد من حذف هذه الذاكرة؟')) return;
-      try {
-        const res = await fetch('/api/memories/' + hash, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + authToken }
-        });
-        if (res.ok) {
-          showToast('تم حذف الذاكرة بنجاح');
-          loadMemories();
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Vault
-    async function loadVaultKeys() {
-      const grid = document.getElementById('vaultGrid');
-      if (!authToken) return;
-
-      try {
-        const res = await fetch('/api/vault', {
-          headers: { 'Authorization': 'Bearer ' + authToken }
-        });
-        const data = await res.json();
-        const keys = data.keys || [];
-        document.getElementById('statVault').innerText = keys.length;
-
-        if (keys.length === 0) {
-          grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:30px;">الخزنة فارغة حالياً. أضف مفاتيحك السرية لتخزينها بأمان تام.</div>';
-          return;
-        }
-
-        grid.innerHTML = keys.map(k => \`
-          <div class="memory-card" style="border-color: rgba(244,63,94,0.3);">
-            <div>
-              <div class="memory-header">
-                <span class="badge" style="background:rgba(244,63,94,0.15); color:#fb7185;">🔐 سر مشفر (AES-GCM)</span>
-                <span style="font-size:11px; color:var(--text-muted);">\${new Date(k.created_at * 1000).toLocaleDateString('ar-EG')}</span>
-              </div>
-              <div class="memory-title mono" style="color:#fda4af;">\${escapeHtml(k.key_name)}</div>
-              <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">محتوى مشفر بمعيار Zero-Knowledge. لا يمكن قراءته إلا بكلمة المرور.</div>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
-              <button class="nav-btn btn-secondary" style="font-size:12px; padding:6px 12px;" onclick="openDecryptModal('\${escapeAttr(k.key_name)}')">فك التشفير 🔓</button>
-              <button class="action-icon-btn" onclick="deleteVaultKey('\${escapeAttr(k.key_name)}')">🗑️</button>
-            </div>
-          </div>
-        \`).join('');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function openNewVaultModal() {
-      document.getElementById('vaultKeyName').value = '';
-      document.getElementById('vaultSecretValue').value = '';
-      document.getElementById('vaultPassphrase').value = '';
-      document.getElementById('vaultModal').classList.add('active');
-    }
-
-    function closeVaultModal() {
-      document.getElementById('vaultModal').classList.remove('active');
-    }
-
-    async function handleSaveVault(e) {
-      e.preventDefault();
-      const key_name = document.getElementById('vaultKeyName').value.trim();
-      const secret_value = document.getElementById('vaultSecretValue').value;
-      const passphrase = document.getElementById('vaultPassphrase').value;
-
-      try {
-        const res = await fetch('/api/vault', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authToken
-          },
-          body: JSON.stringify({ key_name, secret_value, passphrase })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          closeVaultModal();
-          showToast('تم تشفير المفتاح وتخزينه في الخزنة! 🔒');
-          if (data.recoveryKey) {
-            alert('⚠️ تنبيه هام: هذا هو مفتاح الاسترداد الخاص بك (يظهر مرة واحدة فقط):\\n\\n' + data.recoveryKey + '\\n\\nاحتفظ به في مكان آمن!');
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok) {
+              this.authToken = data.token;
+              this.currentUser = data.user;
+              localStorage.setItem('mz_token', this.authToken);
+              this.modals.auth = false;
+              this.showToast('مرحباً بك ' + this.currentUser.username + ' 👋');
+              this.loadMemories();
+              this.loadTasks();
+            } else {
+              alert(data.error || 'فشلت عملية المصادقة');
+            }
+          } catch (err) {
+            alert(err.message);
           }
-          loadVaultKeys();
-        } else {
-          alert(data.error || 'فشل التخزين');
+        },
+
+        logout() {
+          this.authToken = '';
+          this.currentUser = null;
+          localStorage.removeItem('mz_token');
+          this.showToast('تم تسجيل الخروج');
+        },
+
+        // --- MEMORIES ---
+        async loadMemories() {
+          this.loadingMemories = true;
+          try {
+            const url = this.memoryQuery
+              ? '/api/memories/recall?query=' + encodeURIComponent(this.memoryQuery)
+              : '/api/memories';
+            const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
+            const res = await fetch(url, { headers });
+            if (res.ok) {
+              const data = await res.json();
+              this.memories = data.memories || [];
+              this.totalMemories = this.memories.length;
+            }
+          } catch (_e) {}
+          this.loadingMemories = false;
+        },
+
+        searchMemories() {
+          this.loadMemories();
+        },
+
+        setMemoryFilter(type) {
+          this.memoryFilter = type;
+        },
+
+        get filteredMemories() {
+          if (this.memoryFilter === 'all') return this.memories;
+          return this.memories.filter(m => m.type === this.memoryFilter);
+        },
+
+        openMemoryModal() {
+          this.formMemory = { type: 'preference', title: '', content: '' };
+          this.modals.memory = true;
+        },
+
+        async saveMemory() {
+          if (!this.authToken) return this.openAuthModal();
+          try {
+            const res = await fetch('/api/memories', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify(this.formMemory)
+            });
+            if (res.ok) {
+              this.modals.memory = false;
+              this.showToast('تم حفظ ذرة الذاكرة بنجاح ⚡');
+              this.loadMemories();
+            } else {
+              const d = await res.json();
+              alert(d.error);
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        async deleteMemory(hash) {
+          if (!confirm('هل تريد حذف هذه الذاكرة؟')) return;
+          try {
+            const res = await fetch('/api/memories/' + hash, {
+              method: 'DELETE',
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              this.showToast('تم حذف الذاكرة');
+              this.loadMemories();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        // --- TASKS ---
+        async loadTasks() {
+          this.loadingTasks = true;
+          try {
+            const url = '/api/tasks?format=tree' + (this.taskStatusFilter ? '&status=' + this.taskStatusFilter : '');
+            const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
+            const res = await fetch(url, { headers });
+            if (res.ok) {
+              const data = await res.json();
+              this.taskTree = data.tree || [];
+              this.taskAsciiPreview = data.ascii || '';
+              
+              // Count total tasks
+              const flatRes = await fetch('/api/tasks', { headers });
+              const flatData = await flatRes.json();
+              this.tasks = flatData.tasks || [];
+              this.tasksCount = this.tasks.filter(t => !this.isTaskDone(t.status)).length;
+            }
+          } catch (_e) {}
+          this.loadingTasks = false;
+        },
+
+        isTaskDone(status) {
+          return status && (status.toLowerCase() === 'done' || status.toLowerCase() === 'completed');
+        },
+
+        getTaskBadgeClass(status) {
+          if (this.isTaskDone(status)) return 'badge-success text-success-content';
+          if (status === 'in_progress') return 'badge-info text-info-content';
+          if (status === 'blocked') return 'badge-error text-error-content';
+          return 'badge-ghost';
+        },
+
+        openTaskModal(parentId = '') {
+          this.formTask = { parent_id: parentId, title: '', status: 'todo', priority: 'medium', assignee: '', description: '' };
+          this.modals.task = true;
+        },
+
+        async saveTask() {
+          if (!this.authToken) return this.openAuthModal();
+          try {
+            const res = await fetch('/api/tasks', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify(this.formTask)
+            });
+            if (res.ok) {
+              this.modals.task = false;
+              this.showToast('تمت إضافة المهمة بنجاح 📋');
+              this.loadTasks();
+            } else {
+              const d = await res.json();
+              alert(d.error);
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        async toggleTaskStatus(task) {
+          const next = this.isTaskDone(task.status) ? 'todo' : 'done';
+          try {
+            const res = await fetch('/api/tasks/' + task.id, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify({ status: next })
+            });
+            if (res.ok) {
+              this.showToast(next === 'done' ? 'أحسنت! تم إكمال المهمة ✓' : 'تمت إعادة فتح المهمة ⏳');
+              this.loadTasks();
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        },
+
+        async deleteTask(id) {
+          if (!confirm('هل تريد حذف هذه المهمة وفروعها؟')) return;
+          try {
+            const res = await fetch('/api/tasks/' + id + '?cascade=true', {
+              method: 'DELETE',
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              this.showToast('تم حذف المهمة');
+              this.loadTasks();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        // --- CONTEXT PACK & LOGS ---
+        async generateContextPack() {
+          this.loadingContext = true;
+          try {
+            const res = await fetch('/api/context/pack', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify({
+                query: this.contextQuery,
+                format: this.contextFormat,
+                token_budget: parseInt(this.contextBudget, 10) || 1200,
+                include_tasks: true,
+                include_logs: true
+              })
+            });
+            if (res.ok) {
+              const d = await res.json();
+              this.contextResult = d.content;
+              this.contextStats = 'تقدير التوكن: ~' + d.estimatedTokens + 't | ذكريات: ' + d.memoryCount + ' | مهام: ' + d.taskCount + ' | سجلات: ' + d.logCount;
+            }
+          } catch (err) {
+            this.contextResult = 'خطأ: ' + err.message;
+          }
+          this.loadingContext = false;
+        },
+
+        async loadLogs() {
+          try {
+            const res = await fetch('/api/logs?limit=30', {
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              const d = await res.json();
+              this.logsList = d.logs || [];
+            }
+          } catch (_e) {}
+        },
+
+        async appendQuickLog() {
+          if (!this.quickLogMessage.trim()) return;
+          try {
+            const res = await fetch('/api/logs', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify({ message: this.quickLogMessage.trim(), source: 'dashboard', level: 'info' })
+            });
+            if (res.ok) {
+              this.quickLogMessage = '';
+              this.showToast('تم حفظ السجل المؤقت');
+              this.loadLogs();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        // --- SIMULATOR ---
+        async runSimulator() {
+          if (!this.simulatorQuery.trim()) return;
+          this.loadingSimulator = true;
+          try {
+            const res = await fetch('/api/memories/recall', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify({ query: this.simulatorQuery, limit: 4 })
+            });
+            if (res.ok) {
+              const d = await res.json();
+              this.simulatorResults = d.memories || [];
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+          this.loadingSimulator = false;
+        },
+
+        // --- VAULT ---
+        async loadVaultKeys() {
+          this.loadingVault = true;
+          try {
+            const res = await fetch('/api/vault', {
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              const d = await res.json();
+              this.vaultKeys = d.keys || [];
+            }
+          } catch (_e) {}
+          this.loadingVault = false;
+        },
+
+        openVaultModal() {
+          this.formVault = { key_name: '', secret_value: '', passphrase: '' };
+          this.modals.vault = true;
+        },
+
+        async saveVaultSecret() {
+          if (!this.authToken) return this.openAuthModal();
+          try {
+            const res = await fetch('/api/vault', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify(this.formVault)
+            });
+            if (res.ok) {
+              this.modals.vault = false;
+              this.showToast('تم تشفير السر في الخزنة 🔐');
+              this.loadVaultKeys();
+            } else {
+              const d = await res.json();
+              alert(d.error);
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        openDecryptModal(keyName) {
+          this.decryptKeyName = keyName;
+          this.decryptPassphrase = '';
+          this.decryptedResult = '';
+          this.modals.decrypt = true;
+        },
+
+        async retrieveVaultSecret() {
+          try {
+            const res = await fetch('/api/vault/retrieve', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify({ key_name: this.decryptKeyName, passphrase: this.decryptPassphrase })
+            });
+            const d = await res.json();
+            if (res.ok) {
+              this.decryptedResult = d.secret_value;
+              this.showToast('تم فك التشفير بنجاح 🔓');
+            } else {
+              alert(d.error || 'كلمة المرور غير صحيحة');
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        async deleteVaultKey(keyName) {
+          if (!confirm('هل تريد حذف المفتاح المشفر: ' + keyName + '؟')) return;
+          try {
+            const res = await fetch('/api/vault/' + encodeURIComponent(keyName), {
+              method: 'DELETE',
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              this.showToast('تم حذف المفتاح من الخزنة');
+              this.loadVaultKeys();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        // --- CONNECT URLS ---
+        getDirectMcpUrl() {
+          const origin = window.location.origin;
+          const key = this.currentUser?.api_key || 'YOUR_TOKEN';
+          return origin + '/mcp?token=' + key;
+        },
+
+        getOpenApiUrl() {
+          const origin = window.location.origin;
+          const key = this.currentUser?.api_key || 'YOUR_TOKEN';
+          return origin + '/openapi.json?token=' + key;
+        },
+
+        copyDirectMcpUrl() {
+          this.copyText(this.getDirectMcpUrl());
+        },
+
+        // --- ADMIN ---
+        async loadAdminStats() {
+          try {
+            const res = await fetch('/api/admin/stats', {
+              headers: { 'Authorization': 'Bearer ' + this.authToken }
+            });
+            if (res.ok) {
+              this.adminStats = await res.json();
+            }
+          } catch (_e) {}
+        },
+
+        // Utilities
+        formatDate(ts) {
+          if (!ts) return '';
+          return new Date(ts * 1000).toLocaleDateString('ar-EG');
+        },
+
+        formatTime(ts) {
+          if (!ts) return '';
+          return new Date(ts * 1000).toLocaleTimeString();
         }
-      } catch (err) {
-        console.error(err);
       }
     }
-
-    function openDecryptModal(keyName) {
-      document.getElementById('decryptTargetKeyName').value = keyName;
-      document.getElementById('decryptKeyLabel').innerText = 'المفتاح: ' + keyName;
-      document.getElementById('decryptPassphraseInput').value = '';
-      document.getElementById('decryptedResultBox').style.display = 'none';
-      document.getElementById('decryptModal').classList.add('active');
-    }
-
-    function closeDecryptModal() {
-      document.getElementById('decryptModal').classList.remove('active');
-    }
-
-    async function handleDecryptVault(e) {
-      e.preventDefault();
-      const key_name = document.getElementById('decryptTargetKeyName').value;
-      const passphrase = document.getElementById('decryptPassphraseInput').value;
-
-      try {
-        const res = await fetch('/api/vault/retrieve', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authToken
-          },
-          body: JSON.stringify({ key_name, passphrase })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById('decryptedResultBox').style.display = 'block';
-          document.getElementById('decryptedResultText').innerText = data.secret_value;
-          showToast('تم فك التشفير في الذاكرة الحية 🔓');
-        } else {
-          alert(data.error || 'فشل فك التشفير: كلمة مرور غير صحيحة');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function deleteVaultKey(keyName) {
-      if (!confirm('هل تريد حذف المفتاح ' + keyName + ' نهائياً؟')) return;
-      try {
-        const res = await fetch('/api/vault/' + encodeURIComponent(keyName), {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + authToken }
-        });
-        if (res.ok) {
-          showToast('تم حذف المفتاح من الخزنة');
-          loadVaultKeys();
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Agent Simulator
-    async function simulateAgentRecall() {
-      const input = document.getElementById('agentPromptInput');
-      const query = input.value.trim();
-      if (!query) return;
-
-      const term = document.getElementById('agentTerminal');
-      term.innerHTML += \`<div class="terminal-line t-amber">&gt; Agent Request: "\${escapeHtml(query)}"</div>\`;
-      term.innerHTML += \`<div class="terminal-line t-muted">&gt; Computing Gemini 768-dim query embedding & querying Turso vector space...</div>\`;
-
-      try {
-        const res = await fetch('/api/memories/recall', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authToken
-          },
-          body: JSON.stringify({ query, limit: 3 })
-        });
-        const data = await res.json();
-        const hits = data.memories || [];
-
-        if (hits.length === 0) {
-          term.innerHTML += \`<div class="terminal-line t-rose">&gt; [MCP Recall] No matching memories found in substrate.</div>\`;
-        } else {
-          term.innerHTML += \`<div class="terminal-line t-green">&gt; [MCP Recall] Found \${hits.length} memory node(s):</div>\`;
-          hits.forEach((h, i) => {
-            term.innerHTML += \`<div class="terminal-line t-cyan">  #\${i+1} [\${h.type.toUpperCase()}] \${escapeHtml(h.title || h.hash.substring(0,8))} (Similarity: \${h.score || '1.0'}, Recall Count: \${h.recall_count})</div>\`;
-            term.innerHTML += \`<div class="terminal-line" style="color:#e2e8f0; margin-left: 20px;">    "\${escapeHtml(h.content)}"</div>\`;
-          });
-          term.innerHTML += \`<div class="terminal-line t-purple">&gt; Automatically reinforced decay scores and bumped recall counts in Turso!</div>\`;
-        }
-        term.scrollTop = term.scrollHeight;
-      } catch (err) {
-        term.innerHTML += \`<div class="terminal-line t-rose">&gt; Error: \${err.message}</div>\`;
-      }
-    }
-
-    // Admin Dashboard
-    async function loadAdminStats() {
-      try {
-        const res = await fetch('/api/admin/stats', {
-          headers: { 'Authorization': 'Bearer ' + authToken }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-
-        // Overview
-        document.getElementById('adminStatsOverview').innerHTML = \`
-          <div class="stat-card">
-            <div class="stat-title">إجمالي المستخدمين المسجلين</div>
-            <div class="stat-value">\${data.totalUsers}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">إجمالي الذكريات بالنظام</div>
-            <div class="stat-value">\${data.totalMemories}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-title">إجمالي أسرار الخزنات</div>
-            <div class="stat-value">\${data.totalVaultSecrets}</div>
-          </div>
-        \`;
-
-        // Users table
-        const tbody = document.getElementById('adminUsersTableBody');
-        tbody.innerHTML = (data.users || []).map(u => \`
-          <tr>
-            <td class="mono">\${u.id.substring(0,8)}...</td>
-            <td><strong>\${escapeHtml(u.username)}</strong></td>
-            <td>\${escapeHtml(u.email)}</td>
-            <td><span class="badge" style="background:\${u.role === 'admin' ? 'rgba(168,85,247,0.2)' : 'rgba(56,189,248,0.2)'}; color:#fff;">\${u.role}</span></td>
-            <td>\${u.memory_count}</td>
-            <td>\${new Date(u.created_at * 1000).toLocaleDateString('ar-EG')}</td>
-          </tr>
-        \`).join('');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Auth Modals & Handlers
-    function openAuthModal() {
-      document.getElementById('authModal').classList.add('active');
-    }
-    function closeAuthModal() {
-      document.getElementById('authModal').classList.remove('active');
-    }
-
-    function setAuthMode(mode) {
-      authMode = mode;
-      document.getElementById('authTabLogin').classList.toggle('active', mode === 'login');
-      document.getElementById('authTabRegister').classList.toggle('active', mode === 'register');
-      document.getElementById('authUsernameGroup').style.display = (mode === 'register') ? 'block' : 'none';
-      document.getElementById('authModalTitle').innerText = (mode === 'register') ? 'إنشاء حساب جديد في MemoryZ' : 'تسجيل الدخول إلى MemoryZ';
-      document.getElementById('authSubmitBtn').innerText = (mode === 'register') ? 'تسجيل الحساب' : 'دخول';
-    }
-
-    async function handleAuthSubmit(e) {
-      e.preventDefault();
-      const emailOrUser = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-      const username = document.getElementById('authUsername').value.trim();
-
-      const endpoint = (authMode === 'register') ? '/api/auth/register' : '/api/auth/login';
-      const body = (authMode === 'register') 
-        ? { username, email: emailOrUser, password }
-        : { identifier: emailOrUser, password };
-
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          authToken = data.token;
-          currentUser = data.user;
-          localStorage.setItem('mz_token', authToken);
-          closeAuthModal();
-          updateAuthUI(currentUser);
-          loadMemories();
-          showToast('مرحباً بك يا ' + currentUser.username + '! 🚀');
-        } else {
-          alert(data.error || 'فشلت العملية');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Auto-init on load
-    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>`;

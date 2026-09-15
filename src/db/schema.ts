@@ -99,5 +99,58 @@ export async function initDb(): Promise<void> {
   `);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_logs(created_at DESC);`);
 
-  console.log("MemoryZ Database schema initialized successfully on Turso Cloud.");
+  // 7. Hierarchical Multi-Agent Tasks & TODOs
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      parent_id TEXT,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'todo',
+      priority TEXT DEFAULT 'medium',
+      assignee TEXT,
+      metadata TEXT DEFAULT '{}',
+      order_index INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      completed_at INTEGER
+    );
+  `);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON tasks(user_id, status);`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_id);`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_user_order ON tasks(user_id, order_index ASC, created_at DESC);`);
+
+  // 8. Ephemeral Agent Logs & Telemetry
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      level TEXT DEFAULT 'info',
+      source TEXT DEFAULT 'agent',
+      message TEXT NOT NULL,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL
+    );
+  `);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_logs_user_created ON logs(user_id, created_at DESC);`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_logs_source ON logs(user_id, source);`);
+
+  // 9. Context Snapshots & Working Memory Packs
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS context_snapshots (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      content TEXT NOT NULL,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_context_user_name ON context_snapshots(user_id, name);`);
+
+  console.log("MemoryZ v2 Database schema initialized successfully on Turso Cloud.");
 }
+
