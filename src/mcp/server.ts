@@ -29,8 +29,57 @@ export const MCP_TOOLS = [
           type: "object",
           description: "Optional key-value metadata (e.g. tools, ports, tags, URLs)",
         },
+        namespace: {
+          type: "string",
+          description: "Optional project/namespace for isolation (default: 'default')",
+        },
+        agent_id: {
+          type: "string",
+          description: "Optional identifier of the agent writing this memory (for provenance)",
+        },
+        source: {
+          type: "string",
+          description: "Optional origin of this memory (e.g. 'human', 'claude', 'cursor-agent')",
+        },
       },
       required: ["type", "content"],
+    },
+  },
+  {
+    name: "get_memory",
+    description: "Fetch one or more memories by their exact hash, optionally including their linked knowledge-graph neighbors. Use this to resolve a hash another agent referenced in a note or task.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        hash: { type: "string", description: "Exact hash of the memory to fetch" },
+        hashes: { type: "array", items: { type: "string" }, description: "Multiple exact hashes to fetch in one call" },
+        include_links: { type: "boolean", description: "Include linked graph neighbors (default: false)" },
+      },
+    },
+  },
+  {
+    name: "memory_update",
+    description: "Update the content, title, or metadata of an existing memory by hash. Re-embeds the content automatically.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        hash: { type: "string", description: "Exact hash of the memory to update" },
+        content: { type: "string", description: "New content to replace the memory with" },
+        title: { type: "string", description: "Optional updated title" },
+        metadata: { type: "object", description: "Optional updated metadata (replaces existing)" },
+      },
+      required: ["hash", "content"],
+    },
+  },
+  {
+    name: "memory_delete",
+    description: "Soft-delete a memory by hash. The memory is excluded from future recall but not physically erased.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        hash: { type: "string", description: "Exact hash of the memory to delete" },
+      },
+      required: ["hash"],
     },
   },
   {
@@ -56,6 +105,10 @@ export const MCP_TOOLS = [
           type: "string",
           enum: ["compact", "summary", "full"],
           description: "Output format: 'compact' (one-liners, saves tokens), 'summary' (bullet points), or 'full' (complete JSON)",
+        },
+        namespace: {
+          type: "string",
+          description: "Optional project/namespace filter (default: 'default')",
         },
       },
     },
@@ -92,6 +145,7 @@ export const MCP_TOOLS = [
         priority: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "Task priority (default: 'medium')" },
         assignee: { type: "string", description: "Agent or user assigned to this task (e.g. 'claude', 'cursor', 'architect')" },
         metadata: { type: "object", description: "Optional key-value metadata or custom tags" },
+        namespace: { type: "string", description: "Optional project/namespace for isolation (default: 'default')" },
       },
       required: ["title"],
     },
@@ -127,7 +181,21 @@ export const MCP_TOOLS = [
           enum: ["tree", "compact", "json"],
           description: "Format: 'tree' (token-efficient ASCII hierarchy), 'compact' (one-liners), or 'json' (raw objects)",
         },
+        namespace: { type: "string", description: "Optional project/namespace filter (default: 'default')" },
       },
+    },
+  },
+  {
+    name: "task_claim",
+    description: "Atomically claim a task for an agent, preventing two agents from working the same task simultaneously. Fails if another agent already holds the claim.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "ID of the task to claim" },
+        agent_id: { type: "string", description: "Identifier of the claiming agent (e.g. 'claude', 'cursor', 'architect')" },
+        release: { type: "boolean", description: "Set true to release this agent's own claim instead of claiming" },
+      },
+      required: ["id", "agent_id"],
     },
   },
   {
@@ -266,13 +334,14 @@ export class McpServer {
           },
           serverInfo: {
             name: "MemoryZ",
-            version: "2.0.0",
+            version: "3.0.0",
           },
           instructions:
-            "MemoryZ v2 is a sovereign agentic memory & hierarchical task substrate. " +
-            "Use 'task_create', 'task_list', and 'task_update' to manage hierarchical multi-agent tasks. " +
-            "Use 'recall_memory' (with format: 'compact') or 'context_pack' for token-efficient retrieval. " +
-            "Use 'store_memory' to remember long-term rules, and 'log_store' for ephemeral traces. " +
+            "MemoryZ v3 is a sovereign agentic memory & hierarchical multi-agent task substrate. " +
+            "Use 'task_create', 'task_list', 'task_update', and 'task_claim' to manage hierarchical multi-agent tasks without duplicate work. " +
+            "Use 'recall_memory' (with format: 'compact'), 'get_memory' (exact hash lookup), or 'context_pack' for token-efficient retrieval. " +
+            "Use 'store_memory' to remember long-term rules (optionally with 'namespace' for project isolation and 'agent_id'/'source' for provenance), " +
+            "'memory_update'/'memory_delete' to correct or remove memories, and 'log_store' for ephemeral traces. " +
             "Use 'vault_store' and 'vault_retrieve' for encrypted credentials.",
         },
       };
@@ -345,14 +414,49 @@ export class McpServer {
           content: args.content,
           title: args.title,
           metadata: args.metadata,
+          namespace: args.namespace,
+          agentId: args.agent_id,
+          source: args.source,
         });
         return {
           status: "stored",
           hash: node.hash,
           type: node.type,
           title: node.title,
+          namespace: node.namespace,
           message: `Memory stored successfully with 768-dim embedding.`,
         };
+      }
+
+      case "get_memory": {
+        const hashes: string[] = args.hashes && Array.isArray(args.hashes) ? args.hashes : args.hash ? [args.hash] : [];
+        if (hashes.length === 0) throw new Error("Provide 'hash' or 'hashes'");
+        const memories = await MemoryService.getByHash(userId, hashes, args.include_links === true);
+        return {
+          count: memories.length,
+          memories: memories.map((m) => ({
+            hash: m.hash,
+            type: m.type,
+            title: m.title,
+            content: m.content,
+            metadata: m.metadata,
+            namespace: m.namespace,
+            agent_id: m.agent_id,
+            source: m.source,
+            links: m.links,
+          })),
+        };
+      }
+
+      case "memory_update": {
+        const ok = await MemoryService.updateMemory(userId, args.hash, args.content, args.title, args.metadata);
+        if (!ok) throw new Error(`Memory '${args.hash}' not found`);
+        return { status: "updated", hash: args.hash };
+      }
+
+      case "memory_delete": {
+        const ok = await MemoryService.deleteMemory(userId, args.hash);
+        return { status: ok ? "deleted" : "not_found", hash: args.hash };
       }
 
       case "recall_memory": {
@@ -362,6 +466,7 @@ export class McpServer {
           query: args.query,
           type: args.type as MemoryType,
           limit: args.limit ? parseInt(args.limit, 10) : 5,
+          namespace: args.namespace,
         });
 
         if (format === "compact") {
@@ -421,6 +526,7 @@ export class McpServer {
           priority: args.priority as TaskPriority,
           assignee: args.assignee,
           metadata: args.metadata,
+          namespace: args.namespace,
         });
         return {
           status: "created",
@@ -429,6 +535,7 @@ export class McpServer {
           task_status: task.status,
           parent_id: task.parent_id,
           assignee: task.assignee,
+          namespace: task.namespace,
         };
       }
 
@@ -450,7 +557,7 @@ export class McpServer {
       case "task_list": {
         const format = args.format || "tree";
         if (format === "tree") {
-          const tree = await TaskService.getTree(userId, { status: args.status });
+          const tree = await TaskService.getTree(userId, { status: args.status, namespace: args.namespace });
           const ascii = TaskService.formatTreeAscii(tree);
           return {
             tree: ascii || "(No tasks found)",
@@ -462,6 +569,7 @@ export class McpServer {
           status: args.status,
           parentId: args.parent_id,
           assignee: args.assignee,
+          namespace: args.namespace,
         });
 
         if (format === "compact") {
@@ -472,6 +580,28 @@ export class McpServer {
         }
 
         return { count: tasks.length, tasks };
+      }
+
+      case "task_claim": {
+        if (args.release === true) {
+          const released = await TaskService.release(userId, args.id, args.agent_id);
+          return { status: released ? "released" : "not_claimed_by_you", task_id: args.id };
+        }
+        const result = await TaskService.claim(userId, args.id, args.agent_id);
+        if (!result.success) {
+          return {
+            status: "claim_failed",
+            reason: result.reason,
+            task_id: args.id,
+            locked_by: result.task?.locked_by ?? null,
+          };
+        }
+        return {
+          status: "claimed",
+          task_id: args.id,
+          agent_id: args.agent_id,
+          task: result.task,
+        };
       }
 
       case "task_delete": {

@@ -12,6 +12,9 @@ export interface TaskItem {
   priority: TaskPriority;
   assignee: string | null;
   metadata: Record<string, unknown>;
+  namespace: string;
+  locked_by: string | null;
+  locked_at: number | null;
   order_index: number;
   created_at: number;
   updated_at: number;
@@ -32,6 +35,7 @@ export interface CreateTaskParams {
   assignee?: string;
   metadata?: Record<string, unknown>;
   orderIndex?: number;
+  namespace?: string;
 }
 
 export interface UpdateTaskParams {
@@ -49,6 +53,7 @@ export interface TaskFilterParams {
   status?: string;
   parentId?: string | null;
   assignee?: string;
+  namespace?: string;
   limit?: number;
 }
 
@@ -80,6 +85,7 @@ export class TaskService {
     const metadataStr = JSON.stringify(params.metadata || {});
     const orderIndex = typeof params.orderIndex === "number" ? params.orderIndex : 0;
     const completedAt = status.toLowerCase() === "done" || status.toLowerCase() === "completed" ? now : null;
+    const namespace = params.namespace?.trim() || "default";
 
     // Verify parent exists if given
     if (parentId) {
@@ -96,9 +102,9 @@ export class TaskService {
       sql: `
         INSERT INTO tasks (
           id, user_id, parent_id, title, description,
-          status, priority, assignee, metadata, order_index,
+          status, priority, assignee, metadata, namespace, order_index,
           created_at, updated_at, completed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       `,
       args: [
         id,
@@ -110,6 +116,7 @@ export class TaskService {
         priority,
         assignee,
         metadataStr,
+        namespace,
         orderIndex,
         now,
         now,
@@ -127,6 +134,9 @@ export class TaskService {
       priority,
       assignee,
       metadata: params.metadata || {},
+      namespace,
+      locked_by: null,
+      locked_at: null,
       order_index: orderIndex,
       created_at: now,
       updated_at: now,
@@ -200,11 +210,62 @@ export class TaskService {
       priority: newPriority,
       assignee: newAssignee,
       metadata: newMetadata,
+      namespace: current.namespace,
+      locked_by: current.locked_by,
+      locked_at: current.locked_at,
       order_index: newOrderIndex,
       created_at: current.created_at,
       updated_at: now,
       completed_at: newCompletedAt,
     };
+  }
+
+  /**
+   * Atomically claim a task for an agent, preventing duplicate work between agents.
+   * Fails if the task is already locked by a different agent.
+   */
+  static async claim(userId: string, id: string, agentId: string): Promise<{ success: boolean; task: TaskItem | null; reason?: string }> {
+    const db = getDb();
+    const task = await this.get(userId, id);
+    if (!task) return { success: false, task: null, reason: "not_found" };
+
+    if (task.locked_by && task.locked_by !== agentId) {
+      return { success: false, task, reason: "already_claimed" };
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    await db.execute({
+      sql: `
+        UPDATE tasks
+        SET locked_by = ?, locked_at = ?, assignee = ?, updated_at = ?
+        WHERE id = ? AND user_id = ? AND (locked_by IS NULL OR locked_by = ?);
+      `,
+      args: [agentId, now, agentId, now, id, userId, agentId],
+    });
+
+    const updated = await this.get(userId, id);
+    return { success: true, task: updated };
+  }
+
+  /**
+   * Release a claim on a task (only the current lock holder may release it)
+   */
+  static async release(userId: string, id: string, agentId: string): Promise<boolean> {
+    const db = getDb();
+    const task = await this.get(userId, id);
+    if (!task || !task.locked_by) return false;
+    if (task.locked_by !== agentId) return false;
+
+    const now = Math.floor(Date.now() / 1000);
+    await db.execute({
+      sql: `
+        UPDATE tasks
+        SET locked_by = NULL, locked_at = NULL, updated_at = ?
+        WHERE id = ? AND user_id = ? AND locked_by = ?;
+      `,
+      args: [now, id, userId, agentId],
+    });
+    return true;
   }
 
   /**
@@ -298,6 +359,11 @@ export class TaskService {
       args.push(filter.assignee);
     }
 
+    if (filter.namespace) {
+      sql += " AND namespace = ?";
+      args.push(filter.namespace);
+    }
+
     sql += " ORDER BY order_index ASC, created_at ASC";
 
     if (filter.limit) {
@@ -312,8 +378,8 @@ export class TaskService {
   /**
    * Retrieve hierarchical nested task tree
    */
-  static async getTree(userId: string, filter: { status?: string } = {}): Promise<TaskTreeNode[]> {
-    const allTasks = await this.list(userId, { status: filter.status });
+  static async getTree(userId: string, filter: { status?: string; namespace?: string } = {}): Promise<TaskTreeNode[]> {
+    const allTasks = await this.list(userId, { status: filter.status, namespace: filter.namespace });
     return this.buildTree(allTasks);
   }
 
@@ -401,6 +467,9 @@ export class TaskService {
       priority: (row.priority as TaskPriority) || "medium",
       assignee: (row.assignee as string) || null,
       metadata,
+      namespace: (row.namespace as string) || "default",
+      locked_by: (row.locked_by as string) || null,
+      locked_at: row.locked_at ? Number(row.locked_at) : null,
       order_index: Number(row.order_index || 0),
       created_at: Number(row.created_at),
       updated_at: Number(row.updated_at),

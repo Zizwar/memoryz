@@ -58,8 +58,70 @@ switch (command) {
       Deno.exit(1);
     }
     const userId = await getUserId();
-    const node = await MemoryService.store({ userId, type, content, title });
+    const node = await MemoryService.store({
+      userId,
+      type,
+      content,
+      title,
+      namespace: flags["namespace"] || flags["ns"],
+      agentId: flags["agent"] || flags["agent_id"],
+      source: flags["source"] || "cli",
+    });
     console.log(`\x1b[32m✔ Stored memory [${node.type}] (Hash: ${node.hash.substring(0, 10)}...)\x1b[0m`);
+    break;
+  }
+
+  case "get": {
+    const hash = flags["hash"] || args[1];
+    if (!hash) {
+      console.error("Usage: deno run -A cli.ts get <hash> [--links]");
+      Deno.exit(1);
+    }
+    const userId = await getUserId();
+    const found = await MemoryService.getByHash(userId, [hash], flags["links"] === "true");
+    if (found.length === 0) {
+      console.error(`\x1b[31m✘ Memory '${hash}' not found.\x1b[0m`);
+      Deno.exit(1);
+    }
+    if (flags["json"] === "true") {
+      console.log(JSON.stringify(found[0], null, 2));
+    } else {
+      const m = found[0];
+      console.log(`\x1b[1m\x1b[35m[${m.type.toUpperCase()}]\x1b[0m ${m.title || m.hash.substring(0, 10)}`);
+      console.log(`\x1b[90mns: ${m.namespace}${m.agent_id ? ` | agent: ${m.agent_id}` : ""}${m.source ? ` | src: ${m.source}` : ""}\x1b[0m`);
+      console.log(`\n${m.content}\n`);
+      if (m.links?.length) {
+        console.log(`\x1b[36mLinks:\x1b[0m`);
+        m.links.forEach((l) => console.log(`  → [${l.relation_type}] ${l.target_title || l.target_hash.substring(0, 10)}`));
+      }
+    }
+    break;
+  }
+
+  case "edit":
+  case "update": {
+    const hash = flags["hash"] || args[1];
+    const content = flags["content"] || args[2];
+    if (!hash || !content) {
+      console.error("Usage: deno run -A cli.ts edit <hash> --content='...' [--title='...']");
+      Deno.exit(1);
+    }
+    const userId = await getUserId();
+    const ok = await MemoryService.updateMemory(userId, hash, content, flags["title"]);
+    console.log(ok ? `\x1b[32m✔ Memory updated & re-embedded.\x1b[0m` : `\x1b[31m✘ Memory '${hash}' not found.\x1b[0m`);
+    break;
+  }
+
+  case "forget":
+  case "delete": {
+    const hash = flags["hash"] || args[1];
+    if (!hash) {
+      console.error("Usage: deno run -A cli.ts forget <hash>");
+      Deno.exit(1);
+    }
+    const userId = await getUserId();
+    const ok = await MemoryService.deleteMemory(userId, hash);
+    console.log(ok ? `\x1b[32m✔ Memory forgotten (soft-deleted).\x1b[0m` : `\x1b[31m✘ Memory '${hash}' not found.\x1b[0m`);
     break;
   }
 
@@ -72,7 +134,13 @@ switch (command) {
     const isJson = flags["json"] === "true";
     const userId = await getUserId();
 
-    const results = await MemoryService.recall({ userId, query, type, limit });
+    const results = await MemoryService.recall({
+      userId,
+      query,
+      type,
+      limit,
+      namespace: flags["namespace"] || flags["ns"],
+    });
 
     if (isJson) {
       console.log(JSON.stringify(results, null, 2));
@@ -128,9 +196,29 @@ switch (command) {
         priority,
         assignee,
         description,
+        namespace: flags["namespace"] || flags["ns"],
       });
 
       console.log(`\x1b[32m✔ Task created:\x1b[0m [${task.status}] ${task.title} (ID: \x1b[36m${task.id}\x1b[0m${task.parent_id ? `, Parent: ${task.parent_id}` : ""})`);
+    } else if (sub === "claim") {
+      const id = args[2] || flags["id"];
+      const agentId = flags["agent"] || flags["agent_id"] || "cli";
+      if (!id) {
+        console.error("Usage: deno run -A cli.ts task claim <task_id> [--agent=<name>] [--release]");
+        Deno.exit(1);
+      }
+      if (flags["release"] === "true") {
+        const released = await TaskService.release(userId, id, agentId);
+        console.log(released ? `\x1b[32m✔ Claim released by '${agentId}'.\x1b[0m` : `\x1b[33m⚠ Task not claimed by '${agentId}'.\x1b[0m`);
+      } else {
+        const result = await TaskService.claim(userId, id, agentId);
+        if (result.success) {
+          console.log(`\x1b[32m✔ Task claimed by '${agentId}':\x1b[0m ${result.task?.title}`);
+        } else {
+          console.error(`\x1b[31m✘ Claim failed (${result.reason})${result.task?.locked_by ? ` — held by '${result.task.locked_by}'` : ""}.\x1b[0m`);
+          Deno.exit(1);
+        }
+      }
     } else if (sub === "done" || sub === "complete") {
       const id = args[2] || flags["id"];
       if (!id) {
@@ -168,17 +256,18 @@ switch (command) {
       const isTree = flags["tree"] === "true" || flags["t"] === "true" || (!flags["compact"] && !flags["json"]);
       const isJson = flags["json"] === "true";
       const status = flags["status"];
+      const namespace = flags["namespace"] || flags["ns"];
 
       if (isJson) {
-        const tasks = await TaskService.list(userId, { status });
+        const tasks = await TaskService.list(userId, { status, namespace });
         console.log(JSON.stringify(tasks, null, 2));
       } else if (isTree) {
-        const tree = await TaskService.getTree(userId, { status });
+        const tree = await TaskService.getTree(userId, { status, namespace });
         console.log(`\x1b[1m\x1b[36m📋 Hierarchical Task Tree (${tree.length} root tasks):\x1b[0m\n`);
         const ascii = TaskService.formatTreeAscii(tree);
         console.log(ascii || "\x1b[90m(No tasks found)\x1b[0m");
       } else {
-        const tasks = await TaskService.list(userId, { status });
+        const tasks = await TaskService.list(userId, { status, namespace });
         console.log(TaskService.formatCompactList(tasks));
       }
     }
@@ -341,13 +430,15 @@ switch (command) {
   case "help":
   default:
     console.log(`
-\x1b[1m\x1b[36mMemoryZ v2 CLI — Sovereign Agentic Memory & Task Substrate\x1b[0m
+\x1b[1m\x1b[36mMemoryZ v3 CLI — Sovereign Multi-Agent Memory & Task Substrate\x1b[0m
 
 \x1b[1mTask Management (Hierarchical & Multi-Agent):\x1b[0m
-  \x1b[33mtask list\x1b[0m     [--tree] [--status=active|todo|done] [--json]
+  \x1b[33mtask list\x1b[0m     [--tree] [--status=active|todo|done] [--ns=<project>] [--json]
                  Display tasks as an ultra-compact, token-efficient hierarchy tree.
-  \x1b[33mtask add\x1b[0m      "<Title>" [--parent=<id>] [--status=todo] [--priority=medium] [--assignee=agent]
+  \x1b[33mtask add\x1b[0m      "<Title>" [--parent=<id>] [--status=todo] [--priority=medium] [--assignee=agent] [--ns=<project>]
                  Create a root task or nested child subtask.
+  \x1b[33mtask claim\x1b[0m    <task_id> [--agent=<name>] [--release]
+                 Atomically lock a task to one agent so two agents never duplicate work.
   \x1b[33mtask done\x1b[0m     <task_id>
                  Quickly mark a task completed.
   \x1b[33mtask update\x1b[0m   <task_id> [--status=...] [--title=...] [--assignee=...]
@@ -356,10 +447,16 @@ switch (command) {
                  Delete task and optionally its descendants.
 
 \x1b[1mMemory Operations:\x1b[0m
-  \x1b[33mrecall\x1b[0m        [--query="..."] [--compact] [--summary] [--limit=5]
+  \x1b[33mrecall\x1b[0m        [--query="..."] [--compact] [--summary] [--limit=5] [--ns=<project>]
                  Semantic vector recall with time-decay scoring.
-  \x1b[33mstore\x1b[0m         --type=env|skill|preference|note --content="..." [--title="..."]
+  \x1b[33mstore\x1b[0m         --type=env|skill|preference|note --content="..." [--title="..."] [--ns=<project>] [--agent=<id>]
                  Store a memory atom with automatic 768-dim Gemini vector embedding.
+  \x1b[33mget\x1b[0m           <hash> [--links] [--json]
+                 Fetch an exact memory by hash (resolve a hash another agent referenced).
+  \x1b[33medit\x1b[0m          <hash> --content="..." [--title="..."]
+                 Rewrite a memory's content and re-embed it.
+  \x1b[33mforget\x1b[0m        <hash>
+                 Soft-delete a memory so it no longer surfaces in recall.
 
 \x1b[1mEphemeral Logs & Scratchpads:\x1b[0m
   \x1b[33mlog\x1b[0m           "<Message>" [--level=info] [--source=agent]

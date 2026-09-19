@@ -2,9 +2,9 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
   return {
     openapi: "3.1.0",
     info: {
-      title: "MemoryZ v2 Living Agentic Memory & Task Substrate",
-      version: "2.0.0",
-      description: "Sovereign Living Memory & Hierarchical Multi-Agent Task Substrate. Allows AI assistants to store memories, manage hierarchical task trees, append ephemeral logs, and pack token-budgeted prompt context.",
+      title: "MemoryZ v3 Living Agentic Memory & Task Substrate",
+      version: "3.0.0",
+      description: "Sovereign Living Memory & Hierarchical Multi-Agent Task Substrate. Allows AI assistants to store memories, manage hierarchical task trees, append ephemeral logs, and pack token-budgeted prompt context. v3 adds namespace isolation per project, provenance (agent_id/source), exact-hash memory lookup, and atomic task claiming so multiple agents can share one memory without duplicating work.",
     },
     servers: [
       {
@@ -43,6 +43,10 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
                       type: "string",
                       enum: ["compact", "summary", "full"],
                       description: "Output format: 'compact' saves tokens, 'summary' provides bullets",
+                    },
+                    namespace: {
+                      type: "string",
+                      description: "Optional project/namespace filter so agents only see one project's memories",
                     },
                   },
                   required: ["query"],
@@ -98,6 +102,18 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
                       type: "object",
                       description: "Optional key-value metadata",
                     },
+                    namespace: {
+                      type: "string",
+                      description: "Optional project/namespace for isolation (default: 'default')",
+                    },
+                    agent_id: {
+                      type: "string",
+                      description: "Optional identifier of the agent writing this memory (provenance)",
+                    },
+                    source: {
+                      type: "string",
+                      description: "Optional origin of this memory (e.g. 'human', 'claude', 'cursor')",
+                    },
                   },
                   required: ["type", "content"],
                 },
@@ -111,6 +127,55 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
           },
         },
       },
+      "/api/memories/{hash}": {
+        get: {
+          summary: "Get Memory By Hash",
+          description: "Fetch one exact memory by its hash, optionally including linked knowledge-graph neighbors. Use to resolve a hash another agent referenced in a note or task.",
+          operationId: "getMemory",
+          parameters: [
+            { name: "hash", in: "path", required: true, schema: { type: "string" } },
+            { name: "include_links", in: "query", schema: { type: "boolean" } },
+          ],
+          responses: {
+            "200": { description: "The memory node" },
+            "404": { description: "Memory not found" },
+          },
+        },
+        put: {
+          summary: "Update Memory",
+          description: "Replace a memory's content/title and re-embed it so semantic recall reflects the new text.",
+          operationId: "updateMemory",
+          parameters: [{ name: "hash", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    content: { type: "string" },
+                    title: { type: "string" },
+                    metadata: { type: "object" },
+                  },
+                  required: ["content"],
+                },
+              },
+            },
+          },
+          responses: {
+            "200": { description: "Memory updated" },
+          },
+        },
+        delete: {
+          summary: "Delete Memory",
+          description: "Soft-delete a memory so it no longer surfaces in recall.",
+          operationId: "deleteMemory",
+          parameters: [{ name: "hash", in: "path", required: true, schema: { type: "string" } }],
+          responses: {
+            "200": { description: "Memory deleted" },
+          },
+        },
+      },
       "/api/tasks": {
         get: {
           summary: "List Tasks / Hierarchical Tree",
@@ -120,6 +185,7 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
             { name: "status", in: "query", schema: { type: "string" } },
             { name: "parent_id", in: "query", schema: { type: "string" } },
             { name: "format", in: "query", schema: { type: "string", enum: ["tree", "compact", "json"] } },
+            { name: "namespace", in: "query", schema: { type: "string" }, description: "Project/namespace filter" },
           ],
           responses: {
             "200": { description: "Tasks list or tree" },
@@ -142,6 +208,7 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
                     status: { type: "string", default: "todo" },
                     priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
                     assignee: { type: "string" },
+                    namespace: { type: "string", description: "Project/namespace for isolation (default: 'default')" },
                   },
                   required: ["title"],
                 },
@@ -150,6 +217,34 @@ export function generateOpenApiSpec(origin: string, token: string = ""): any {
           },
           responses: {
             "201": { description: "Task created" },
+          },
+        },
+      },
+      "/api/tasks/{id}/claim": {
+        post: {
+          summary: "Claim Task (Multi-Agent Lock)",
+          description: "Atomically claim a task for one agent so two agents never duplicate the same work. Returns 409 if another agent already holds the claim. Set release=true to give up your own claim.",
+          operationId: "claimTask",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    agent_id: { type: "string", description: "Identifier of the claiming agent" },
+                    release: { type: "boolean", description: "Release this agent's own claim instead of claiming" },
+                  },
+                  required: ["agent_id"],
+                },
+              },
+            },
+          },
+          responses: {
+            "200": { description: "Task claimed or released" },
+            "409": { description: "Already claimed by another agent" },
+            "404": { description: "Task not found" },
           },
         },
       },

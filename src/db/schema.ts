@@ -29,6 +29,9 @@ export async function initDb(): Promise<void> {
       content TEXT NOT NULL,
       embedding F32_BLOB(768),
       metadata TEXT DEFAULT '{}',
+      namespace TEXT DEFAULT 'default',
+      agent_id TEXT,
+      source TEXT,
       recall_count INTEGER DEFAULT 0,
       recall_score REAL DEFAULT 0,
       last_recalled_at INTEGER,
@@ -39,6 +42,21 @@ export async function initDb(): Promise<void> {
   `);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_user_type ON memories(user_id, type, is_deleted);`);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_recall ON memories(user_id, recall_score DESC);`);
+
+  // Migration: v3 provenance & namespace columns for pre-existing memories table (no-op on fresh installs)
+  for (const stmt of [
+    "ALTER TABLE memories ADD COLUMN namespace TEXT DEFAULT 'default';",
+    "ALTER TABLE memories ADD COLUMN agent_id TEXT;",
+    "ALTER TABLE memories ADD COLUMN source TEXT;",
+  ]) {
+    try {
+      await db.execute(stmt);
+    } catch (_e) {
+      // Column already exists — ignore
+    }
+  }
+
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_namespace ON memories(user_id, namespace, type, is_deleted);`);
 
   // Try creating vector index if supported by backend
   try {
@@ -111,6 +129,9 @@ export async function initDb(): Promise<void> {
       priority TEXT DEFAULT 'medium',
       assignee TEXT,
       metadata TEXT DEFAULT '{}',
+      namespace TEXT DEFAULT 'default',
+      locked_by TEXT,
+      locked_at INTEGER,
       order_index INTEGER DEFAULT 0,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
@@ -120,6 +141,21 @@ export async function initDb(): Promise<void> {
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON tasks(user_id, status);`);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_id);`);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_user_order ON tasks(user_id, order_index ASC, created_at DESC);`);
+
+  // Migration: v3 namespace & claim-lock columns for pre-existing tasks table (no-op on fresh installs)
+  for (const stmt of [
+    "ALTER TABLE tasks ADD COLUMN namespace TEXT DEFAULT 'default';",
+    "ALTER TABLE tasks ADD COLUMN locked_by TEXT;",
+    "ALTER TABLE tasks ADD COLUMN locked_at INTEGER;",
+  ]) {
+    try {
+      await db.execute(stmt);
+    } catch (_e) {
+      // Column already exists — ignore
+    }
+  }
+
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_tasks_namespace ON tasks(user_id, namespace, status);`);
 
   // 8. Ephemeral Agent Logs & Telemetry
   await db.execute(`
@@ -151,6 +187,7 @@ export async function initDb(): Promise<void> {
   `);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_context_user_name ON context_snapshots(user_id, name);`);
 
-  console.log("MemoryZ v2 Database schema initialized successfully on Turso Cloud.");
+  // stderr, not stdout: stdout is the JSON-RPC framing channel for the stdio MCP bridge
+  console.error("MemoryZ v3 Database schema initialized successfully on Turso Cloud.");
 }
 

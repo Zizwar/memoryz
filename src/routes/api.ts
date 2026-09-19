@@ -117,17 +117,20 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       let type: MemoryType | undefined;
       let limit = 10;
       let format: string | undefined;
+      let namespace: string | undefined;
 
       if (method === "POST") {
         const body = await req.json();
         query = body.query;
         type = body.type;
         format = body.format;
+        namespace = body.namespace;
         if (body.limit) limit = parseInt(body.limit, 10);
       } else {
         query = url.searchParams.get("query") || undefined;
         type = (url.searchParams.get("type") as MemoryType) || undefined;
         format = url.searchParams.get("format") || undefined;
+        namespace = url.searchParams.get("namespace") || undefined;
         const limParam = url.searchParams.get("limit");
         if (limParam) limit = parseInt(limParam, 10);
       }
@@ -137,6 +140,7 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         query,
         type,
         limit,
+        namespace,
       });
 
       if (format === "compact") {
@@ -171,7 +175,8 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     if (method === "GET") {
       const type = (url.searchParams.get("type") as MemoryType) || undefined;
       const limit = parseInt(url.searchParams.get("limit") || "50", 10);
-      const memories = await MemoryService.list(currentUser.id, type, limit);
+      const namespace = url.searchParams.get("namespace") || undefined;
+      const memories = await MemoryService.list(currentUser.id, type, limit, namespace);
       return json({ count: memories.length, memories });
     }
 
@@ -184,6 +189,9 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
           content: body.content,
           title: body.title,
           metadata: body.metadata,
+          namespace: body.namespace,
+          agentId: body.agent_id,
+          source: body.source,
         });
         return json(memory, 201);
       } catch (err) {
@@ -209,9 +217,16 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
   }
 
-  // Single memory item (PUT / DELETE)
+  // Single memory item (GET / PUT / DELETE)
   if (path.startsWith("/api/memories/") && !path.includes("/recall")) {
     const hash = path.replace("/api/memories/", "");
+    if (method === "GET") {
+      const includeLinks = url.searchParams.get("include_links") === "true";
+      const found = await MemoryService.getByHash(currentUser.id, [hash], includeLinks);
+      if (found.length === 0) return json({ error: "Memory not found" }, 404);
+      return json(found[0]);
+    }
+
     if (method === "PUT") {
       try {
         const body = await req.json();
@@ -243,7 +258,8 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     try {
       const status = url.searchParams.get("status") || undefined;
       const format = url.searchParams.get("format") || "json";
-      const tree = await TaskService.getTree(currentUser.id, { status });
+      const namespace = url.searchParams.get("namespace") || undefined;
+      const tree = await TaskService.getTree(currentUser.id, { status, namespace });
 
       if (format === "ascii" || format === "text") {
         return new Response(TaskService.formatTreeAscii(tree), {
@@ -266,11 +282,12 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         const parentId = url.searchParams.get("parent_id") || undefined;
         const assignee = url.searchParams.get("assignee") || undefined;
         const format = url.searchParams.get("format") || "json";
+        const namespace = url.searchParams.get("namespace") || undefined;
         const limitParam = url.searchParams.get("limit");
         const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 
         if (format === "tree") {
-          const tree = await TaskService.getTree(currentUser.id, { status });
+          const tree = await TaskService.getTree(currentUser.id, { status, namespace });
           return json({ tree, total_roots: tree.length, ascii: TaskService.formatTreeAscii(tree) });
         }
 
@@ -278,6 +295,7 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
           status,
           parentId,
           assignee,
+          namespace,
           limit,
         });
 
@@ -308,11 +326,42 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
           assignee: body.assignee,
           metadata: body.metadata,
           orderIndex: body.order_index,
+          namespace: body.namespace,
         });
         return json(task, 201);
       } catch (err) {
         return json({ error: (err as Error).message }, 400);
       }
+    }
+  }
+
+  // Tasks: Atomic multi-agent claim / release
+  if (path.startsWith("/api/tasks/") && path.endsWith("/claim") && method === "POST") {
+    try {
+      const taskId = path.replace("/api/tasks/", "").replace("/claim", "");
+      const body = await req.json().catch(() => ({}));
+      const agentId = body.agent_id || url.searchParams.get("agent_id");
+      if (!agentId) return json({ error: "agent_id is required" }, 400);
+
+      if (body.release === true) {
+        const released = await TaskService.release(currentUser.id, taskId, agentId);
+        return json({ success: released, status: released ? "released" : "not_claimed_by_you" });
+      }
+
+      const result = await TaskService.claim(currentUser.id, taskId, agentId);
+      if (!result.success) {
+        return json(
+          {
+            success: false,
+            reason: result.reason,
+            locked_by: result.task?.locked_by ?? null,
+          },
+          result.reason === "not_found" ? 404 : 409
+        );
+      }
+      return json({ success: true, task: result.task });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
     }
   }
 

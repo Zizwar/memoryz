@@ -12,6 +12,9 @@ export interface MemoryNode {
   title: string | null;
   content: string;
   metadata: Record<string, unknown>;
+  namespace: string;
+  agent_id: string | null;
+  source: string | null;
   recall_count: number;
   recall_score: number;
   last_recalled_at: number | null;
@@ -37,6 +40,9 @@ export interface StoreMemoryParams {
   content: string;
   title?: string;
   metadata?: Record<string, unknown>;
+  namespace?: string;
+  agentId?: string;
+  source?: string;
 }
 
 export interface RecallQueryParams {
@@ -46,6 +52,7 @@ export interface RecallQueryParams {
   limit?: number;
   threshold?: number;
   format?: "full" | "compact" | "summary";
+  namespace?: string;
 }
 
 export class MemoryService {
@@ -81,6 +88,9 @@ export class MemoryService {
 
     const hash = await this.computeHash(params.userId, content, params.type, now);
     const metadataStr = JSON.stringify(params.metadata || {});
+    const namespace = params.namespace?.trim() || "default";
+    const agentId = params.agentId || null;
+    const source = params.source || null;
 
     // Generate vector embedding
     const embedding = await EmbeddingService.embed(content);
@@ -91,9 +101,9 @@ export class MemoryService {
         sql: `
           INSERT INTO memories (
             hash, user_id, type, title, content, embedding,
-            metadata, recall_count, recall_score, last_recalled_at,
+            metadata, namespace, agent_id, source, recall_count, recall_score, last_recalled_at,
             is_deleted, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, vector32(?), ?, 0, 0, NULL, 0, ?, ?);
+          ) VALUES (?, ?, ?, ?, ?, vector32(?), ?, ?, ?, ?, 0, 0, NULL, 0, ?, ?);
         `,
         args: [
           hash,
@@ -103,6 +113,9 @@ export class MemoryService {
           content,
           JSON.stringify(embedding),
           metadataStr,
+          namespace,
+          agentId,
+          source,
           now,
           now,
         ],
@@ -113,9 +126,9 @@ export class MemoryService {
         sql: `
           INSERT INTO memories (
             hash, user_id, type, title, content,
-            metadata, recall_count, recall_score, last_recalled_at,
+            metadata, namespace, agent_id, source, recall_count, recall_score, last_recalled_at,
             is_deleted, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, ?, ?);
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, ?, ?);
         `,
         args: [
           hash,
@@ -124,6 +137,9 @@ export class MemoryService {
           params.title || null,
           content,
           metadataStr,
+          namespace,
+          agentId,
+          source,
           now,
           now,
         ],
@@ -137,12 +153,84 @@ export class MemoryService {
       title: params.title || null,
       content,
       metadata: params.metadata || {},
+      namespace,
+      agent_id: agentId,
+      source,
       recall_count: 0,
       recall_score: 0,
       last_recalled_at: null,
       created_at: now,
       updated_at: now,
     };
+  }
+
+  /**
+   * Fetch memories by exact hash(es), optionally including their linked graph neighbors
+   */
+  static async getByHash(
+    userId: string,
+    hashes: string[],
+    includeLinks = false
+  ): Promise<MemoryNode[]> {
+    const db = getDb();
+    if (hashes.length === 0) return [];
+    const placeholders = hashes.map(() => "?").join(",");
+    const res = await db.execute({
+      sql: `
+        SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
+               recall_count, recall_score, last_recalled_at, created_at, updated_at
+        FROM memories
+        WHERE user_id = ? AND is_deleted = 0 AND hash IN (${placeholders});
+      `,
+      args: [userId, ...hashes],
+    });
+
+    const results: MemoryNode[] = [];
+    for (const row of res.rows) {
+      let links: MemoryLink[] | undefined;
+      if (includeLinks) {
+        const linksRes = await db.execute({
+          sql: `
+            SELECT l.source_hash, l.target_hash, l.relation_type, l.weight, l.created_at,
+                   m.title as target_title, m.type as target_type
+            FROM memory_links l
+            LEFT JOIN memories m ON l.target_hash = m.hash
+            WHERE l.source_hash = ?
+            ORDER BY l.weight DESC;
+          `,
+          args: [row.hash as string],
+        });
+        links = linksRes.rows.map((l) => ({
+          source_hash: l.source_hash as string,
+          target_hash: l.target_hash as string,
+          relation_type: l.relation_type as RelationType,
+          weight: Number(l.weight || 1.0),
+          created_at: Number(l.created_at),
+          target_title: l.target_title as string,
+          target_type: l.target_type as string,
+        }));
+      }
+
+      results.push({
+        hash: row.hash as string,
+        user_id: row.user_id as string,
+        type: row.type as MemoryType,
+        title: row.title as string | null,
+        content: row.content as string,
+        metadata: JSON.parse((row.metadata as string) || "{}"),
+        namespace: (row.namespace as string) || "default",
+        agent_id: (row.agent_id as string) || null,
+        source: (row.source as string) || null,
+        recall_count: Number(row.recall_count),
+        recall_score: Number(row.recall_score),
+        last_recalled_at: row.last_recalled_at ? Number(row.last_recalled_at) : null,
+        created_at: Number(row.created_at),
+        updated_at: Number(row.updated_at),
+        links,
+      });
+    }
+
+    return results;
   }
 
   /**
@@ -161,7 +249,7 @@ export class MemoryService {
       try {
         const queryVec = await EmbeddingService.embed(query);
         let sql = `
-          SELECT hash, user_id, type, title, content, metadata,
+          SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
                  recall_count, recall_score, last_recalled_at, created_at, updated_at,
                  (1.0 - vector_distance_cos(embedding, vector32(?))) as sim
           FROM memories
@@ -172,6 +260,10 @@ export class MemoryService {
         if (params.type) {
           sql += " AND type = ?";
           args.push(params.type);
+        }
+        if (params.namespace) {
+          sql += " AND namespace = ?";
+          args.push(params.namespace);
         }
 
         sql += " ORDER BY sim DESC LIMIT ?";
@@ -186,7 +278,7 @@ export class MemoryService {
       // Step 2: If vector returned few or failed, perform text search and combine
       if (rows.length === 0) {
         let sql = `
-          SELECT hash, user_id, type, title, content, metadata,
+          SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
                  recall_count, recall_score, last_recalled_at, created_at, updated_at,
                  1.0 as sim
           FROM memories
@@ -198,6 +290,10 @@ export class MemoryService {
           sql += " AND type = ?";
           args.push(params.type);
         }
+        if (params.namespace) {
+          sql += " AND namespace = ?";
+          args.push(params.namespace);
+        }
         sql += " ORDER BY recall_score DESC, updated_at DESC LIMIT ?";
         args.push(limit);
 
@@ -207,7 +303,7 @@ export class MemoryService {
     } else {
       // Query-less recall: retrieve by recency & recall_score
       let sql = `
-        SELECT hash, user_id, type, title, content, metadata,
+        SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
                recall_count, recall_score, last_recalled_at, created_at, updated_at,
                1.0 as sim
         FROM memories
@@ -217,6 +313,10 @@ export class MemoryService {
       if (params.type) {
         sql += " AND type = ?";
         args.push(params.type);
+      }
+      if (params.namespace) {
+        sql += " AND namespace = ?";
+        args.push(params.namespace);
       }
       sql += " ORDER BY recall_score DESC, updated_at DESC LIMIT ?";
       args.push(limit);
@@ -274,6 +374,9 @@ export class MemoryService {
         title: row.title as string | null,
         content: row.content as string,
         metadata: metadataObj,
+        namespace: (row.namespace as string) || "default",
+        agent_id: (row.agent_id as string) || null,
+        source: (row.source as string) || null,
         recall_count: count,
         recall_score: newScore,
         last_recalled_at: now,
@@ -360,26 +463,51 @@ export class MemoryService {
 
     const embedding = await EmbeddingService.embed(trimmed);
     const metaStr = metadata ? JSON.stringify(metadata) : undefined;
+    const embStr = JSON.stringify(embedding);
 
+    // Re-embed alongside the content so semantic recall does not match stale text
     let res;
-    if (metaStr) {
-      res = await db.execute({
-        sql: `
-          UPDATE memories
-          SET content = ?, title = ?, metadata = ?, updated_at = ?
-          WHERE user_id = ? AND hash = ?;
-        `,
-        args: [trimmed, title || null, metaStr, now, userId, hash],
-      });
-    } else {
-      res = await db.execute({
-        sql: `
-          UPDATE memories
-          SET content = ?, title = ?, updated_at = ?
-          WHERE user_id = ? AND hash = ?;
-        `,
-        args: [trimmed, title || null, now, userId, hash],
-      });
+    try {
+      if (metaStr) {
+        res = await db.execute({
+          sql: `
+            UPDATE memories
+            SET content = ?, title = ?, metadata = ?, embedding = vector32(?), updated_at = ?
+            WHERE user_id = ? AND hash = ?;
+          `,
+          args: [trimmed, title || null, metaStr, embStr, now, userId, hash],
+        });
+      } else {
+        res = await db.execute({
+          sql: `
+            UPDATE memories
+            SET content = ?, title = ?, embedding = vector32(?), updated_at = ?
+            WHERE user_id = ? AND hash = ?;
+          `,
+          args: [trimmed, title || null, embStr, now, userId, hash],
+        });
+      }
+    } catch (_err) {
+      // Fallback for backends without vector32()
+      if (metaStr) {
+        res = await db.execute({
+          sql: `
+            UPDATE memories
+            SET content = ?, title = ?, metadata = ?, updated_at = ?
+            WHERE user_id = ? AND hash = ?;
+          `,
+          args: [trimmed, title || null, metaStr, now, userId, hash],
+        });
+      } else {
+        res = await db.execute({
+          sql: `
+            UPDATE memories
+            SET content = ?, title = ?, updated_at = ?
+            WHERE user_id = ? AND hash = ?;
+          `,
+          args: [trimmed, title || null, now, userId, hash],
+        });
+      }
     }
     return res.rowsAffected > 0;
   }
@@ -387,10 +515,10 @@ export class MemoryService {
   /**
    * Get all active memories for a user
    */
-  static async list(userId: string, type?: MemoryType, limit: number = 50): Promise<MemoryNode[]> {
+  static async list(userId: string, type?: MemoryType, limit: number = 50, namespace?: string): Promise<MemoryNode[]> {
     const db = getDb();
     let sql = `
-      SELECT hash, user_id, type, title, content, metadata,
+      SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
              recall_count, recall_score, last_recalled_at, created_at, updated_at
       FROM memories
       WHERE user_id = ? AND is_deleted = 0
@@ -400,6 +528,10 @@ export class MemoryService {
     if (type) {
       sql += " AND type = ?";
       args.push(type);
+    }
+    if (namespace) {
+      sql += " AND namespace = ?";
+      args.push(namespace);
     }
     sql += " ORDER BY updated_at DESC LIMIT ?";
     args.push(limit);
@@ -412,6 +544,9 @@ export class MemoryService {
       title: row.title as string | null,
       content: row.content as string,
       metadata: JSON.parse((row.metadata as string) || "{}"),
+      namespace: (row.namespace as string) || "default",
+      agent_id: (row.agent_id as string) || null,
+      source: (row.source as string) || null,
       recall_count: Number(row.recall_count),
       recall_score: Number(row.recall_score),
       last_recalled_at: row.last_recalled_at ? Number(row.last_recalled_at) : null,
