@@ -873,9 +873,9 @@ export function renderAppHtml(): string {
         <div class="space-y-1.5 pt-1">
           <div class="text-xs font-semibold">تثبيت سريع عبر نظام المهارات المفتوح:</div>
           <div class="mockup-code text-xs bg-base-300 border border-base-content/10 shadow relative">
-            <pre data-prefix="$"><code>npx skills add memoryz.wino.deno.net</code></pre>
+            <pre data-prefix="$"><code>npx skills add https://memoryz.wino.deno.net</code></pre>
             <button class="btn btn-ghost btn-xs absolute left-3 top-3 text-base-content/60 hover:text-base-content"
-                    @click="copyText('npx skills add memoryz.wino.deno.net')">
+                    @click="copyText('npx skills add https://memoryz.wino.deno.net')">
               <i class="fa-solid fa-copy"></i>
             </button>
           </div>
