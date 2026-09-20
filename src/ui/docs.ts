@@ -1,46 +1,112 @@
 export const DEFAULT_SKILL_MD = `---
 name: memoryz
-description: Sovereign Agentic Memory & Hierarchical Task Substrate. Use to recall developer preferences with token-saving formats, manage hierarchical multi-agent tasks, log ephemeral traces, and store persistent instructions.
+description: Sovereign agentic memory and hierarchical multi-agent task substrate. Use to recall developer preferences and project rules in token-saving formats, share one memory across several agents with namespace isolation and provenance, coordinate hierarchical tasks with atomic claiming so two agents never duplicate work, log ephemeral traces, and store secrets in an encrypted vault.
 ---
 
-# MemoryZ v2 — Sovereign Agentic Memory & Task Substrate
+# MemoryZ v3 — Sovereign Multi-Agent Memory & Task Substrate
 
-MemoryZ v2 gives you a persistent, living cross-session memory substrate and hierarchical task coordinator.
+MemoryZ is a persistent, cross-session memory substrate and task coordinator that
+**several agents can share at once**. Memories are vector-embedded and ranked by
+time-decayed recall, so what the team actually uses stays near the top.
 
-## 1. Token-Saving Memory Recall
-- Before starting a task, check developer rules or environment specs:
-  \`memoryz recall "<task topic>" --compact\`
-  OR dense prompt bundle (tasks + memories):
-  \`memoryz context "<task topic>"\`
+Available as a CLI (\`memoryz\`), an MCP server, and a REST API. The commands below
+use the CLI; the MCP tool name is given in parentheses where they differ.
 
-## 2. Hierarchical Tasks & Multi-Agent TODOs
-- View current tasks as an ultra-compact ASCII tree:
-  \`memoryz task list --tree\`
-- Create a root task or nested child subtask:
-  \`memoryz task add "<title>" [--parent=<id>] [--priority=high] [--assignee=<agent>]\`
-- Mark a task done:
-  \`memoryz task done <id>\`
-- Update task status:
-  \`memoryz task update <id> --status=in_progress\`
+## 1. Recall before you act
 
-## 3. Ephemeral Logs & Scratchpad
-- For temporary execution notes, run traces, or low-importance logs (skips vector embedding):
-  \`memoryz log "<message>" [--level=info] [--source=agent]\`
-  \`memoryz logs --limit=20\`
+Always check for existing rules before starting a task — the developer may have
+already told another agent how they want this done.
 
-## 4. When to Store Persistent Memory
-- When the developer gives durable instructions or preferences:
-  \`memoryz store --type=preference --content="<rule text>"\`
-  Types:
-  - \`env\`: Ports, infrastructure, domains, CLI tool choices.
-  - \`preference\`: Coding habits, architectural patterns, styles.
-  - \`skill\`: Multi-step procedure prompts or custom agent workflows.
-  - \`note\`: Reference facts, URLs, documentation pointers.
+\`\`\`
+memoryz recall "<task topic>" --compact        # (recall_memory) one-liners, token-cheap
+memoryz context "<task topic>"                 # (context_pack) memories + active tasks in one bundle
+memoryz get <hash> [--links]                   # (get_memory) resolve an exact hash another agent cited
+\`\`\`
 
-## 5. Secret Vault
-- For credentials and API keys:
-  \`memoryz vault store --key="<name>" --secret="<val>" --pass="<passphrase>"\`
-  \`memoryz vault get --key="<name>" --pass="<passphrase>"\`
+\`recall\` reinforces what it returns, so frequently-used memories rise over time.
+
+## 2. Namespaces — keep projects apart
+
+Every memory and task belongs to a \`namespace\` (default: \`default\`). Use one
+namespace per project so agents working on different repos never see each other's
+noise.
+
+\`\`\`
+memoryz recall "deploy steps" --ns=my-project
+memoryz task list --ns=my-project
+\`\`\`
+
+Pass \`--ns=\` on \`store\`, \`recall\`, \`task add\`, and \`task list\`. Over MCP and REST
+the field is \`namespace\`.
+
+## 3. Provenance — record who wrote it
+
+When you store something, say who you are. Later agents can then tell a human
+instruction apart from a guess another agent made.
+
+\`\`\`
+memoryz store --type=preference --content="<rule>" --ns=my-project --agent=<your-name>
+\`\`\`
+
+Sets \`agent_id\` and \`source\` on the memory. Over MCP: \`agent_id\` and \`source\`.
+
+## 4. Hierarchical tasks & atomic claiming
+
+\`\`\`
+memoryz task list --tree                       # (task_list) compact ASCII hierarchy
+memoryz task add "<title>" [--parent=<id>] [--priority=high] [--assignee=<agent>]
+memoryz task claim <id> --agent=<your-name>    # (task_claim) lock it to you
+memoryz task claim <id> --agent=<your-name> --release
+memoryz task update <id> --status=in_progress
+memoryz task done <id>
+\`\`\`
+
+**Claim before you start.** \`task claim\` is atomic: if another agent already holds
+the task the command fails and tells you who has it, so two agents never do the
+same work. Release when you stop, or mark it done.
+
+A typical handoff: agent A creates a task and stores the context as a memory, then
+puts the memory hash in the task description. Agent B claims the task and calls
+\`memoryz get <hash>\` to load exactly the context A meant.
+
+## 5. Storing persistent memory
+
+Store when the developer gives a durable instruction, not for transient state.
+
+\`\`\`
+memoryz store --type=<type> --content="<text>" [--title="..."] [--ns=<project>]
+memoryz edit <hash> --content="<corrected text>"   # (memory_update) re-embeds
+memoryz forget <hash>                              # (memory_delete) soft delete
+\`\`\`
+
+Types:
+- \`env\` — ports, infrastructure, domains, CLI tool choices
+- \`preference\` — coding habits, architectural patterns, style
+- \`skill\` — multi-step procedures or reusable agent workflows
+- \`note\` — reference facts, URLs, documentation pointers
+
+Correct a wrong memory with \`edit\` rather than storing a second contradictory one.
+
+## 6. Ephemeral logs
+
+For run traces and low-importance notes. Skips vector embedding, so it is fast and
+does not pollute recall.
+
+\`\`\`
+memoryz log "<message>" [--level=info] [--source=<agent>]
+memoryz logs --limit=20
+\`\`\`
+
+## 7. Secret vault
+
+Zero-knowledge, AES-256-GCM. Secrets are never embedded or indexed.
+
+\`\`\`
+memoryz vault store --key="<name>" --secret="<val>" --pass="<passphrase>"
+memoryz vault get --key="<name>" --pass="<passphrase>"
+\`\`\`
+
+Never put a credential in a regular memory — use the vault.
 `;
 
 export function renderDocsHtml(): string {
@@ -453,7 +519,17 @@ This project connects to MemoryZ v2 (memoryz.wino.deno.net):
             كيفية تثبيت المهارة في مشروعك:
           </h3>
           <p class="text-xs text-base-content/80 mb-2">
-            قم بتنزيل الملف مباشرة إلى مجلد مهارات الوكيل (Skills Directory) بأمر واحد في الطرفية:
+            الطريقة الموصى بها — عبر نظام المهارات المفتوح (يدعم Claude Code وCursor وCodex وغيرها):
+          </p>
+          <div class="mockup-code text-xs bg-base-300 border border-base-content/10 shadow relative mb-3">
+            <pre data-prefix="$"><code>npx skills add memoryz.wino.deno.net</code></pre>
+            <button class="btn btn-ghost btn-xs absolute left-3 top-3 text-base-content/60 hover:text-base-content"
+                    @click="copyText('npx skills add memoryz.wino.deno.net')">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+          </div>
+          <p class="text-xs text-base-content/80 mb-2">
+            أو نزّل الملف مباشرة إلى مجلد مهارات الوكيل (Skills Directory) بأمر واحد في الطرفية:
           </p>
           <div class="mockup-code text-xs bg-base-300 border border-base-content/10 shadow relative">
             <pre data-prefix="$"><code>mkdir -p .agents/skills/memoryz && curl -sSL https://memoryz.wino.deno.net/skill.md > .agents/skills/memoryz/SKILL.md</code></pre>

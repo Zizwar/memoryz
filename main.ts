@@ -6,6 +6,27 @@ import { generateOpenApiSpec } from "./src/routes/openapi.ts";
 import { renderAppHtml } from "./src/ui/html.ts";
 import { DEFAULT_SKILL_MD, renderDocsHtml } from "./src/ui/docs.ts";
 
+// Single source of truth for the published skill: /skill.md serves these exact
+// bytes and the well-known index advertises their digest, so the two cannot drift.
+let skillMdCache: string | null = null;
+async function getSkillMd(): Promise<string> {
+  if (skillMdCache !== null) return skillMdCache;
+  try {
+    skillMdCache = await Deno.readTextFile("./.agents/skills/memoryz/SKILL.md");
+  } catch (_e) {
+    skillMdCache = DEFAULT_SKILL_MD;
+  }
+  return skillMdCache;
+}
+
+async function skillDigest(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  const hex = Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `sha256:${hex}`;
+}
+
 // Initialize database schema on startup
 try {
   await initDb();
@@ -50,27 +71,56 @@ Deno.serve({ port: config.port }, async (req: Request) => {
     const disposition = isDownload
       ? 'attachment; filename="SKILL.md"'
       : 'inline; filename="SKILL.md"';
-    try {
-      const skillText = await Deno.readTextFile("./.agents/skills/memoryz/SKILL.md");
-      return new Response(skillText, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
-          "Content-Disposition": disposition,
-          "Access-Control-Allow-Origin": "*",
-          "Cache-Control": "public, max-age=3600",
+    return new Response(await getSkillMd(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Content-Disposition": disposition,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }
+
+  // Agent Skills discovery (RFC 8615 well-known URI). `npx skills add <this-host>`
+  // walks these documents to find installable skills.
+  if (
+    path === "/.well-known/agent-skills/index.json" ||
+    path === "/.well-known/skills/index.json"
+  ) {
+    const skillText = await getSkillMd();
+    const index = {
+      $schema: "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+      skills: [
+        {
+          name: "memoryz",
+          type: "skill-md",
+          description:
+            "Sovereign agentic memory and hierarchical multi-agent task substrate. Share one memory across several agents with namespace isolation and provenance, coordinate tasks with atomic claiming, and store secrets in an encrypted vault.",
+          url: `${url.origin}/skill.md`,
+          digest: await skillDigest(skillText),
         },
-      });
-    } catch (_e) {
-      return new Response(DEFAULT_SKILL_MD, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
-          "Content-Disposition": disposition,
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
-    }
+      ],
+    };
+    return new Response(JSON.stringify(index, null, 2), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }
+
+  if (path === "/.well-known/agent-skills/memoryz.md" || path === "/.well-known/skills/memoryz.md") {
+    return new Response(await getSkillMd(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
   }
 
   // OpenAPI 3.1 & Swagger schema for Mobile Chat Connectors (ChatGPT / LibreChat / Actions)
