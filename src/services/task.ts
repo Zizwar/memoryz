@@ -226,15 +226,12 @@ export class TaskService {
    */
   static async claim(userId: string, id: string, agentId: string): Promise<{ success: boolean; task: TaskItem | null; reason?: string }> {
     const db = getDb();
-    const task = await this.get(userId, id);
-    if (!task) return { success: false, task: null, reason: "not_found" };
-
-    if (task.locked_by && task.locked_by !== agentId) {
-      return { success: false, task, reason: "already_claimed" };
-    }
-
     const now = Math.floor(Date.now() / 1000);
-    await db.execute({
+
+    // Single conditional statement: whoever's UPDATE matches the unlocked row wins.
+    // Two agents racing here both pass the pre-check below, so the winner is decided
+    // by rowsAffected — never re-read first and assume you won.
+    const res = await db.execute({
       sql: `
         UPDATE tasks
         SET locked_by = ?, locked_at = ?, assignee = ?, updated_at = ?
@@ -244,6 +241,14 @@ export class TaskService {
     });
 
     const updated = await this.get(userId, id);
+    if (!updated) return { success: false, task: null, reason: "not_found" };
+
+    if (res.rowsAffected === 0) {
+      // Either someone else holds it, or we already do and nothing changed.
+      if (updated.locked_by === agentId) return { success: true, task: updated };
+      return { success: false, task: updated, reason: "already_claimed" };
+    }
+
     return { success: true, task: updated };
   }
 
@@ -252,12 +257,8 @@ export class TaskService {
    */
   static async release(userId: string, id: string, agentId: string): Promise<boolean> {
     const db = getDb();
-    const task = await this.get(userId, id);
-    if (!task || !task.locked_by) return false;
-    if (task.locked_by !== agentId) return false;
-
     const now = Math.floor(Date.now() / 1000);
-    await db.execute({
+    const res = await db.execute({
       sql: `
         UPDATE tasks
         SET locked_by = NULL, locked_at = NULL, updated_at = ?
@@ -265,7 +266,7 @@ export class TaskService {
       `,
       args: [now, id, userId, agentId],
     });
-    return true;
+    return res.rowsAffected > 0;
   }
 
   /**
