@@ -1,6 +1,7 @@
 import { getDb } from "../db/client.ts";
 import { config } from "../config.ts";
 import { EmbeddingService } from "./embedding.ts";
+import { dispatchWebhookEvent } from "./webhook.ts";
 
 export type MemoryType = "note" | "skill" | "preference" | "env";
 export type RelationType = "related" | "depends_on" | "supersedes" | "context_for";
@@ -145,6 +146,20 @@ export class MemoryService {
         ],
       });
     }
+
+    dispatchWebhookEvent({
+      userId: params.userId,
+      event: "memory.created",
+      namespace,
+      payload: {
+        hash,
+        type: params.type,
+        title: params.title || null,
+        namespace,
+        agent_id: agentId,
+        source,
+      },
+    });
 
     return {
       hash,

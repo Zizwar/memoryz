@@ -3,6 +3,7 @@ import { VaultService } from "../services/vault.ts";
 import { TaskService, TaskPriority } from "../services/task.ts";
 import { LogService, LogLevel } from "../services/log.ts";
 import { ContextService } from "../services/context.ts";
+import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
 
 export const MCP_TOOLS = [
   // 1. Core Memory Operations
@@ -312,6 +313,47 @@ export const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {},
+    },
+  },
+
+  // 6. Multi-Agent Webhooks & Realtime Subscriptions
+  {
+    name: "webhook_register",
+    description: "Register a webhook endpoint to receive realtime event notifications (e.g. task.status_changed, task.done, task.claimed, memory.created) with optional HMAC signing.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Destination URL to receive POST webhook payloads" },
+        events: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of events to subscribe to (e.g. ['task.done', 'task.status_changed', 'memory.created'] or ['*'] for all)",
+        },
+        secret: { type: "string", description: "Optional secret for HMAC-SHA256 signature in x-memoryz-signature header" },
+        namespace: { type: "string", description: "Optional project namespace filter (default: 'default', or '*' for all)" },
+      },
+      required: ["url"],
+    },
+  },
+  {
+    name: "webhook_list",
+    description: "List all registered webhook subscriptions and their health status.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        namespace: { type: "string", description: "Optional namespace filter" },
+      },
+    },
+  },
+  {
+    name: "webhook_delete",
+    description: "Delete an existing webhook subscription by ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "ID of the webhook to delete" },
+      },
+      required: ["id"],
     },
   },
 ];
@@ -706,6 +748,28 @@ export class McpServer {
             created_at: new Date(k.created_at * 1000).toISOString(),
           })),
         };
+      }
+
+      // --- Multi-Agent Webhooks ---
+      case "webhook_register": {
+        const wh = await registerWebhook({
+          userId,
+          url: args.url,
+          events: args.events,
+          secret: args.secret,
+          namespace: args.namespace,
+        });
+        return { status: "registered", webhook: wh };
+      }
+
+      case "webhook_list": {
+        const list = await listWebhooks(userId, args.namespace);
+        return { count: list.length, webhooks: list };
+      }
+
+      case "webhook_delete": {
+        const ok = await deleteWebhook(args.id, userId);
+        return { success: ok, id: args.id };
       }
 
       default:

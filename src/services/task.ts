@@ -1,4 +1,5 @@
 import { getDb } from "../db/client.ts";
+import { dispatchWebhookEvent } from "./webhook.ts";
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
@@ -124,7 +125,7 @@ export class TaskService {
       ],
     });
 
-    return {
+    const createdTask: TaskItem = {
       id,
       user_id: params.userId,
       parent_id: parentId,
@@ -142,6 +143,15 @@ export class TaskService {
       updated_at: now,
       completed_at: completedAt,
     };
+
+    dispatchWebhookEvent({
+      userId: params.userId,
+      event: "task.created",
+      namespace,
+      payload: { task: createdTask },
+    });
+
+    return createdTask;
   }
 
   /**
@@ -200,7 +210,7 @@ export class TaskService {
       ],
     });
 
-    return {
+    const updatedTask: TaskItem = {
       id,
       user_id: userId,
       parent_id: newParentId,
@@ -218,6 +228,22 @@ export class TaskService {
       updated_at: now,
       completed_at: newCompletedAt,
     };
+
+    const statusChanged = newStatus !== current.status;
+    const eventName = isDone ? "task.done" : (statusChanged ? "task.status_changed" : "task.updated");
+
+    dispatchWebhookEvent({
+      userId,
+      event: eventName,
+      namespace: current.namespace,
+      payload: {
+        task: updatedTask,
+        previous_status: current.status,
+        new_status: newStatus,
+      },
+    });
+
+    return updatedTask;
   }
 
   /**
@@ -249,6 +275,13 @@ export class TaskService {
       return { success: false, task: updated, reason: "already_claimed" };
     }
 
+    dispatchWebhookEvent({
+      userId,
+      event: "task.claimed",
+      namespace: updated.namespace,
+      payload: { taskId: id, agentId, task: updated },
+    });
+
     return { success: true, task: updated };
   }
 
@@ -266,7 +299,15 @@ export class TaskService {
       `,
       args: [now, id, userId, agentId],
     });
-    return res.rowsAffected > 0;
+    if ((res.rowsAffected ?? 0) > 0) {
+      dispatchWebhookEvent({
+        userId,
+        event: "task.released",
+        payload: { taskId: id, agentId },
+      });
+      return true;
+    }
+    return false;
   }
 
   /**

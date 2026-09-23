@@ -185,7 +185,33 @@ export async function initDb(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
   `);
-  await db.execute(`CREATE INDEX IF NOT EXISTS idx_context_user_name ON context_snapshots(user_id, name);`);
+  // 10. Multi-Agent Webhooks & Event Subscriptions
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL DEFAULT '["*"]',
+      secret TEXT,
+      namespace TEXT DEFAULT 'default',
+      is_active INTEGER DEFAULT 1,
+      failure_count INTEGER DEFAULT 0,
+      last_called_at INTEGER,
+      last_status_code INTEGER,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_webhooks_user ON webhooks(user_id, is_active);`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_webhooks_namespace ON webhooks(user_id, namespace, is_active);`);
+
+  // Migration: blocked_by dependency column for tasks
+  try {
+    await db.execute("ALTER TABLE tasks ADD COLUMN blocked_by TEXT DEFAULT '[]';");
+  } catch (_e) {
+    // Column already exists — ignore
+  }
 
   // stderr, not stdout: stdout is the JSON-RPC framing channel for the stdio MCP bridge
   console.error("MemoryZ v3 Database schema initialized successfully on Turso Cloud.");
