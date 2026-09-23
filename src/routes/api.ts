@@ -75,6 +75,8 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       const decoded = await AuthService.verifyToken(token);
       if (decoded) {
         currentUser = await AuthService.findById(decoded.sub);
+      } else {
+        currentUser = await AuthService.findByApiKey(token);
       }
     } else if (authHeader.startsWith("Key ")) {
       const key = authHeader.substring(4);
