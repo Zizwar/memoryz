@@ -59,7 +59,7 @@ export function renderAppHtml(): string {
       </div>
       <div class="flex items-center gap-1.5">
         <span class="text-base sm:text-lg font-black tracking-tight">Memory<span class="text-primary">Z</span></span>
-        <span class="badge badge-primary badge-xs font-mono font-bold tracking-wider">v2</span>
+        <span class="badge badge-primary badge-xs font-mono font-bold tracking-wider">v3</span>
       </div>
     </div>
 
@@ -215,7 +215,7 @@ export function renderAppHtml(): string {
   <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
 
     <!-- NAVIGATION CARDS (Responsive Grid, Mobile-Friendly, No Horizontal Overflow) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
       <!-- 1. الذاكرة الحية -->
       <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
               :class="activeTab === 'memories' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
@@ -322,7 +322,26 @@ export function renderAppHtml(): string {
         </div>
       </button>
 
-      <!-- 7. لوحة المدير (مشروطة) -->
+      <!-- 7. الويبهوك والأحداث -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'webhooks' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('webhooks')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'webhooks' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-satellite-dish"></i>
+          </div>
+          <span class="badge badge-xs font-mono font-medium"
+                :class="activeTab === 'webhooks' ? 'badge-primary' : 'badge-ghost'"
+                x-text="webhooksCount"></span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">الويبهوك</div>
+          <div class="text-[10px] text-base-content/60 truncate">بث الأحداث الحية</div>
+        </div>
+      </button>
+
+      <!-- 8. لوحة المدير (مشروطة) -->
       <template x-if="currentUser && currentUser.role === 'admin'">
         <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98] col-span-2 sm:col-span-1"
                 :class="activeTab === 'admin' ? 'border-warning bg-warning/10 ring-1 ring-warning' : 'border-base-300 hover:border-warning/40'"
@@ -342,12 +361,39 @@ export function renderAppHtml(): string {
       </template>
     </div>
 
+    <!-- NAMESPACE FILTER TOOLBAR (v3 Substrate Scope + Jev AI Cron) -->
+    <div class="bg-base-200/60 border border-base-300 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-base-content/70 font-bold text-[11px] flex items-center gap-1.5">
+          <i class="fa-solid fa-layer-group text-primary"></i>
+          <span>نطاق العزل (Namespace):</span>
+        </span>
+        <div class="join shadow-sm">
+          <button class="btn btn-xs join-item" :class="currentNamespace === 'all' ? 'btn-primary' : 'btn-ghost'" @click="setNamespace('all')">الكل</button>
+          <button class="btn btn-xs join-item" :class="currentNamespace === 'vibzcode' ? 'btn-primary' : 'btn-ghost'" @click="setNamespace('vibzcode')">vibzcode</button>
+          <button class="btn btn-xs join-item" :class="currentNamespace === 'memoryz' ? 'btn-primary' : 'btn-ghost'" @click="setNamespace('memoryz')">memoryz</button>
+          <button class="btn btn-xs join-item" :class="currentNamespace === 'ferme' ? 'btn-primary' : 'btn-ghost'" @click="setNamespace('ferme')">ferme</button>
+          <button class="btn btn-xs join-item" :class="currentNamespace === 'default' ? 'btn-primary' : 'btn-ghost'" @click="setNamespace('default')">default</button>
+        </div>
+      </div>
+
+      <!-- Quick Maintenance Cron Button -->
+      <button class="btn btn-xs btn-outline btn-secondary gap-1.5 rounded-lg"
+              :class="{ 'loading': runningCron }"
+              @click="triggerMaintenanceCron()"
+              title="تشغيل تنظيف أقفال المهام العالقة وتدوير الذاكرة مع Jev AI">
+        <i class="fa-solid fa-broom" x-show="!runningCron"></i>
+        <span>صيانة وتدوير الذاكرة (Cron + Jev AI)</span>
+      </button>
+    </div>
+
     <!-- Active Section Action Header (Compact & Responsive) -->
     <div class="flex items-center justify-between gap-2 bg-base-200/60 border border-base-300 px-3.5 py-2.5 rounded-xl">
       <div class="flex items-center gap-2 min-w-0">
         <span class="text-xs sm:text-sm font-bold text-base-content/90 truncate" x-text="
           activeTab === 'memories' ? 'الذاكرة الحية والمتجهات (Vector Memories)' :
           activeTab === 'tasks' ? 'شجرة المهام وتنسيق الوكلاء (Tasks & Multi-Agent TODOs)' :
+          activeTab === 'webhooks' ? 'الاشتراكات الفورية في الأحداث (Multi-Agent Webhooks)' :
           activeTab === 'context' ? 'حزم السياق والسجلات اللحظية (Context Packs & Logs)' :
           activeTab === 'agent' ? 'محاكي الاسترجاع واستجابة الوكلاء (Agent Simulator)' :
           activeTab === 'vault' ? 'الخزنة السرية المشفرة (Zero-Knowledge Secret Vault)' :
@@ -365,6 +411,12 @@ export function renderAppHtml(): string {
         <template x-if="activeTab === 'tasks'">
           <button class="btn btn-success btn-xs sm:btn-sm text-success-content gap-1 shadow-sm" @click="openTaskModal()">
             <i class="fa-solid fa-plus text-xs"></i> <span>مهمة جديدة</span>
+          </button>
+        </template>
+
+        <template x-if="activeTab === 'webhooks'">
+          <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openWebhookModal()">
+            <i class="fa-solid fa-plus text-xs"></i> <span>اشتراك ويبهوك جديد</span>
           </button>
         </template>
 
@@ -415,7 +467,7 @@ export function renderAppHtml(): string {
             <div class="card-body p-4 flex flex-col justify-between gap-2.5">
               <!-- Card Header -->
               <div class="flex items-start justify-between gap-2">
-                <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="badge badge-sm font-semibold uppercase tracking-wider"
                         :class="{
                           'badge-info text-info-content': m.type === 'env',
@@ -425,6 +477,21 @@ export function renderAppHtml(): string {
                         }"
                         x-text="m.type"></span>
                   <span class="font-bold text-sm text-base-content truncate max-w-[200px]" x-text="m.title || m.hash.substring(0, 8)"></span>
+                  <template x-if="m.namespace">
+                    <span class="badge badge-outline badge-xs font-mono" x-text="m.namespace"></span>
+                  </template>
+                  <template x-if="m.agent_id || m.source">
+                    <span class="badge badge-ghost badge-xs font-mono gap-1 text-base-content/60" :title="'مصدر الذاكرة: ' + (m.agent_id || m.source)">
+                      <i class="fa-solid fa-microchip text-[9px]"></i>
+                      <span x-text="m.agent_id || m.source"></span>
+                    </span>
+                  </template>
+                  <template x-if="m.time_decay">
+                    <span class="badge badge-ghost badge-xs font-mono text-base-content/50" :title="'معامل الحيوية الزمني: ' + m.time_decay">
+                      <i class="fa-solid fa-clock-rotate-left text-[9px]"></i>
+                      <span x-text="Number(m.time_decay).toFixed(2)"></span>
+                    </span>
+                  </template>
                 </div>
                 <div class="flex items-center gap-1 opacity-80">
                   <span class="badge badge-ghost badge-xs font-mono gap-1" title="مرات الاستدعاء">
@@ -442,7 +509,12 @@ export function renderAppHtml(): string {
 
               <!-- Footer Meta -->
               <div class="flex items-center justify-between pt-2 border-t border-base-300/60 text-[11px] text-base-content/50 font-mono">
-                <span x-text="'#' + m.hash.substring(0, 8)"></span>
+                <div class="flex items-center gap-1">
+                  <span class="hover:text-primary cursor-pointer" @click="copyText(m.hash)" :title="'نسخ الهاش الكامل: ' + m.hash" x-text="'#' + m.hash.substring(0, 8)"></span>
+                  <button class="btn btn-ghost btn-xs p-0.5 h-auto min-h-0 text-base-content/40 hover:text-base-content" @click="copyText(m.hash)" title="نسخ الهاش">
+                    <i class="fa-solid fa-copy text-[10px]"></i>
+                  </button>
+                </div>
                 <span x-text="formatDate(m.created_at)"></span>
               </div>
             </div>
@@ -502,10 +574,24 @@ export function renderAppHtml(): string {
                           x-text="t.title"></span>
                     <span class="badge badge-xs font-mono" :class="getTaskBadgeClass(t.status)" x-text="t.status"></span>
                     <span class="badge badge-outline badge-xs font-mono" x-text="t.priority"></span>
+                    <template x-if="t.namespace">
+                      <span class="badge badge-outline badge-xs font-mono" x-text="t.namespace"></span>
+                    </template>
                     <template x-if="t.assignee">
                       <span class="badge badge-ghost badge-xs gap-1 font-mono">
                         <i class="fa-solid fa-robot text-[9px] text-primary"></i>
                         <span x-text="'@' + t.assignee"></span>
+                      </span>
+                    </template>
+                    <template x-if="t.locked_by">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="badge badge-warning badge-xs font-mono gap-1 text-[10px]" :title="'قفل بواسطة: ' + t.locked_by">
+                          <i class="fa-solid fa-lock text-[9px]"></i>
+                          <span x-text="t.locked_by"></span>
+                        </span>
+                        <button class="btn btn-ghost btn-xs text-warning p-0.5 h-auto min-h-0" @click="releaseTaskLock(t.id, t.locked_by)" title="فك قفل المهمة يدوياً">
+                          <i class="fa-solid fa-lock-open text-[10px]"></i>
+                        </button>
                       </span>
                     </template>
                   </div>
@@ -540,10 +626,24 @@ export function renderAppHtml(): string {
                         <div class="flex items-center gap-1.5 flex-wrap">
                           <span class="text-xs font-semibold" :class="{ 'line-through text-base-content/50': isTaskDone(sub.status) }" x-text="sub.title"></span>
                           <span class="badge badge-xs font-mono" :class="getTaskBadgeClass(sub.status)" x-text="sub.status"></span>
+                          <template x-if="sub.namespace">
+                            <span class="badge badge-outline badge-xs font-mono" x-text="sub.namespace"></span>
+                          </template>
                           <template x-if="sub.assignee">
                             <span class="badge badge-ghost badge-xs gap-1 font-mono">
                               <i class="fa-solid fa-robot text-[9px] text-primary"></i>
                               <span x-text="'@' + sub.assignee"></span>
+                            </span>
+                          </template>
+                          <template x-if="sub.locked_by">
+                            <span class="inline-flex items-center gap-1">
+                              <span class="badge badge-warning badge-xs font-mono gap-1 text-[9px]" :title="'قفل بواسطة: ' + sub.locked_by">
+                                <i class="fa-solid fa-lock text-[8px]"></i>
+                                <span x-text="sub.locked_by"></span>
+                              </span>
+                              <button class="btn btn-ghost btn-xs text-warning p-0.5 h-auto min-h-0" @click="releaseTaskLock(sub.id, sub.locked_by)" title="فك قفل المهمة">
+                                <i class="fa-solid fa-lock-open text-[9px]"></i>
+                              </button>
                             </span>
                           </template>
                         </div>
@@ -577,6 +677,77 @@ export function renderAppHtml(): string {
           </button>
         </div>
         <pre class="bg-base-300 p-3 rounded-lg text-xs mono text-base-content/80 overflow-x-auto max-h-44" x-text="taskAsciiPreview || '(لا توجد مهام)'"></pre>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB: WEBHOOKS & MULTI-AGENT EVENT STREAM -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'webhooks'" class="space-y-4">
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold">
+              <i class="fa-solid fa-satellite-dish"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">بث الأحداث واشتراكات الويبهوك (Multi-Agent Webhooks)</div>
+              <div class="text-[11px] text-base-content/60">إشعار الوكلاء الخارجية (VibzCode, Cursor, Claude Code) فورياً عند تغيير المهام أو إضافة ذكريات</div>
+            </div>
+          </div>
+
+          <button class="btn btn-sm btn-primary gap-1 shadow-sm" @click="openWebhookModal()">
+            <i class="fa-solid fa-plus text-xs"></i> <span>تسجيل ويبهوك جديد</span>
+          </button>
+        </div>
+
+        <div class="alert bg-base-100 border border-base-300 text-xs py-2 px-3 rounded-lg flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-info text-sm"></i>
+          <span>يتم إرسال الأحداث مع ترويسة <code class="text-primary font-mono font-bold">X-MemoryZ-Signature: sha256=...</code> للتحقق التام عبر HMAC-SHA256 والتأكد من موثوقية البث.</span>
+        </div>
+
+        <!-- Webhooks List -->
+        <div class="space-y-2.5">
+          <template x-for="wh in webhooks" :key="wh.id">
+            <div class="p-3.5 rounded-xl border border-base-300 bg-base-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+              <div class="space-y-1.5 flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono font-bold text-xs sm:text-sm text-primary break-all" x-text="wh.url"></span>
+                  <span class="badge badge-xs font-mono" :class="wh.active ? 'badge-success' : 'badge-ghost'" x-text="wh.active ? 'نشط (Active)' : 'معطل'"></span>
+                  <template x-if="wh.namespace">
+                    <span class="badge badge-outline badge-xs font-mono" x-text="'ns: ' + wh.namespace"></span>
+                  </template>
+                  <template x-if="wh.secret">
+                    <span class="badge badge-ghost badge-xs font-mono gap-1 text-base-content/60">
+                      <i class="fa-solid fa-key text-[9px] text-warning"></i>
+                      <span>HMAC-SHA256</span>
+                    </span>
+                  </template>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap text-xs text-base-content/70">
+                  <span class="font-semibold text-[11px]">الأحداث المشترك بها:</span>
+                  <template x-for="ev in (wh.events || '').split(',')" :key="ev">
+                    <span class="badge badge-secondary badge-xs font-mono" x-text="ev.trim()"></span>
+                  </template>
+                  <span class="text-base-content/40 text-[10px] mr-auto" x-text="formatDate(wh.created_at)"></span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1.5 flex-none self-end sm:self-center">
+                <button class="btn btn-ghost btn-xs btn-square text-error" @click="deleteWebhook(wh.id)" title="حذف الويبهوك">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <div x-show="webhooks.length === 0 && !loadingWebhooks" class="p-8 text-center text-base-content/60 border border-dashed border-base-300 rounded-xl">
+            <i class="fa-solid fa-tower-broadcast text-3xl mb-2 text-base-content/30"></i>
+            <div>لا توجد اشتراكات ويبهوك مسجلة حالياً.</div>
+            <div class="text-[11px] text-base-content/50 mt-1">سجل عنوان الويبهوك الخاص بـ VibzCode لتلقي تنبيهات المهام والذكريات فوراً.</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1033,6 +1204,49 @@ export function renderAppHtml(): string {
     <form method="dialog" class="modal-backdrop" @click="modals.task = false"><button>إغلاق</button></form>
   </dialog>
 
+  <!-- Modal: Webhook Registration Form -->
+  <dialog class="modal" :class="{ 'modal-open': modals.webhook }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-md">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-satellite-dish text-primary"></i>
+        <span>تسجيل اشتراك ويبهوك جديد (Webhook)</span>
+      </h3>
+      <form @submit.prevent="saveWebhook()" class="space-y-3 text-xs">
+        <div class="form-control">
+          <label class="label"><span class="label-text">رابط استقبال الويبهوك (Endpoint URL)</span></label>
+          <input type="url" class="input input-sm input-bordered font-mono" placeholder="http://127.0.0.1:3000/api/orchestrator/webhook-receiver" required x-model="formWebhook.url">
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">المفتاح السري للتوقيع (Secret Key - اختياري)</span></label>
+          <input type="text" class="input input-sm input-bordered font-mono" placeholder="سلسلة سرية للتحقق من HMAC-SHA256" x-model="formWebhook.secret">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="form-control">
+            <label class="label"><span class="label-text">نطاق العزل (Namespace)</span></label>
+            <input type="text" class="input input-sm input-bordered font-mono" placeholder="vibzcode, default..." x-model="formWebhook.namespace">
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">الأحداث المشترك بها</span></label>
+            <input type="text" class="input input-sm input-bordered font-mono" placeholder="task.*,memory.*" required x-model="formWebhook.events">
+          </div>
+        </div>
+
+        <div class="text-[10px] text-base-content/60 leading-normal">
+          الأحداث المدعومة: <code class="text-primary font-mono font-bold">task.status_changed</code>, <code class="text-primary font-mono font-bold">task.done</code>, <code class="text-primary font-mono font-bold">task.claimed</code>, <code class="text-primary font-mono font-bold">memory.created</code> أو <code class="text-primary font-mono font-bold">*</code>.
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.webhook = false">إلغاء</button>
+          <button type="submit" class="btn btn-primary btn-sm">حفظ وتفعيل الويبهوك</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.webhook = false"><button>إغلاق</button></form>
+  </dialog>
+
   <!-- Modal: Vault Store Form -->
   <dialog class="modal" :class="{ 'modal-open': modals.vault }">
     <div class="modal-box bg-base-200 border border-base-300 max-w-md">
@@ -1146,9 +1360,11 @@ export function renderAppHtml(): string {
       return {
         // State
         activeTab: 'memories',
+        currentNamespace: 'all',
         theme: localStorage.getItem('memoryz_theme') || 'dark',
         authToken: localStorage.getItem('mz_token') || '',
         currentUser: null,
+        runningCron: false,
         
         // Memories
         memories: [],
@@ -1164,6 +1380,11 @@ export function renderAppHtml(): string {
         taskAsciiPreview: '',
         taskStatusFilter: '',
         loadingTasks: false,
+
+        // Webhooks
+        webhooks: [],
+        webhooksCount: 0,
+        loadingWebhooks: false,
         
         // Context & Logs
         contextQuery: '',
@@ -1194,14 +1415,16 @@ export function renderAppHtml(): string {
         modals: {
           memory: false,
           task: false,
+          webhook: false,
           vault: false,
           decrypt: false,
           auth: false,
         },
         
         // Forms
-        formMemory: { type: 'preference', title: '', content: '' },
-        formTask: { parent_id: '', title: '', status: 'todo', priority: 'medium', assignee: '', description: '' },
+        formMemory: { type: 'preference', title: '', content: '', namespace: 'vibzcode' },
+        formTask: { parent_id: '', title: '', status: 'todo', priority: 'medium', assignee: '', description: '', namespace: 'vibzcode' },
+        formWebhook: { url: '', secret: '', events: 'task.*,memory.*', namespace: 'vibzcode' },
         formVault: { key_name: '', secret_value: '', passphrase: '' },
         authMode: 'login',
         authForm: { username: '', identifier: '', password: '' },
@@ -1212,7 +1435,7 @@ export function renderAppHtml(): string {
         showToast(msg) {
           this.toast.message = msg;
           this.toast.show = true;
-          setTimeout(() => { this.toast.show = false; }, 3000);
+          setTimeout(() => { this.toast.show = false; }, 3500);
         },
 
         async copyText(txt) {
@@ -1227,6 +1450,60 @@ export function renderAppHtml(): string {
           document.documentElement.setAttribute('data-theme', this.theme);
         },
 
+        setNamespace(ns) {
+          this.currentNamespace = ns;
+          this.loadMemories();
+          this.loadTasks();
+          if (this.activeTab === 'webhooks') this.loadWebhooks();
+        },
+
+        async triggerMaintenanceCron() {
+          if (this.runningCron) return;
+          this.runningCron = true;
+          this.showToast('جاري تشغيل دورة الصيانة والتدوير الذكي مع Jev AI... ⏳');
+          try {
+            const res = await fetch('/api/cron/run', {
+              method: 'POST',
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            const d = await res.json();
+            if (res.ok && d.result) {
+              const r = d.result;
+              this.showToast('اكتملت الصيانة! أقفال ملغاة: ' + (r.unlockedTasks || 0) + ' | تدوير: ' + (r.decayedMemories || 0) + ' | ضغط Jev: ' + (r.compactedPairs || 0));
+              this.loadTasks();
+              this.loadMemories();
+            } else {
+              this.showToast(d.error || 'حدث خطأ أثناء الصيانة');
+            }
+          } catch (err) {
+            this.showToast('فشل تشغيل الصيانة: ' + err.message);
+          } finally {
+            this.runningCron = false;
+          }
+        },
+
+        async releaseTaskLock(taskId, lockedBy) {
+          try {
+            const res = await fetch('/api/tasks/' + taskId + '/release', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {})
+              },
+              body: JSON.stringify({ agent_id: lockedBy || 'admin' })
+            });
+            if (res.ok) {
+              this.showToast('تم فك قفل المهمة بنجاح 🔓');
+              this.loadTasks();
+            } else {
+              const d = await res.json();
+              alert(d.error || 'فشل فك قفل المهمة');
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
         async initApp() {
           this.theme = localStorage.getItem('memoryz_theme') || 'dark';
           document.documentElement.setAttribute('data-theme', this.theme);
@@ -1235,12 +1512,14 @@ export function renderAppHtml(): string {
           }
           await this.loadMemories();
           await this.loadTasks();
+          await this.loadWebhooks();
         },
 
         switchTab(tab) {
           this.activeTab = tab;
           if (tab === 'memories') this.loadMemories();
           if (tab === 'tasks') this.loadTasks();
+          if (tab === 'webhooks') this.loadWebhooks();
           if (tab === 'context') this.loadLogs();
           if (tab === 'vault') this.loadVaultKeys();
           if (tab === 'admin') this.loadAdminStats();
@@ -1306,9 +1585,28 @@ export function renderAppHtml(): string {
         async loadMemories() {
           this.loadingMemories = true;
           try {
-            const url = this.memoryQuery
-              ? '/api/memories/recall?query=' + encodeURIComponent(this.memoryQuery)
-              : '/api/memories';
+            const nsParam = this.currentNamespace !== 'all' ? '&namespace=' + encodeURIComponent(this.currentNamespace) : '';
+            const q = (this.memoryQuery || '').trim();
+            let url = '/api/memories?limit=100' + nsParam;
+
+            // Direct 64-char Hash Lookup
+            const cleanHash = q.startsWith('#') ? q.slice(1) : q;
+            if (cleanHash.length === 64 && /^[0-9a-fA-F]+$/.test(cleanHash)) {
+              url = '/api/memories/' + cleanHash;
+              const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
+              const res = await fetch(url, { headers });
+              if (res.ok) {
+                const item = await res.json();
+                this.memories = [item];
+                this.totalMemories = 1;
+                this.loadingMemories = false;
+                return;
+              }
+            }
+
+            if (q) {
+              url = '/api/memories/recall?query=' + encodeURIComponent(q) + nsParam;
+            }
             const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
             const res = await fetch(url, { headers });
             if (res.ok) {
@@ -1334,7 +1632,12 @@ export function renderAppHtml(): string {
         },
 
         openMemoryModal() {
-          this.formMemory = { type: 'preference', title: '', content: '' };
+          this.formMemory = {
+            type: 'preference',
+            title: '',
+            content: '',
+            namespace: this.currentNamespace !== 'all' ? this.currentNamespace : 'vibzcode'
+          };
           this.modals.memory = true;
         },
 
@@ -1382,7 +1685,8 @@ export function renderAppHtml(): string {
         async loadTasks() {
           this.loadingTasks = true;
           try {
-            const url = '/api/tasks?format=tree' + (this.taskStatusFilter ? '&status=' + this.taskStatusFilter : '');
+            const nsParam = this.currentNamespace !== 'all' ? '&namespace=' + encodeURIComponent(this.currentNamespace) : '';
+            const url = '/api/tasks?format=tree' + (this.taskStatusFilter ? '&status=' + this.taskStatusFilter : '') + nsParam;
             const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
             const res = await fetch(url, { headers });
             if (res.ok) {
@@ -1390,8 +1694,7 @@ export function renderAppHtml(): string {
               this.taskTree = data.tree || [];
               this.taskAsciiPreview = data.ascii || '';
               
-              // Count total tasks
-              const flatRes = await fetch('/api/tasks', { headers });
+              const flatRes = await fetch('/api/tasks' + (nsParam ? '?' + nsParam.slice(1) : ''), { headers });
               const flatData = await flatRes.json();
               this.tasks = flatData.tasks || [];
               this.tasksCount = this.tasks.filter(t => !this.isTaskDone(t.status)).length;
@@ -1412,7 +1715,15 @@ export function renderAppHtml(): string {
         },
 
         openTaskModal(parentId = '') {
-          this.formTask = { parent_id: parentId, title: '', status: 'todo', priority: 'medium', assignee: '', description: '' };
+          this.formTask = {
+            parent_id: parentId,
+            title: '',
+            status: 'todo',
+            priority: 'medium',
+            assignee: '',
+            description: '',
+            namespace: this.currentNamespace !== 'all' ? this.currentNamespace : 'vibzcode'
+          };
           this.modals.task = true;
         },
 
@@ -1470,6 +1781,73 @@ export function renderAppHtml(): string {
             if (res.ok) {
               this.showToast('تم حذف المهمة');
               this.loadTasks();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        // --- WEBHOOKS ---
+        async loadWebhooks() {
+          this.loadingWebhooks = true;
+          try {
+            const nsParam = this.currentNamespace !== 'all' ? '?namespace=' + encodeURIComponent(this.currentNamespace) : '';
+            const res = await fetch('/api/webhooks' + nsParam, {
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.webhooks = data.webhooks || [];
+              this.webhooksCount = this.webhooks.length;
+            }
+          } catch (_e) {}
+          this.loadingWebhooks = false;
+        },
+
+        openWebhookModal() {
+          this.formWebhook = {
+            url: '',
+            secret: '',
+            events: 'task.*,memory.*',
+            namespace: this.currentNamespace !== 'all' ? this.currentNamespace : 'vibzcode'
+          };
+          this.modals.webhook = true;
+        },
+
+        async saveWebhook() {
+          if (!this.authToken) return this.openAuthModal();
+          try {
+            const res = await fetch('/api/webhooks', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify(this.formWebhook)
+            });
+            if (res.ok) {
+              this.modals.webhook = false;
+              this.showToast('تم تسجيل الويبهوك بنجاح 📡');
+              this.loadWebhooks();
+            } else {
+              const d = await res.json();
+              alert(d.error || 'فشل حفظ الويبهوك');
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        async deleteWebhook(id) {
+          if (!confirm('هل تريد إلغاء اشتراك هذا الويبهوك؟')) return;
+          try {
+            const res = await fetch('/api/webhooks/' + id, {
+              method: 'DELETE',
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            if (res.ok) {
+              this.showToast('تم حذف الويبهوك');
+              this.loadWebhooks();
             }
           } catch (err) {
             alert(err.message);
