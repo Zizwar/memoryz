@@ -5,6 +5,7 @@ import { handleMcpRoute } from "./src/routes/mcp.ts";
 import { generateOpenApiSpec } from "./src/routes/openapi.ts";
 import { renderAppHtml } from "./src/ui/html.ts";
 import { DEFAULT_SKILL_MD, renderDocsHtml } from "./src/ui/docs.ts";
+import { runMemoryMaintenance } from "./src/services/cron.ts";
 
 // Single source of truth for the published skill: /skill.md serves these exact
 // bytes and the well-known index advertises their digest, so the two cannot drift.
@@ -44,6 +45,19 @@ console.log(`
                                     __/ |      
    Sovereign Living Memory Substrate |___/       
 `);
+
+// Autonomous Memory Lifecycle & Compaction Cron (Deno Deploy native: every 2 hours)
+if ("cron" in Deno) {
+  // @ts-ignore: Deno.cron is a Deno Deploy global
+  (Deno as any).cron("memoryz-maintenance", "0 */2 * * *", async () => {
+    console.log("[Deno.cron] Running scheduled MemoryZ lifecycle maintenance...");
+    try {
+      await runMemoryMaintenance();
+    } catch (e) {
+      console.error("[Deno.cron] Scheduled maintenance error:", e);
+    }
+  });
+}
 
 Deno.serve({ port: config.port }, async (req: Request) => {
   const url = new URL(req.url);

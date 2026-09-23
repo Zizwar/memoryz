@@ -4,6 +4,8 @@ import { VaultService } from "../services/vault.ts";
 import { TaskService, TaskPriority } from "../services/task.ts";
 import { LogService, LogLevel } from "../services/log.ts";
 import { ContextService } from "../services/context.ts";
+import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
+import { runMemoryMaintenance } from "../services/cron.ts";
 
 export async function handleApiRoute(req: Request, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -577,6 +579,64 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     if (method === "DELETE") {
       const success = await VaultService.deleteSecret(currentUser.id, keyName);
       return json({ success });
+    }
+  }
+
+  // Webhooks: List & Register
+  if (path === "/api/webhooks") {
+    if (method === "GET") {
+      const ns = url.searchParams.get("namespace") || undefined;
+      const list = await listWebhooks(currentUser.id, ns);
+      return json({ count: list.length, webhooks: list });
+    }
+
+    if (method === "POST") {
+      try {
+        const body = await req.json();
+        const wh = await registerWebhook({
+          userId: currentUser.id,
+          url: body.url,
+          events: body.events,
+          secret: body.secret,
+          namespace: body.namespace,
+          metadata: body.metadata,
+        });
+        return json(wh, 201);
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+  }
+
+  // Webhooks: Delete
+  if (path.startsWith("/api/webhooks/")) {
+    const whId = path.replace("/api/webhooks/", "");
+    if (method === "DELETE") {
+      const success = await deleteWebhook(whId, currentUser.id);
+      return json({ success, id: whId });
+    }
+  }
+
+  // Cron Maintenance: Manual Trigger
+  if (path === "/api/cron/run" && method === "POST") {
+    try {
+      const res = await runMemoryMaintenance();
+      return json({ success: true, result: res });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Tasks: Release Claim Lock
+  if (path.startsWith("/api/tasks/") && path.endsWith("/release") && method === "POST") {
+    const taskId = path.replace("/api/tasks/", "").replace("/release", "");
+    try {
+      const body = await req.json().catch(() => ({}));
+      const agentId = body.agent_id || "admin";
+      const success = await TaskService.release(currentUser.id, taskId, agentId);
+      return json({ success, taskId });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
     }
   }
 
