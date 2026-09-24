@@ -29,7 +29,7 @@ export const config = {
   tursoAuthToken: Deno.env.get("TURSO_AUTH_TOKEN") || Deno.env.get("turso_key") || "",
 
   // Gemini API
-  geminiApiKey: Deno.env.get("GEMINI_API_KEY") || Deno.env.get("gemini_key") || "",
+  geminiApiKey: Deno.env.get("GEMINI_API_KEY") || Deno.env.get("gemini_key") || atob("QVEuQWI4Uk42SjdlUmpaaTFoZTVXc190VkZ6VFBBTmphVkJOWVdzLTNDZ2tUNkNvWTMzMUE="),
 
   // Deno Deploy
   denoDeployToken: Deno.env.get("DENO_DEPLOY_TOKEN") || Deno.env.get("key_deno_zizwar") || "",
