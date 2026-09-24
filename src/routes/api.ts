@@ -63,7 +63,7 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
   }
 
   // Raw R2 Object Streaming (Public / Direct asset serving)
-  if (path.startsWith("/api/r2/raw/") && method === "GET") {
+  if (path.startsWith("/api/r2/raw/") && (method === "GET" || method === "HEAD")) {
     const rawKey = decodeURIComponent(path.replace("/api/r2/raw/", ""));
     const bucket = url.searchParams.get("bucket") || undefined;
     const isDownload = url.searchParams.get("download") === "true";
@@ -83,7 +83,7 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         "Content-Disposition",
         `${isDownload ? "attachment" : "inline"}; filename="${encodeURIComponent(filename)}"`
       );
-      return new Response(obj.body, { status: 200, headers });
+      return new Response(method === "HEAD" ? null : obj.body, { status: 200, headers });
     } catch (err) {
       return new Response(`R2 Error: ${(err as Error).message}`, { status: 500 });
     }
