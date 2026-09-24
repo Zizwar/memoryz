@@ -4,6 +4,7 @@ import { TaskService, TaskPriority } from "../services/task.ts";
 import { LogService, LogLevel } from "../services/log.ts";
 import { ContextService } from "../services/context.ts";
 import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
+import { R2Service } from "../services/r2.ts";
 
 export const MCP_TOOLS = [
   // 1. Core Memory Operations
@@ -354,6 +355,73 @@ export const MCP_TOOLS = [
         id: { type: "string", description: "ID of the webhook to delete" },
       },
       required: ["id"],
+    },
+  },
+  // 6. Cloudflare R2 Object Storage
+  {
+    name: "r2_upload",
+    description: "Upload a file, artifact, or object to Cloudflare R2 storage. Supports text, JSON, or base64 encoded binary data.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: { type: "string", description: "Storage key or path in bucket (e.g. 'code/bundle.zip' or 'diagram.png')" },
+        content: { type: "string", description: "Text or JSON content to upload" },
+        base64: { type: "string", description: "Base64-encoded binary data to upload" },
+        content_type: { type: "string", description: "Optional MIME content type (e.g. 'application/json', 'image/png')" },
+        bucket: { type: "string", description: "Optional target R2 bucket (defaults to 'memoryz')" },
+        namespace: { type: "string", description: "Optional project namespace to prefix to the key" },
+      },
+      required: ["key"],
+    },
+  },
+  {
+    name: "r2_download",
+    description: "Download and read file content from Cloudflare R2 storage by key.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: { type: "string", description: "Key or path of the object in R2" },
+        bucket: { type: "string", description: "Optional bucket name (defaults to 'memoryz')" },
+      },
+      required: ["key"],
+    },
+  },
+  {
+    name: "r2_list",
+    description: "List files and objects stored in Cloudflare R2 storage with optional prefix and namespace filtering.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bucket: { type: "string", description: "Optional bucket name (defaults to 'memoryz')" },
+        prefix: { type: "string", description: "Optional key prefix to filter objects" },
+        namespace: { type: "string", description: "Optional namespace filter (e.g. 'vibzcode')" },
+        limit: { type: "number", description: "Max number of items to return (default: 50)" },
+      },
+    },
+  },
+  {
+    name: "r2_delete",
+    description: "Delete an object from Cloudflare R2 storage by key.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: { type: "string", description: "Key of the object to delete" },
+        bucket: { type: "string", description: "Optional bucket name (defaults to 'memoryz')" },
+      },
+      required: ["key"],
+    },
+  },
+  {
+    name: "r2_get_url",
+    description: "Get the direct URL to view or download a file from Cloudflare R2 storage.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: { type: "string", description: "Key of the object in R2" },
+        bucket: { type: "string", description: "Optional bucket name (defaults to 'memoryz')" },
+        download: { type: "boolean", description: "If true, generates a direct download attachment URL" },
+      },
+      required: ["key"],
     },
   },
 ];
@@ -770,6 +838,128 @@ export class McpServer {
       case "webhook_delete": {
         const ok = await deleteWebhook(args.id, userId);
         return { success: ok, id: args.id };
+      }
+
+      // --- Cloudflare R2 Object Storage ---
+      case "r2_upload": {
+        let data: Uint8Array | string;
+        if (args.base64) {
+          const binaryString = atob(args.base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          data = bytes;
+        } else if (args.content !== undefined) {
+          data = typeof args.content === "string" ? args.content : JSON.stringify(args.content, null, 2);
+        } else {
+          throw new Error("Must provide either 'content' or 'base64' to r2_upload");
+        }
+
+        const res = await R2Service.uploadObject({
+          key: args.key,
+          data,
+          contentType: args.content_type,
+          bucket: args.bucket,
+          namespace: args.namespace,
+        });
+
+        return {
+          status: "uploaded",
+          key: res.key,
+          bucket: res.bucket,
+          size: res.size,
+          size_formatted: R2Service.formatBytes(res.size),
+          url: res.url,
+          download_url: `${res.url}&download=true`,
+        };
+      }
+
+      case "r2_download": {
+        const obj = await R2Service.getObject(args.key, args.bucket);
+        if (!obj || !obj.body) {
+          throw new Error(`R2 Object '${args.key}' not found in bucket '${args.bucket || "memoryz"}'`);
+        }
+        const reader = obj.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let totalLen = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            chunks.push(value);
+            totalLen += value.length;
+          }
+        }
+        const fullBytes = new Uint8Array(totalLen);
+        let offset = 0;
+        for (const ch of chunks) {
+          fullBytes.set(ch, offset);
+          offset += ch.length;
+        }
+
+        const isText = obj.contentType.startsWith("text/") || 
+                       obj.contentType.includes("json") || 
+                       obj.contentType.includes("javascript") ||
+                       obj.contentType.includes("typescript") ||
+                       obj.contentType.includes("xml") ||
+                       obj.contentType.includes("yaml") ||
+                       obj.contentType.includes("csv") ||
+                       obj.contentType.includes("markdown");
+
+        if (isText) {
+          const text = new TextDecoder().decode(fullBytes);
+          return {
+            key: args.key,
+            content_type: obj.contentType,
+            size: totalLen,
+            size_formatted: R2Service.formatBytes(totalLen),
+            content: text,
+          };
+        } else {
+          let binary = "";
+          for (let i = 0; i < fullBytes.length; i++) {
+            binary += String.fromCharCode(fullBytes[i]);
+          }
+          const base64 = btoa(binary);
+          return {
+            key: args.key,
+            content_type: obj.contentType,
+            size: totalLen,
+            size_formatted: R2Service.formatBytes(totalLen),
+            base64,
+          };
+        }
+      }
+
+      case "r2_list": {
+        let prefix = args.prefix || "";
+        if (args.namespace && args.namespace !== "all" && args.namespace !== "default") {
+          prefix = prefix ? `${args.namespace}/${prefix}` : `${args.namespace}/`;
+        }
+        const res = await R2Service.listObjects({
+          bucket: args.bucket,
+          prefix: prefix || undefined,
+          limit: args.limit ? parseInt(args.limit, 10) : 50,
+        });
+        return res;
+      }
+
+      case "r2_delete": {
+        const res = await R2Service.deleteObject(args.key, args.bucket);
+        return { status: "deleted", ...res };
+      }
+
+      case "r2_get_url": {
+        const bucket = args.bucket || "memoryz";
+        const cleanKey = args.key.trim().replace(/^\/+/, "");
+        const base = `/api/r2/raw/${encodeURIComponent(cleanKey)}?bucket=${encodeURIComponent(bucket)}`;
+        return {
+          key: cleanKey,
+          bucket,
+          url: base,
+          download_url: `${base}&download=true`,
+        };
       }
 
       default:
