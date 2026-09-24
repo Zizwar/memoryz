@@ -215,7 +215,7 @@ export function renderAppHtml(): string {
   <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
 
     <!-- NAVIGATION CARDS (Responsive Grid, Mobile-Friendly, No Horizontal Overflow) -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
       <!-- 1. الذاكرة الحية -->
       <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
               :class="activeTab === 'memories' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
@@ -341,7 +341,26 @@ export function renderAppHtml(): string {
         </div>
       </button>
 
-      <!-- 8. لوحة المدير (مشروطة) -->
+      <!-- 8. ملفات وتخزين R2 -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'r2' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('r2')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'r2' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <span class="badge badge-xs font-mono font-medium"
+                :class="activeTab === 'r2' ? 'badge-primary' : 'badge-ghost'"
+                x-text="r2FilesCount"></span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">تخزين R2</div>
+          <div class="text-[10px] text-base-content/60 truncate">ملفات وحزم سحابية</div>
+        </div>
+      </button>
+
+      <!-- 9. لوحة المدير (مشروطة) -->
       <template x-if="currentUser && currentUser.role === 'admin'">
         <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98] col-span-2 sm:col-span-1"
                 :class="activeTab === 'admin' ? 'border-warning bg-warning/10 ring-1 ring-warning' : 'border-base-300 hover:border-warning/40'"
@@ -397,6 +416,7 @@ export function renderAppHtml(): string {
           activeTab === 'context' ? 'حزم السياق والسجلات اللحظية (Context Packs & Logs)' :
           activeTab === 'agent' ? 'محاكي الاسترجاع واستجابة الوكلاء (Agent Simulator)' :
           activeTab === 'vault' ? 'الخزنة السرية المشفرة (Zero-Knowledge Secret Vault)' :
+          activeTab === 'r2' ? 'مستودع الكائنات والملفات السحابية (Cloudflare R2 Storage)' :
           activeTab === 'connect' ? 'تهيئة بروتوكول MCP وأدوات CLI' : 'لوحة إدارة النظام'
         "></span>
       </div>
@@ -417,6 +437,12 @@ export function renderAppHtml(): string {
         <template x-if="activeTab === 'webhooks'">
           <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openWebhookModal()">
             <i class="fa-solid fa-plus text-xs"></i> <span>اشتراك ويبهوك جديد</span>
+          </button>
+        </template>
+
+        <template x-if="activeTab === 'r2'">
+          <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openR2UploadModal()">
+            <i class="fa-solid fa-cloud-arrow-up text-xs"></i> <span>رفع ملف</span>
           </button>
         </template>
 
@@ -1070,6 +1096,137 @@ export function renderAppHtml(): string {
     </div>
 
     <!-- ============================================================= -->
+    <!-- TAB 8: CLOUDFLARE R2 OBJECT STORAGE -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'r2'" class="space-y-4">
+      <!-- R2 Header & Toolbar -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div>
+              <div class="font-bold text-sm">مستودع الكائنات السحابي (Cloudflare R2 Storage)</div>
+              <div class="text-[11px] text-base-content/60">رفع واستضافة وحفظ مخرجات الوكلاء والملفات الثنائية بلا كلفة خروج (Zero Egress Fees)</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Bucket Selector -->
+            <div class="flex items-center gap-1.5 bg-base-100 px-2.5 py-1 rounded-lg border border-base-300 text-xs">
+              <i class="fa-solid fa-bucket text-primary text-xs"></i>
+              <span class="text-base-content/60">الحاوية:</span>
+              <select class="select select-ghost select-xs font-mono font-bold focus:outline-none"
+                      x-model="selectedR2Bucket"
+                      @change="loadR2Files()">
+                <template x-for="b in r2Buckets" :key="b.name || b">
+                  <option :value="b.name || b" x-text="b.name || b"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- Upload File Button -->
+            <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openR2UploadModal()">
+              <i class="fa-solid fa-plus text-xs"></i> <span>رفع ملف</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-base-300/80">
+          <div class="join flex-1 min-w-[200px]">
+            <span class="join-item btn btn-xs btn-ghost border border-base-300 bg-base-100 pointer-events-none">
+              <i class="fa-solid fa-filter text-[10px] text-base-content/60"></i>
+            </span>
+            <input type="text" class="input input-xs input-bordered join-item flex-1 focus:outline-none font-mono"
+                   placeholder="تصفية حسب المسار أو الاسم (Prefix)..."
+                   x-model="r2PrefixFilter"
+                   @input.debounce.300ms="loadR2Files()">
+          </div>
+
+          <button class="btn btn-xs btn-outline gap-1" @click="loadR2Files()">
+            <i class="fa-solid fa-rotate-right text-[10px]" :class="{ 'fa-spin': loadingR2 }"></i>
+            <span>تحديث</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Files List / Grid -->
+      <div class="card bg-base-200 border border-base-300 p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between text-xs text-base-content/70 pb-1 border-b border-base-300">
+          <div class="flex items-center gap-2 font-bold">
+            <i class="fa-solid fa-folder-tree text-primary"></i>
+            <span>الملفات المرفوعة (<span x-text="r2Files.length"></span>)</span>
+          </div>
+          <span class="text-[11px] text-base-content/50 font-mono" x-text="'Bucket: ' + selectedR2Bucket"></span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="table table-xs sm:table-sm w-full">
+            <thead>
+              <tr class="text-base-content/60 border-base-300">
+                <th>الملف / المسار</th>
+                <th>النوع</th>
+                <th>الحجم</th>
+                <th>تاريخ التحديث</th>
+                <th class="text-left">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="f in r2Files" :key="f.key">
+                <tr class="hover:bg-base-300/40 border-base-300/60 transition-colors">
+                  <td class="font-mono text-xs font-semibold">
+                    <div class="flex items-center gap-2">
+                      <i class="fa-solid" :class="getFileIcon(f.key, f.content_type)"></i>
+                      <span class="truncate max-w-xs sm:max-w-md" :title="f.key" x-text="f.key"></span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge badge-ghost badge-xs font-mono" x-text="f.content_type || 'binary'"></span>
+                  </td>
+                  <td class="font-mono text-xs" x-text="formatBytes(f.size)"></td>
+                  <td class="text-[11px] text-base-content/60 font-mono" x-text="f.last_modified ? new Date(f.last_modified).toLocaleString('ar-EG') : '-'"></td>
+                  <td>
+                    <div class="flex items-center justify-end gap-1">
+                      <!-- Open / View Link -->
+                      <a :href="f.url" target="_blank" class="btn btn-ghost btn-xs btn-square tooltip tooltip-bottom" data-tip="عرض الرابط المباشر">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xs text-info"></i>
+                      </a>
+                      <!-- Download Link -->
+                      <a :href="f.download_url" download class="btn btn-ghost btn-xs btn-square tooltip tooltip-bottom" data-tip="تحميل الملف">
+                        <i class="fa-solid fa-download text-xs text-primary"></i>
+                      </a>
+                      <!-- Copy URL -->
+                      <button class="btn btn-ghost btn-xs btn-square tooltip tooltip-bottom" data-tip="نسخ رابط التحميل" @click="copyText(window.location.origin + f.download_url)">
+                        <i class="fa-solid fa-copy text-xs"></i>
+                      </button>
+                      <!-- Delete File -->
+                      <button class="btn btn-ghost btn-xs btn-square text-error tooltip tooltip-bottom" data-tip="حذف الملف" @click="deleteR2File(f.key)">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div x-show="r2Files.length === 0 && !loadingR2" class="p-8 text-center text-base-content/60 border border-dashed border-base-300 rounded-xl">
+          <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2 text-base-content/30"></i>
+          <div>لا توجد ملفات في هذه الحاوية حالياً.</div>
+          <div class="text-[11px] text-base-content/50 mt-1">انقر على "رفع ملف" أو استخدم أداة MCP r2_upload من قبل الوكلاء الذكية.</div>
+        </div>
+
+        <div x-show="loadingR2" class="p-8 text-center">
+          <span class="loading loading-spinner loading-md text-primary"></span>
+          <div class="text-xs text-base-content/60 mt-2">جاري قراءة كائنات Cloudflare R2...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
     <!-- TAB 7: ADMIN CONTROL PLANE -->
     <!-- ============================================================= -->
     <template x-if="currentUser && currentUser.role === 'admin'">
@@ -1346,6 +1503,64 @@ export function renderAppHtml(): string {
     <form method="dialog" class="modal-backdrop" @click="modals.auth = false"><button>إغلاق</button></form>
   </dialog>
 
+  <!-- Modal: R2 Upload Form -->
+  <dialog class="modal" :class="{ 'modal-open': modals.r2Upload }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-md">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-up text-primary"></i>
+        <span>رفع ملف إلى Cloudflare R2</span>
+      </h3>
+      <form @submit.prevent="submitR2Upload()" class="space-y-3 text-xs">
+        <div class="tabs tabs-boxed mb-2 p-1">
+          <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': formR2Upload.mode === 'file' }" @click="formR2Upload.mode = 'file'">ملف محلي</a>
+          <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': formR2Upload.mode === 'text' }" @click="formR2Upload.mode = 'text'">نص / كود</a>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">الحاوية (Bucket)</span></label>
+          <select class="select select-sm select-bordered font-mono" x-model="formR2Upload.bucket">
+            <template x-for="b in r2Buckets" :key="b.name || b">
+              <option :value="b.name || b" x-text="b.name || b"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text">مسار أو اسم الملف في R2 (Key)</span></label>
+          <input type="text" class="input input-sm input-bordered font-mono"
+                 placeholder="مثلاً: bundles/app.zip أو code/script.py"
+                 required x-model="formR2Upload.key">
+        </div>
+
+        <template x-if="formR2Upload.mode === 'file'">
+          <div class="form-control">
+            <label class="label"><span class="label-text">اختر الملف</span></label>
+            <input type="file" class="file-input file-input-sm file-input-bordered w-full"
+                   @change="handleR2FileSelect($event)">
+          </div>
+        </template>
+
+        <template x-if="formR2Upload.mode === 'text'">
+          <div class="form-control">
+            <label class="label"><span class="label-text">محتوى النص أو الكود</span></label>
+            <textarea class="textarea textarea-sm textarea-bordered font-mono h-28"
+                      placeholder="الصق محتوى الملف هنا..."
+                      x-model="formR2Upload.textContent"></textarea>
+          </div>
+        </template>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.r2Upload = false">إلغاء</button>
+          <button type="submit" class="btn btn-primary btn-sm gap-1" :disabled="uploadingR2">
+            <span class="loading loading-spinner loading-xs" x-show="uploadingR2"></span>
+            <span>بدء الرفع 🚀</span>
+          </button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop" @click="modals.r2Upload = false"><button>إغلاق</button></form>
+  </dialog>
+
   <!-- Toast Notification (Minimalist) -->
   <div class="toast toast-end toast-bottom z-50 pointer-events-none" x-show="toast.show" x-transition>
     <div class="alert alert-info py-2 px-4 shadow-lg text-xs font-semibold gap-2">
@@ -1407,6 +1622,15 @@ export function renderAppHtml(): string {
         decryptKeyName: '',
         decryptPassphrase: '',
         decryptedResult: '',
+
+        // R2 Storage Substrate
+        r2Files: [],
+        r2FilesCount: 0,
+        r2Buckets: [{ name: 'memoryz' }, { name: 'vibenote' }],
+        selectedR2Bucket: 'memoryz',
+        r2PrefixFilter: '',
+        loadingR2: false,
+        uploadingR2: false,
         
         // Admin
         adminStats: {},
@@ -1416,6 +1640,7 @@ export function renderAppHtml(): string {
           memory: false,
           task: false,
           webhook: false,
+          r2Upload: false,
           vault: false,
           decrypt: false,
           auth: false,
@@ -1426,6 +1651,7 @@ export function renderAppHtml(): string {
         formTask: { parent_id: '', title: '', status: 'todo', priority: 'medium', assignee: '', description: '', namespace: 'vibzcode' },
         formWebhook: { url: '', secret: '', events: 'task.*,memory.*', namespace: 'vibzcode' },
         formVault: { key_name: '', secret_value: '', passphrase: '' },
+        formR2Upload: { mode: 'file', key: '', bucket: 'memoryz', file: null, textContent: '' },
         authMode: 'login',
         authForm: { username: '', identifier: '', password: '' },
 
@@ -1455,6 +1681,7 @@ export function renderAppHtml(): string {
           this.loadMemories();
           this.loadTasks();
           if (this.activeTab === 'webhooks') this.loadWebhooks();
+          if (this.activeTab === 'r2') this.loadR2Files();
         },
 
         async triggerMaintenanceCron() {
@@ -1513,6 +1740,8 @@ export function renderAppHtml(): string {
           await this.loadMemories();
           await this.loadTasks();
           await this.loadWebhooks();
+          await this.loadR2Files();
+          await this.loadR2Buckets();
         },
 
         switchTab(tab) {
@@ -1520,6 +1749,7 @@ export function renderAppHtml(): string {
           if (tab === 'memories') this.loadMemories();
           if (tab === 'tasks') this.loadTasks();
           if (tab === 'webhooks') this.loadWebhooks();
+          if (tab === 'r2') this.loadR2Files();
           if (tab === 'context') this.loadLogs();
           if (tab === 'vault') this.loadVaultKeys();
           if (tab === 'admin') this.loadAdminStats();
@@ -1848,6 +2078,159 @@ export function renderAppHtml(): string {
             if (res.ok) {
               this.showToast('تم حذف الويبهوك');
               this.loadWebhooks();
+            }
+          } catch (err) {
+            alert(err.message);
+          }
+        },
+
+        // --- CLOUDFLARE R2 OBJECT STORAGE ---
+        getFileIcon(key, contentType) {
+          const k = (key || '').toLowerCase();
+          const ct = (contentType || '').toLowerCase();
+          if (ct.startsWith('image/') || k.match(/\.(png|jpg|jpeg|gif|webp|svg)$/)) return 'fa-file-image text-warning';
+          if (ct.includes('zip') || ct.includes('tar') || ct.includes('gzip') || k.match(/\.(zip|tar|gz|7z|rar)$/)) return 'fa-file-zipper text-accent';
+          if (ct.includes('json') || ct.includes('javascript') || ct.includes('typescript') || ct.includes('python') || k.match(/\.(ts|js|json|py|sh|html|css)$/)) return 'fa-file-code text-info';
+          if (ct.startsWith('text/') || k.match(/\.(txt|md|log|csv)$/)) return 'fa-file-lines text-primary';
+          return 'fa-file text-base-content/60';
+        },
+
+        formatBytes(bytes) {
+          if (!bytes || bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        async loadR2Buckets() {
+          try {
+            const res = await fetch('/api/r2/buckets', {
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            if (res.ok) {
+              const d = await res.json();
+              if (d.buckets && d.buckets.length > 0) {
+                this.r2Buckets = d.buckets;
+              }
+            }
+          } catch (_e) {}
+        },
+
+        async loadR2Files() {
+          this.loadingR2 = true;
+          try {
+            const params = new URLSearchParams();
+            if (this.selectedR2Bucket) params.set('bucket', this.selectedR2Bucket);
+            if (this.r2PrefixFilter) params.set('prefix', this.r2PrefixFilter.trim());
+            if (this.currentNamespace !== 'all' && this.currentNamespace !== 'default' && !this.r2PrefixFilter) {
+              params.set('namespace', this.currentNamespace);
+            }
+            const res = await fetch('/api/r2/objects?' + params.toString(), {
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            if (res.ok) {
+              const d = await res.json();
+              this.r2Files = d.objects || [];
+              this.r2FilesCount = this.r2Files.length;
+            }
+          } catch (_e) {}
+          this.loadingR2 = false;
+        },
+
+        openR2UploadModal() {
+          this.formR2Upload = {
+            mode: 'file',
+            key: this.currentNamespace !== 'all' && this.currentNamespace !== 'default' ? this.currentNamespace + '/' : '',
+            bucket: this.selectedR2Bucket || 'memoryz',
+            file: null,
+            textContent: '',
+          };
+          this.modals.r2Upload = true;
+        },
+
+        handleR2FileSelect(event) {
+          const file = event.target.files && event.target.files[0];
+          if (file) {
+            this.formR2Upload.file = file;
+            if (!this.formR2Upload.key || this.formR2Upload.key.endsWith('/')) {
+              const prefix = this.formR2Upload.key || '';
+              this.formR2Upload.key = prefix + file.name;
+            }
+          }
+        },
+
+        async submitR2Upload() {
+          if (!this.formR2Upload.key.trim()) {
+            alert('يرجى كتابة مسار/اسم الملف');
+            return;
+          }
+          this.uploadingR2 = true;
+          try {
+            let res;
+            if (this.formR2Upload.mode === 'file') {
+              if (!this.formR2Upload.file) {
+                alert('يرجى اختيار ملف');
+                this.uploadingR2 = false;
+                return;
+              }
+              const formData = new FormData();
+              formData.append('file', this.formR2Upload.file);
+              formData.append('key', this.formR2Upload.key);
+              formData.append('bucket', this.formR2Upload.bucket);
+              if (this.currentNamespace !== 'all') {
+                formData.append('namespace', this.currentNamespace);
+              }
+
+              res = await fetch('/api/r2/upload', {
+                method: 'POST',
+                headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {},
+                body: formData,
+              });
+            } else {
+              res = await fetch('/api/r2/upload', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}),
+                },
+                body: JSON.stringify({
+                  key: this.formR2Upload.key,
+                  bucket: this.formR2Upload.bucket,
+                  content: this.formR2Upload.textContent,
+                  namespace: this.currentNamespace !== 'all' ? this.currentNamespace : undefined,
+                }),
+              });
+            }
+
+            if (res.ok) {
+              this.modals.r2Upload = false;
+              this.showToast('تم رفع الملف إلى Cloudflare R2 بنجاح ☁️');
+              await this.loadR2Files();
+            } else {
+              const d = await res.json();
+              alert(d.error || 'فشل رفع الملف');
+            }
+          } catch (err) {
+            alert(err.message);
+          } finally {
+            this.uploadingR2 = false;
+          }
+        },
+
+        async deleteR2File(key) {
+          if (!confirm('هل تريد بالتأكيد حذف الملف ' + key + ' من Cloudflare R2؟')) return;
+          try {
+            const res = await fetch('/api/r2/objects/' + encodeURIComponent(key) + '?bucket=' + encodeURIComponent(this.selectedR2Bucket), {
+              method: 'DELETE',
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            if (res.ok) {
+              this.showToast('تم حذف الملف من R2 بنجاح 🗑️');
+              await this.loadR2Files();
+            } else {
+              const d = await res.json();
+              alert(d.error || 'فشل حذف الملف');
             }
           } catch (err) {
             alert(err.message);

@@ -6,6 +6,7 @@ import { LogService, LogLevel } from "../services/log.ts";
 import { ContextService } from "../services/context.ts";
 import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
 import { runMemoryMaintenance } from "../services/cron.ts";
+import { R2Service } from "../services/r2.ts";
 
 export async function handleApiRoute(req: Request, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -58,6 +59,33 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       return json(session);
     } catch (err) {
       return json({ error: (err as Error).message }, 401);
+    }
+  }
+
+  // Raw R2 Object Streaming (Public / Direct asset serving)
+  if (path.startsWith("/api/r2/raw/") && method === "GET") {
+    const rawKey = decodeURIComponent(path.replace("/api/r2/raw/", ""));
+    const bucket = url.searchParams.get("bucket") || undefined;
+    const isDownload = url.searchParams.get("download") === "true";
+    try {
+      const obj = await R2Service.getObject(rawKey, bucket);
+      if (!obj || !obj.body) {
+        return new Response("Object not found in Cloudflare R2", { status: 404 });
+      }
+      const headers = new Headers();
+      headers.set("Content-Type", obj.contentType);
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+      headers.set("Access-Control-Allow-Origin", "*");
+      if (obj.size) headers.set("Content-Length", obj.size.toString());
+      if (obj.etag) headers.set("ETag", obj.etag);
+      const filename = rawKey.split("/").pop() || "file";
+      headers.set(
+        "Content-Disposition",
+        `${isDownload ? "attachment" : "inline"}; filename="${encodeURIComponent(filename)}"`
+      );
+      return new Response(obj.body, { status: 200, headers });
+    } catch (err) {
+      return new Response(`R2 Error: ${(err as Error).message}`, { status: 500 });
     }
   }
 
@@ -639,6 +667,131 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       return json({ success, taskId });
     } catch (err) {
       return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // ==========================================
+  // 6. Cloudflare R2 Storage Endpoints
+  // ==========================================
+
+  // List R2 Buckets
+  if (path === "/api/r2/buckets" && method === "GET") {
+    try {
+      const buckets = await R2Service.listBuckets();
+      return json({ count: buckets.length, buckets });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // List R2 Objects
+  if (path === "/api/r2/objects" && method === "GET") {
+    try {
+      const bucket = url.searchParams.get("bucket") || undefined;
+      const prefix = url.searchParams.get("prefix") || undefined;
+      const namespace = url.searchParams.get("namespace") || undefined;
+      const cursor = url.searchParams.get("cursor") || undefined;
+      const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+
+      // If namespace is specified and prefix is empty, filter by namespace folder
+      let effectivePrefix = prefix;
+      if (!effectivePrefix && namespace && namespace !== "all" && namespace !== "default") {
+        effectivePrefix = `${namespace}/`;
+      }
+
+      const res = await R2Service.listObjects({
+        bucket,
+        prefix: effectivePrefix,
+        cursor,
+        limit,
+      });
+
+      return json({ ...res, bucket: bucket || "memoryz" });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Upload R2 Object (Supports multipart/form-data, json with base64/content, or raw binary)
+  if (path === "/api/r2/upload" && method === "POST") {
+    try {
+      const contentTypeHeader = req.headers.get("content-type") || "";
+      const bucket = url.searchParams.get("bucket") || undefined;
+      const namespace = url.searchParams.get("namespace") || undefined;
+
+      // 1. Multipart Form Data (Browser file upload)
+      if (contentTypeHeader.includes("multipart/form-data")) {
+        const formData = await req.formData();
+        const file = formData.get("file");
+        if (!file || !(file instanceof File)) {
+          return json({ error: "Missing file field in form-data" }, 400);
+        }
+
+        const customKey = (formData.get("key") as string) || (formData.get("path") as string);
+        const formNamespace = (formData.get("namespace") as string) || namespace;
+        const formBucket = (formData.get("bucket") as string) || bucket;
+        const key = customKey ? customKey.trim() : file.name;
+
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const result = await R2Service.uploadObject({
+          key,
+          data: bytes,
+          contentType: file.type || undefined,
+          bucket: formBucket,
+          namespace: formNamespace,
+        });
+
+        return json(result, 201);
+      }
+
+      // 2. JSON Body (Base64 or UTF-8 text payload)
+      if (contentTypeHeader.includes("application/json")) {
+        const body = await req.json();
+        const key = body.key || body.filename || `file-${Date.now()}`;
+        let data: Uint8Array | string = body.content || "";
+        if (body.base64) {
+          const binaryStr = atob(body.base64);
+          data = Uint8Array.from(binaryStr, (c) => c.charCodeAt(0));
+        }
+
+        const result = await R2Service.uploadObject({
+          key,
+          data,
+          contentType: body.content_type || body.contentType,
+          bucket: body.bucket || bucket,
+          namespace: body.namespace || namespace,
+          metadata: body.metadata,
+        });
+
+        return json(result, 201);
+      }
+
+      // 3. Raw Body
+      const key = url.searchParams.get("key") || `raw-${Date.now()}`;
+      const bytes = new Uint8Array(await req.arrayBuffer());
+      const result = await R2Service.uploadObject({
+        key,
+        data: bytes,
+        contentType: contentTypeHeader || undefined,
+        bucket,
+        namespace,
+      });
+
+      return json(result, 201);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Delete R2 Object
+  if (path.startsWith("/api/r2/objects/") && method === "DELETE") {
+    const rawKey = decodeURIComponent(path.replace("/api/r2/objects/", ""));
+    const bucket = url.searchParams.get("bucket") || undefined;
+    try {
+      const res = await R2Service.deleteObject(rawKey, bucket);
+      return json(res);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
     }
   }
 
