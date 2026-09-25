@@ -5,7 +5,7 @@
 
 const JEV_API_URL = "https://api.typesafe.ai/v1/systemone";
 const DEFAULT_MODEL = "jev-latest";
-const DEFAULT_KEY = Deno.env.get("JEV_AI_KEY") || "apikey_2452c1268053e64bdf9a47110a02f0a93b_5a672ff3ba0180ad4771ed162b6a2c4ef43733d5468f02a292cc3a8133c99b7f";
+const DEFAULT_KEY = Deno.env.get("JEV_AI_KEY") || "";
 
 export class JevService {
   private static apiKey = DEFAULT_KEY;
@@ -14,7 +14,17 @@ export class JevService {
     this.apiKey = key;
   }
 
+  static isEnabled(): boolean {
+    if (Deno.env.get("JEV_DISABLED") === "true" || Deno.env.get("DISABLE_JEV") === "true") {
+      return false;
+    }
+    return Boolean(this.apiKey && this.apiKey.trim().length > 0);
+  }
+
   static async evaluate(state: any, questions: Record<string, any>, model = DEFAULT_MODEL): Promise<any> {
+    if (!this.isEnabled()) {
+      throw new Error("Jev AI is currently disabled or API key is not configured.");
+    }
     const res = await fetch(JEV_API_URL, {
       method: "POST",
       headers: {
