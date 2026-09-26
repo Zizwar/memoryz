@@ -29,7 +29,11 @@ export const config = {
   tursoAuthToken: Deno.env.get("TURSO_AUTH_TOKEN") || Deno.env.get("turso_key") || "",
 
   // Gemini API
-  geminiApiKey: Deno.env.get("GEMINI_API_KEY") || Deno.env.get("gemini_key") || atob("QVEuQWI4Uk42SjdlUmpaaTFoZTVXc190VkZ6VFBBTmphVkJOWVdzLTNDZ2tUNkNvWTMzMUE="),
+  geminiApiKey: Deno.env.get("GEMINI_API_KEY") || Deno.env.get("gemini_key") || "",
+
+  // Vercel AI Gateway & TypeSafe Jev
+  vercelAiKey: Deno.env.get("VERCEL_AI_KEY") || "",
+  jevAiKey: Deno.env.get("JEV_AI_KEY") || "",
 
   // Deno Deploy
   denoDeployToken: Deno.env.get("DENO_DEPLOY_TOKEN") || Deno.env.get("key_deno_zizwar") || "",
@@ -48,6 +52,6 @@ export const config = {
 
   // Cloudflare R2 Storage Substrate
   r2AccountId: Deno.env.get("CLOUDFLARE_ACCOUNT_ID") || Deno.env.get("R2_ACCOUNT_ID") || "2b9e37321a07ea1c1452c3a1985b6347",
-  r2ApiToken: Deno.env.get("CLOUDFLARE_R2_TOKEN_VALUE") || Deno.env.get("R2_API_TOKEN") || atob("Y2ZhdF9veGdhTVIzVHcwR0dranFZRVFZWXZhWldQaG1IUmNIaGlsQjdSM3ZpYzViNDM0MmU="),
+  r2ApiToken: Deno.env.get("CLOUDFLARE_R2_TOKEN_VALUE") || Deno.env.get("R2_API_TOKEN") || "",
   r2DefaultBucket: Deno.env.get("CLOUDFLARE_R2_BUCKET") || Deno.env.get("R2_BUCKET") || "memoryz",
 };
