@@ -43,25 +43,47 @@ export class JevService {
     const token = isVercel ? vercelKey : directKey;
     const effectiveModel = isVercel && (model === DEFAULT_MODEL || !model) ? "typesafe-ai/jev" : model;
 
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        state,
-        model: effectiveModel,
-        questions,
-      }),
-    });
+    const maxRetries = 2;
+    let lastError: Error | null = null;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Jev AI evaluation failed via ${isVercel ? 'Vercel AI Gateway' : 'TypeSafe'} (${res.status}): ${errText}`);
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        // Wait 1.5s before retry on transient errors
+        await new Promise((r) => setTimeout(r, 1500 * attempt));
+      }
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            state,
+            model: effectiveModel,
+            questions,
+          }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          const isTransient = res.status === 429 || res.status === 503 || res.status === 502;
+          if (isTransient && attempt < maxRetries) {
+            console.warn(`[JevService] Transient ${res.status} upstream error, retrying (${attempt + 1}/${maxRetries})...`);
+            continue;
+          }
+          throw new Error(`Jev AI evaluation failed via ${isVercel ? 'Vercel AI Gateway' : 'TypeSafe'} (${res.status}): ${errText}`);
+        }
+
+        return await res.json();
+      } catch (err) {
+        lastError = err as Error;
+        if (attempt >= maxRetries) throw err;
+      }
     }
 
-    return await res.json();
+    throw lastError || new Error("Jev AI evaluation failed after retries");
   }
 
   /**
