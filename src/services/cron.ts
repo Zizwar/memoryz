@@ -125,67 +125,73 @@ export async function runMemoryMaintenance(): Promise<CronMaintenanceResult> {
   // Evaluates pairs of memories in the same namespace with matching types
   // ==============================================================
   let compactedMemoriesCount = 0;
-  try {
-    const candidatesRes = await db.execute({
-      sql: `
-        SELECT hash, title, substr(content, 1, 400) as snippet, type, namespace, created_at
-        FROM memories
-        WHERE is_deleted = 0 AND type IN ('note', 'preference')
-        ORDER BY created_at DESC
-        LIMIT 15
-      `,
-      args: [],
-    });
+  const jevActive = await JevService.isEnabled();
 
-    const candidates = candidatesRes.rows;
-    if (candidates.length >= 2) {
-      // Compare top recent pair
-      for (let i = 0; i < candidates.length - 1 && compactedMemoriesCount < 2; i++) {
-        const memA = candidates[i];
-        const memB = candidates[i + 1];
+  if (jevActive) {
+    try {
+      const candidatesRes = await db.execute({
+        sql: `
+          SELECT hash, title, substr(content, 1, 400) as snippet, type, namespace, created_at
+          FROM memories
+          WHERE is_deleted = 0 AND type IN ('note', 'preference')
+          ORDER BY created_at DESC
+          LIMIT 15
+        `,
+        args: [],
+      });
 
-        if (memA.namespace === memB.namespace && memA.hash !== memB.hash) {
-          const stateToCompare = `Memory A (${memA.title || 'Untitled'}):\n${memA.snippet}\n\nMemory B (${memB.title || 'Untitled'}):\n${memB.snippet}`;
-          
-          const evalRes = await JevService.evaluate(stateToCompare, {
-            is_redundant: {
-              type: "noul",
-              instructions: "Do Memory A and Memory B state the exact same technical rule, decision, or fact, making one redundant?",
-              criteria: {
-                true: "Substantially identical decision or superseded duplicate.",
-                false: "Distinct, complementary, or different topics.",
+      const candidates = candidatesRes.rows;
+      if (candidates.length >= 2) {
+        // Compare top recent pair
+        for (let i = 0; i < candidates.length - 1 && compactedMemoriesCount < 2; i++) {
+          const memA = candidates[i];
+          const memB = candidates[i + 1];
+
+          if (memA.namespace === memB.namespace && memA.hash !== memB.hash) {
+            const stateToCompare = `Memory A (${memA.title || 'Untitled'}):\n${memA.snippet}\n\nMemory B (${memB.title || 'Untitled'}):\n${memB.snippet}`;
+            
+            const evalRes = await JevService.evaluate(stateToCompare, {
+              is_redundant: {
+                type: "noul",
+                instructions: "Do Memory A and Memory B state the exact same technical rule, decision, or fact, making one redundant?",
+                criteria: {
+                  true: "Substantially identical decision or superseded duplicate.",
+                  false: "Distinct, complementary, or different topics.",
+                },
               },
-            },
-          });
-
-          const redundancyProb = evalRes.answers?.is_redundant?.noul ?? 0;
-          if (redundancyProb >= 0.85) {
-            // Older memory is superseded by newer memory
-            const newerHash = Number(memA.created_at) > Number(memB.created_at) ? String(memA.hash) : String(memB.hash);
-            const olderHash = newerHash === String(memA.hash) ? String(memB.hash) : String(memA.hash);
-
-            await db.execute({
-              sql: `
-                INSERT OR REPLACE INTO memory_links (source_hash, target_hash, relation_type, weight, created_at)
-                VALUES (?, ?, 'supersedes', 1.0, ?)
-              `,
-              args: [newerHash, olderHash, now],
             });
 
-            // Soft-deprecate older memory
-            await db.execute({
-              sql: "UPDATE memories SET recall_score = recall_score * 0.2, updated_at = ? WHERE hash = ?",
-              args: [now, olderHash],
-            });
+            const redundancyProb = evalRes.answers?.is_redundant?.noul ?? 0;
+            if (redundancyProb >= 0.85) {
+              // Older memory is superseded by newer memory
+              const newerHash = Number(memA.created_at) > Number(memB.created_at) ? String(memA.hash) : String(memB.hash);
+              const olderHash = newerHash === String(memA.hash) ? String(memB.hash) : String(memA.hash);
 
-            compactedMemoriesCount++;
-            details.push(`Jev AI compacted redundant memories: [${newerHash.slice(0, 8)}] supersedes [${olderHash.slice(0, 8)}] (confidence: ${(redundancyProb * 100).toFixed(0)}%).`);
+              await db.execute({
+                sql: `
+                  INSERT OR REPLACE INTO memory_links (source_hash, target_hash, relation_type, weight, created_at)
+                  VALUES (?, ?, 'supersedes', 1.0, ?)
+                `,
+                args: [newerHash, olderHash, now],
+              });
+
+              // Soft-deprecate older memory
+              await db.execute({
+                sql: "UPDATE memories SET recall_score = recall_score * 0.2, updated_at = ? WHERE hash = ?",
+                args: [now, olderHash],
+              });
+
+              compactedMemoriesCount++;
+              details.push(`Jev AI compacted redundant memories: [${newerHash.slice(0, 8)}] supersedes [${olderHash.slice(0, 8)}] (confidence: ${(redundancyProb * 100).toFixed(0)}%).`);
+            }
           }
         }
       }
+    } catch (jevErr) {
+      console.warn("[Cron] Jev AI compaction skipped:", (jevErr as Error).message);
     }
-  } catch (jevErr) {
-    console.warn("[Cron] Jev AI compaction skipped:", (jevErr as Error).message);
+  } else {
+    details.push("Jev AI compaction skipped (disabled in system settings).");
   }
 
   const durationMs = Date.now() - startTime;

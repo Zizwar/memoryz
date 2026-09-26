@@ -3,6 +3,8 @@
  * System One Decision & Quality Gate Engine
  */
 
+import { SettingsService } from "./settings.ts";
+
 const JEV_API_URL = "https://api.typesafe.ai/v1/systemone";
 const DEFAULT_MODEL = "jev-latest";
 const DEFAULT_KEY = Deno.env.get("JEV_AI_KEY") || "";
@@ -14,21 +16,26 @@ export class JevService {
     this.apiKey = key;
   }
 
-  static isEnabled(): boolean {
+  static async isEnabled(): Promise<boolean> {
     if (Deno.env.get("JEV_DISABLED") === "true" || Deno.env.get("DISABLE_JEV") === "true") {
       return false;
     }
-    return Boolean(this.apiKey && this.apiKey.trim().length > 0);
+    const dbEnabled = await SettingsService.isJevEnabled();
+    if (!dbEnabled) return false;
+    const key = this.apiKey || Deno.env.get("JEV_AI_KEY") || "";
+    return Boolean(key && key.trim().length > 0);
   }
 
   static async evaluate(state: any, questions: Record<string, any>, model = DEFAULT_MODEL): Promise<any> {
-    if (!this.isEnabled()) {
-      throw new Error("Jev AI is currently disabled or API key is not configured.");
+    const enabled = await this.isEnabled();
+    if (!enabled) {
+      throw new Error("Jev AI is currently disabled in system settings to protect credits.");
     }
+    const key = this.apiKey || Deno.env.get("JEV_AI_KEY") || "";
     const res = await fetch(JEV_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
+        "Authorization": `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -108,17 +115,17 @@ export class JevService {
         type: "choice",
         instructions: "Assign the appropriate operational priority level for this engineering task.",
         criteria: {
-          urgent: "Security blocker, production outage, critical crash, data loss risk.",
-          high: "Core architectural feature, required milestone blocker, major enhancement.",
-          medium: "Standard feature, normal refactor, test coverage improvement.",
-          low: "Nice-to-have, cosmetic tweak, documentation typo, non-urgent cleanup.",
+          urgent: "Blocking critical bug, security vulnerability, data loss, or server down.",
+          high: "Core architectural feature, significant refactor, or important milestone.",
+          medium: "Normal feature, routine test, standard enhancement, or documentation.",
+          low: "Minor polish, non-blocking cosmetic detail, or future exploratory idea.",
         },
       },
     });
 
     return {
       priority: (res.answers?.priority?.choice as any) || "medium",
-      confidence: res.answers?.priority?.confidence || 1.0,
+      confidence: res.answers?.priority?.confidence ?? 0.5,
     };
   }
 }
