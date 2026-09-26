@@ -213,6 +213,15 @@ export async function initDb(): Promise<void> {
     // Column already exists — ignore
   }
 
+  // App Settings Table
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+
   // stderr, not stdout: stdout is the JSON-RPC framing channel for the stdio MCP bridge
   console.error("MemoryZ v3 Database schema initialized successfully on Turso Cloud.");
 }

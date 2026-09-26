@@ -78,6 +78,14 @@ export function renderAppHtml(): string {
         <i class="fa-solid text-xs sm:text-sm" :class="theme === 'dark' ? 'fa-sun text-warning' : 'fa-moon text-primary'"></i>
       </button>
 
+      <!-- Prominent Login Button when unauthenticated -->
+      <template x-if="!currentUser">
+        <button class="btn btn-primary btn-xs sm:btn-sm gap-1 px-2.5 rounded-xl font-bold shadow-sm" @click="openAuthModal('login')">
+          <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+          <span class="hidden sm:inline">تسجيل الدخول</span>
+        </button>
+      </template>
+
       <!-- BigMac Dropdown Menu (Unified Profile, Quick Actions, Docs & Links) -->
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button"
@@ -213,6 +221,20 @@ export function renderAppHtml(): string {
 
   <!-- MAIN WRAPPER -->
   <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+
+    <!-- Unauthenticated Banner Alert (Shows when visiting from a new domain or without token) -->
+    <template x-if="!currentUser && !authToken">
+      <div class="alert bg-warning/10 border border-warning/30 text-warning text-xs p-3 rounded-xl flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-triangle-exclamation text-base"></i>
+          <span>أنت تتصفح كزائر غير مسجل الدخول على هذا النطاق. لعرض واسترجاع الذكريات والمهام المحمية، يرجى تسجيل الدخول بحسابك أو مفتاح API.</span>
+        </div>
+        <button class="btn btn-warning btn-xs font-bold gap-1 shrink-0" @click="openAuthModal('login')">
+          <i class="fa-solid fa-arrow-right-to-bracket text-[10px]"></i>
+          <span>تسجيل الدخول الآن</span>
+        </button>
+      </div>
+    </template>
 
     <!-- NAVIGATION CARDS (Responsive Grid, Mobile-Friendly, No Horizontal Overflow) -->
     <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
@@ -1261,6 +1283,38 @@ export function renderAppHtml(): string {
               <div class="stat-value text-lg text-info">768d</div>
             </div>
           </div>
+
+          <!-- Jev AI Subsystem Control Card -->
+          <div class="card bg-base-100 border p-4 sm:p-5 rounded-2xl shadow-sm space-y-3 transition-colors"
+               :class="jevEnabled ? 'border-amber-500/40 bg-amber-500/5' : 'border-base-300'">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
+                     :class="jevEnabled ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40' : 'bg-base-200 text-base-content/50 border border-base-300'">
+                  <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-sm flex items-center gap-2">
+                    <span>محرك اتخاذ القرار والفرز الذكي (TypeSafe Jev AI)</span>
+                    <span class="badge badge-xs font-mono font-bold"
+                          :class="jevEnabled ? 'badge-warning text-black' : 'badge-ghost text-base-content/60'"
+                          x-text="jevEnabled ? 'مفعّل (يستهلك توكنات)' : 'معطّل (حفظ الرصيد 100%)'"></span>
+                  </div>
+                  <div class="text-[11px] text-base-content/60 mt-0.5">
+                    يقوم Jev AI بتكثيف الذاكرة واكتشاف التكرارات عبر نموذج System One. عند التعطيل، تتوقف جميع الاتصالات الخارجية وتعمل دورات الصيانة (Cron) بصمت محلياً دون أي استهلاك للرصيد.
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-sm px-4 gap-1.5 font-bold shrink-0"
+                      :class="jevEnabled ? 'btn-error btn-outline hover:bg-error hover:text-white' : 'btn-warning'"
+                      :disabled="loadingJevSetting"
+                      @click="toggleJevSetting()">
+                <span x-show="!loadingJevSetting" x-text="jevEnabled ? '🛑 إيقاف وتعطيل Jev AI' : '⚡ تفعيل Jev AI'"></span>
+                <span x-show="loadingJevSetting" class="loading loading-spinner loading-xs"></span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -1632,8 +1686,10 @@ export function renderAppHtml(): string {
         loadingR2: false,
         uploadingR2: false,
         
-        // Admin
+        // Admin & Settings
         adminStats: {},
+        jevEnabled: false,
+        loadingJevSetting: false,
 
         // Modals
         modals: {
@@ -1734,9 +1790,20 @@ export function renderAppHtml(): string {
         async initApp() {
           this.theme = localStorage.getItem('memoryz_theme') || 'dark';
           document.documentElement.setAttribute('data-theme', this.theme);
+
+          // Support URL query parameter for seamless login on custom domains (e.g. ?token=mz_... or ?key=...)
+          const urlParams = new URLSearchParams(window.location.search);
+          const qToken = urlParams.get('token') || urlParams.get('key') || urlParams.get('api_key');
+          if (qToken) {
+            this.authToken = qToken;
+            localStorage.setItem('mz_token', qToken);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+
           if (this.authToken) {
             await this.fetchMe();
           }
+          await this.loadSystemSettings();
           await this.loadMemories();
           await this.loadTasks();
           await this.loadWebhooks();
@@ -2444,6 +2511,45 @@ export function renderAppHtml(): string {
               this.adminStats = await res.json();
             }
           } catch (_e) {}
+        },
+
+        async loadSystemSettings() {
+          try {
+            const res = await fetch('/api/admin/settings', {
+              headers: this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {}
+            });
+            if (res.ok) {
+              const d = await res.json();
+              this.jevEnabled = !!d.jev_enabled;
+            }
+          } catch (_e) {}
+        },
+
+        async toggleJevSetting() {
+          if (this.loadingJevSetting) return;
+          this.loadingJevSetting = true;
+          const target = !this.jevEnabled;
+          try {
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {})
+              },
+              body: JSON.stringify({ jev_enabled: target })
+            });
+            const d = await res.json();
+            if (res.ok && d.success) {
+              this.jevEnabled = !!d.jev_enabled;
+              this.showToast(this.jevEnabled ? '⚡ تم تفعيل Jev AI (استهلاك التوكنات شغال)' : '🛑 تم تعطيل Jev AI وإيقاف استهلاك الرصيد نهائياً');
+            } else {
+              alert(d.error || 'فشل تحديث إعداد Jev AI');
+            }
+          } catch (err) {
+            alert(err.message);
+          } finally {
+            this.loadingJevSetting = false;
+          }
         },
 
         // Utilities

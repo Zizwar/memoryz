@@ -7,6 +7,7 @@ import { ContextService } from "../services/context.ts";
 import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
 import { runMemoryMaintenance } from "../services/cron.ts";
 import { R2Service } from "../services/r2.ts";
+import { SettingsService } from "../services/settings.ts";
 
 export async function handleApiRoute(req: Request, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -136,6 +137,34 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
     const stats = await AuthService.getPlatformStats();
     return json(stats);
+  }
+
+  // System Settings: Jev AI & Automation Control
+  if (path === "/api/admin/settings" && method === "GET") {
+    const jevEnabled = await SettingsService.isJevEnabled();
+    return json({
+      jev_enabled: jevEnabled,
+      jev_key_configured: Boolean(Deno.env.get("JEV_AI_KEY")),
+    });
+  }
+
+  if (path === "/api/admin/settings" && method === "POST") {
+    if (currentUser.role !== "admin") {
+      return json({ error: "Forbidden. Admin privileges required." }, 403);
+    }
+    try {
+      const body = await req.json();
+      if (typeof body.jev_enabled === "boolean") {
+        await SettingsService.setJevEnabled(body.jev_enabled);
+      }
+      const jevEnabled = await SettingsService.isJevEnabled();
+      return json({
+        success: true,
+        jev_enabled: jevEnabled,
+      });
+    } catch (e) {
+      return json({ error: (e as Error).message }, 400);
+    }
   }
 
   // ==========================================
