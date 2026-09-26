@@ -5,12 +5,12 @@
 
 import { SettingsService } from "./settings.ts";
 
-const JEV_API_URL = "https://api.typesafe.ai/v1/systemone";
+const TYPESAFE_API_URL = "https://api.typesafe.ai/v1/systemone";
+const VERCEL_AI_URL = "https://ai-gateway.vercel.sh/typesafe/v1/systemone";
 const DEFAULT_MODEL = "jev-latest";
-const DEFAULT_KEY = Deno.env.get("JEV_AI_KEY") || "";
 
 export class JevService {
-  private static apiKey = DEFAULT_KEY;
+  private static apiKey = Deno.env.get("JEV_AI_KEY") || "";
 
   static setApiKey(key: string) {
     this.apiKey = key;
@@ -22,8 +22,10 @@ export class JevService {
     }
     const dbEnabled = await SettingsService.isJevEnabled();
     if (!dbEnabled) return false;
-    const key = this.apiKey || Deno.env.get("JEV_AI_KEY") || "";
-    return Boolean(key && key.trim().length > 0);
+    const hasKey = Boolean(
+      (Deno.env.get("VERCEL_AI_KEY") || this.apiKey || Deno.env.get("JEV_AI_KEY") || "").trim()
+    );
+    return hasKey;
   }
 
   static async evaluate(state: any, questions: Record<string, any>, model = DEFAULT_MODEL): Promise<any> {
@@ -31,23 +33,32 @@ export class JevService {
     if (!enabled) {
       throw new Error("Jev AI is currently disabled in system settings to protect credits.");
     }
-    const key = this.apiKey || Deno.env.get("JEV_AI_KEY") || "";
-    const res = await fetch(JEV_API_URL, {
+
+    const vercelKey = Deno.env.get("VERCEL_AI_KEY")?.trim();
+    const directKey = (this.apiKey || Deno.env.get("JEV_AI_KEY") || "").trim();
+
+    // Prefer Vercel AI Gateway if configured, fallback to direct TypeSafe API
+    const isVercel = Boolean(vercelKey);
+    const apiUrl = isVercel ? VERCEL_AI_URL : TYPESAFE_API_URL;
+    const token = isVercel ? vercelKey : directKey;
+    const effectiveModel = isVercel && (model === DEFAULT_MODEL || !model) ? "typesafe-ai/jev" : model;
+
+    const res = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key}`,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         state,
-        model,
+        model: effectiveModel,
         questions,
       }),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`Jev AI evaluation failed (${res.status}): ${errText}`);
+      throw new Error(`Jev AI evaluation failed via ${isVercel ? 'Vercel AI Gateway' : 'TypeSafe'} (${res.status}): ${errText}`);
     }
 
     return await res.json();

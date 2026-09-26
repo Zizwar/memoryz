@@ -31,6 +31,10 @@ export const config = {
   // Gemini API
   geminiApiKey: Deno.env.get("GEMINI_API_KEY") || Deno.env.get("gemini_key") || "",
 
+  // Vercel AI Gateway & TypeSafe Jev
+  vercelAiKey: Deno.env.get("VERCEL_AI_KEY") || "",
+  jevAiKey: Deno.env.get("JEV_AI_KEY") || "",
+
   // Deno Deploy
   denoDeployToken: Deno.env.get("DENO_DEPLOY_TOKEN") || Deno.env.get("key_deno_zizwar") || "",
   denoOrg: Deno.env.get("DENO_ORG") || "wino",
