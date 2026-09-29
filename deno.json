@@ -1,6 +1,6 @@
 {
   "name": "memoryz",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "exports": "./main.ts",
   "tasks": {
     "dev": "deno run --allow-net --allow-env --allow-read --watch main.ts",

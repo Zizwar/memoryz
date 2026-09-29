@@ -1,6 +1,6 @@
 {
   "name": "memoryz",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Sovereign Agentic Memory & Hierarchical Task Substrate CLI & MCP Auto-Installer",
   "type": "module",
   "main": "./index.js",

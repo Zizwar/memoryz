@@ -199,7 +199,7 @@ export function renderAppHtml(): string {
             <a href="https://www.npmjs.com/package/memoryz" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between py-2 rounded-lg">
               <div class="flex items-center gap-2.5">
                 <i class="fa-brands fa-npm text-error text-sm w-4 text-center"></i>
-                <span>حزمة NPM (v2.0.0)</span>
+                <span>حزمة NPM (v2.0.1)</span>
               </div>
               <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-40"></i>
             </a>
