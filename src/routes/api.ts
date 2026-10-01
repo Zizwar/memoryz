@@ -4,7 +4,7 @@ import { VaultService } from "../services/vault.ts";
 import { TaskService, TaskPriority } from "../services/task.ts";
 import { LogService, LogLevel } from "../services/log.ts";
 import { ContextService } from "../services/context.ts";
-import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
+import { registerWebhook, listWebhooks, deleteWebhook, dispatchWebhookEvent } from "../services/webhook.ts";
 import { runMemoryMaintenance } from "../services/cron.ts";
 import { R2Service } from "../services/r2.ts";
 import { SettingsService } from "../services/settings.ts";
@@ -695,9 +695,23 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
   }
 
-  // Webhooks: Delete
+  // Webhooks: Delete & Test Ping
   if (path.startsWith("/api/webhooks/")) {
     const whId = path.replace("/api/webhooks/", "");
+    if (whId.endsWith("/test") && method === "POST") {
+      const targetId = whId.replace("/test", "");
+      try {
+        await dispatchWebhookEvent({
+          userId: currentUser.id,
+          event: "test.ping",
+          namespace: "default",
+          payload: { message: "MemoryZ Webhook Test Ping", webhook_id: targetId, timestamp: Date.now() },
+        });
+        return json({ success: true, message: "Webhook test event dispatched" });
+      } catch (err) {
+        return json({ error: (err as Error).message }, 500);
+      }
+    }
     if (method === "DELETE") {
       const success = await deleteWebhook(whId, currentUser.id);
       return json({ success, id: whId });

@@ -5,6 +5,8 @@ import { handleMcpRoute } from "./src/routes/mcp.ts";
 import { generateOpenApiSpec } from "./src/routes/openapi.ts";
 import { renderAppHtml } from "./src/ui/html.ts";
 import { DEFAULT_SKILL_MD, renderDocsHtml } from "./src/ui/docs.ts";
+import { renderGraphHtml } from "./src/ui/graph_page.ts";
+import { renderWebhooksHtml } from "./src/ui/webhooks_page.ts";
 import { runMemoryMaintenance } from "./src/services/cron.ts";
 
 // Single source of truth for the published skill: /skill.md serves these exact
@@ -74,6 +76,22 @@ Deno.serve({ port: config.port }, async (req: Request) => {
   // Documentation Portal (/docs)
   if (path === "/docs" || path === "/docs.html") {
     return new Response(renderDocsHtml(), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  // Standalone Knowledge Graph Visualizer (/graph)
+  if (path === "/graph" || path === "/graph.html") {
+    return new Response(renderGraphHtml(), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  // Standalone Real-Time Webhooks Management (/webhooks)
+  if (path === "/webhooks" || path === "/webhooks.html") {
+    return new Response(renderWebhooksHtml(), {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });

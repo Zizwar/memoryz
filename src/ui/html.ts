@@ -146,7 +146,29 @@ export function renderAppHtml(): string {
             </li>
           </template>
 
-          <li class="menu-title text-[10px] text-base-content/50 uppercase tracking-wider pt-1">المصادر والتوثيق</li>
+          <li class="menu-title text-[10px] text-base-content/50 uppercase tracking-wider pt-1">صفحات مستقلة ومصادر</li>
+
+          <!-- Standalone Knowledge Graph -->
+          <li>
+            <a href="/graph" target="_blank" rel="noopener" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-circle-nodes text-primary text-xs w-4 text-center"></i>
+                <span class="font-medium">شبكة المعرفة (Graph مستقل)</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-40"></i>
+            </a>
+          </li>
+
+          <!-- Standalone Webhooks -->
+          <li>
+            <a href="/webhooks" target="_blank" rel="noopener" class="flex items-center justify-between py-2 rounded-lg">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-satellite-dish text-secondary text-xs w-4 text-center"></i>
+                <span class="font-medium">إدارة الويبهوك (صفحة مستقلة)</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-40"></i>
+            </a>
+          </li>
 
           <!-- Docs -->
           <li>
@@ -657,6 +679,11 @@ export function renderAppHtml(): string {
             <i class="fa-solid text-xs" :class="graphPhysicsEnabled ? 'fa-atom text-primary animate-pulse' : 'fa-pause text-base-content/40'"></i>
           </button>
 
+          <a href="/graph" target="_blank" rel="noopener" class="btn btn-sm btn-outline gap-1 text-xs" title="فتح الرسم البياني في صفحة وشاشة كاملة مستقلة">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            <span class="hidden sm:inline">شاشة كاملة</span>
+          </a>
+
           <button class="btn btn-sm btn-primary gap-1 shadow-sm text-xs font-bold" @click="openCreateLinkModal()">
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>ربط ذكريين</span>
@@ -948,9 +975,15 @@ export function renderAppHtml(): string {
             </div>
           </div>
 
-          <button class="btn btn-sm btn-primary gap-1 shadow-sm" @click="openWebhookModal()">
-            <i class="fa-solid fa-plus text-xs"></i> <span>تسجيل ويبهوك جديد</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <a href="/webhooks" target="_blank" rel="noopener" class="btn btn-sm btn-outline gap-1 text-xs" title="فتح إدارة الويبهوك في صفحة مستقلة">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              <span class="hidden sm:inline">صفحة مستقلة</span>
+            </a>
+            <button class="btn btn-sm btn-primary gap-1 shadow-sm" @click="openWebhookModal()">
+              <i class="fa-solid fa-plus text-xs"></i> <span>تسجيل ويبهوك جديد</span>
+            </button>
+          </div>
         </div>
 
         <div class="alert bg-base-100 border border-base-300 text-xs py-2 px-3 rounded-lg flex items-center gap-2">
@@ -2363,7 +2396,7 @@ export function renderAppHtml(): string {
               return {
                 id: n.id,
                 label: n.label,
-                title: '[' + n.type.toUpperCase() + '] ' + n.label + '\n\n' + n.content.substring(0, 150) + '...',
+                title: '[' + n.type.toUpperCase() + '] ' + n.label + '\\n\\n' + n.content.substring(0, 150) + '...',
                 shape: 'dot',
                 size: size,
                 color: colors,
