@@ -20,7 +20,6 @@ export function renderAppHtml(): string {
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <script>
@@ -1778,15 +1777,24 @@ export function renderAppHtml(): string {
     <form method="dialog" class="modal-backdrop" @click="modals.decrypt = false"><button>إغلاق</button></form>
   </dialog>
 
-  <!-- Modal: Auth (Login / Register) -->
+  <!-- Modal: Auth (Login / Register / API Key) -->
   <dialog class="modal" :class="{ 'modal-open': modals.auth }">
     <div class="modal-box bg-base-200 border border-base-300 max-w-sm">
       <div class="tabs tabs-boxed mb-3 p-1">
         <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': authMode === 'login' }" @click="authMode = 'login'">دخول</a>
+        <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': authMode === 'key' }" @click="authMode = 'key'">مفتاح API</a>
         <a class="tab tab-sm flex-1 font-bold" :class="{ 'tab-active': authMode === 'register' }" @click="authMode = 'register'">حساب جديد</a>
       </div>
 
       <form @submit.prevent="submitAuth()" class="space-y-3 text-xs">
+        <template x-if="authMode === 'key'">
+          <div class="form-control">
+            <label class="label"><span class="label-text font-bold">أدخل مفتاح API الخاص بك (mz_...)</span></label>
+            <input type="text" class="input input-sm input-bordered font-mono" placeholder="mz_..." required x-model="authForm.apiKey">
+            <label class="label"><span class="label-text-alt text-base-content/50">تسجيل دخول مباشر وموثق بالمفتاح</span></label>
+          </div>
+        </template>
+
         <template x-if="authMode === 'register'">
           <div class="form-control">
             <label class="label"><span class="label-text">اسم المستخدم</span></label>
@@ -1794,19 +1802,23 @@ export function renderAppHtml(): string {
           </div>
         </template>
 
-        <div class="form-control">
-          <label class="label"><span class="label-text" x-text="authMode === 'register' ? 'البريد الإلكتروني' : 'اسم المستخدم أو البريد'"></span></label>
-          <input type="text" class="input input-sm input-bordered" required x-model="authForm.identifier">
-        </div>
+        <template x-if="authMode !== 'key'">
+          <div class="space-y-3">
+            <div class="form-control">
+              <label class="label"><span class="label-text" x-text="authMode === 'register' ? 'البريد الإلكتروني' : 'اسم المستخدم أو البريد'"></span></label>
+              <input type="text" class="input input-sm input-bordered" required x-model="authForm.identifier">
+            </div>
 
-        <div class="form-control">
-          <label class="label"><span class="label-text">كلمة المرور</span></label>
-          <input type="password" class="input input-sm input-bordered" required x-model="authForm.password">
-        </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">كلمة المرور</span></label>
+              <input type="password" class="input input-sm input-bordered" required x-model="authForm.password">
+            </div>
+          </div>
+        </template>
 
         <div class="modal-action">
           <button type="button" class="btn btn-ghost btn-sm" @click="modals.auth = false">إلغاء</button>
-          <button type="submit" class="btn btn-primary btn-sm" x-text="authMode === 'register' ? 'إنشاء الحساب' : 'تسجيل الدخول'"></button>
+          <button type="submit" class="btn btn-primary btn-sm" x-text="authMode === 'register' ? 'إنشاء الحساب' : (authMode === 'key' ? 'دخول بالمفتاح 🔑' : 'تسجيل الدخول')"></button>
         </div>
       </form>
     </div>
@@ -1978,7 +1990,7 @@ export function renderAppHtml(): string {
         formVault: { key_name: '', secret_value: '', passphrase: '' },
         formR2Upload: { mode: 'file', key: '', bucket: 'memoryz', file: null, textContent: '' },
         authMode: 'login',
-        authForm: { username: '', identifier: '', password: '' },
+        authForm: { username: '', identifier: '', password: '', apiKey: '' },
 
         // Toast
         toast: { show: false, message: '' },
@@ -2075,7 +2087,6 @@ export function renderAppHtml(): string {
           }
           await this.loadSystemSettings();
           await this.loadMemories();
-          await this.loadGraph();
           await this.loadTasks();
           await this.loadWebhooks();
           await this.loadR2Files();
@@ -2085,7 +2096,11 @@ export function renderAppHtml(): string {
         switchTab(tab) {
           this.activeTab = tab;
           if (tab === 'memories') this.loadMemories();
-          if (tab === 'graph') this.loadGraph();
+          if (tab === 'graph') {
+            this.$nextTick(() => {
+              this.loadGraph();
+            });
+          }
           if (tab === 'tasks') this.loadTasks();
           if (tab === 'webhooks') this.loadWebhooks();
           if (tab === 'r2') this.loadR2Files();
@@ -2115,6 +2130,26 @@ export function renderAppHtml(): string {
         },
 
         async submitAuth() {
+          if (this.authMode === 'key') {
+            const key = (this.authForm.apiKey || '').trim();
+            if (!key) return;
+            this.authToken = key;
+            await this.fetchMe();
+            if (this.currentUser) {
+              localStorage.setItem('mz_token', key);
+              this.modals.auth = false;
+              this.showToast('مرحباً بك ' + this.currentUser.username + ' 👋');
+              this.loadMemories();
+              this.loadTasks();
+              this.loadVaultKeys();
+            } else {
+              this.authToken = '';
+              localStorage.removeItem('mz_token');
+              alert('مفتاح API غير صالح أو غير موجود');
+            }
+            return;
+          }
+
           const endpoint = this.authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
           const payload = this.authMode === 'register'
             ? { username: this.authForm.username, email: this.authForm.identifier, password: this.authForm.password }
@@ -2253,9 +2288,28 @@ export function renderAppHtml(): string {
         },
 
         // --- KNOWLEDGE GRAPH ---
+        loadVisScript() {
+          if (typeof vis !== 'undefined') return Promise.resolve(true);
+          return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => {
+              const fallback = document.createElement('script');
+              fallback.src = 'https://unpkg.com/vis-network/standalone/umd/vis-network.min.js';
+              fallback.onload = () => resolve(true);
+              fallback.onerror = () => resolve(false);
+              document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+          });
+        },
+
         async loadGraph() {
+          if (this.activeTab !== 'graph') return;
           this.loadingGraph = true;
           try {
+            await this.loadVisScript();
             const nsParam = this.currentNamespace !== 'all' ? '?namespace=' + encodeURIComponent(this.currentNamespace) : '';
             const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
             const res = await fetch('/api/memories/graph' + nsParam, { headers });
@@ -2263,9 +2317,9 @@ export function renderAppHtml(): string {
               const data = await res.json();
               this.graphData = data;
               this.graphStats = data.stats || { totalNodes: (data.nodes ? data.nodes.length : 0), totalEdges: (data.edges ? data.edges.length : 0) };
-              this.$nextTick(() => {
+              setTimeout(() => {
                 this.initOrUpdateNetwork();
-              });
+              }, 120);
             }
           } catch (e) {
             console.error('Error loading graph:', e);
@@ -2275,112 +2329,117 @@ export function renderAppHtml(): string {
         },
 
         initOrUpdateNetwork() {
+          if (this.activeTab !== 'graph') return;
           const container = document.getElementById('memory-network-canvas');
           if (!container || typeof vis === 'undefined') return;
 
-          const colorMap = {
-            note: { background: '#10b981', border: '#059669', highlight: { background: '#34d399', border: '#10b981' } },
-            skill: { background: '#8b5cf6', border: '#7c3aed', highlight: { background: '#a78bfa', border: '#8b5cf6' } },
-            preference: { background: '#f59e0b', border: '#d97706', highlight: { background: '#fbbf24', border: '#f59e0b' } },
-            env: { background: '#06b6d4', border: '#0891b2', highlight: { background: '#22d3ee', border: '#06b6d4' } },
-          };
-
-          const rawNodes = this.graphData.nodes || [];
-          const rawEdges = this.graphData.edges || [];
-
-          const q = (this.graphSearchQuery || '').toLowerCase();
-          const filteredNodes = rawNodes.filter(n => {
-            const matchType = this.graphFilterType === 'all' || n.type === this.graphFilterType;
-            const matchQuery = !q ||
-              (n.label && n.label.toLowerCase().includes(q)) ||
-              (n.content && n.content.toLowerCase().includes(q));
-            return matchType && matchQuery;
-          });
-
-          const activeNodeIds = new Set(filteredNodes.map(n => n.id));
-          const filteredEdges = rawEdges.filter(e => activeNodeIds.has(e.from) && activeNodeIds.has(e.to));
-
-          const isDark = this.theme === 'dark';
-          const visNodes = filteredNodes.map(n => {
-            const colors = colorMap[n.type] || colorMap.note;
-            const size = Math.min(38, Math.max(16, 16 + (n.recall_score || 0) * 3));
-            return {
-              id: n.id,
-              label: n.label,
-              title: '[' + n.type.toUpperCase() + '] ' + n.label + '\n\n' + n.content.substring(0, 150) + '...',
-              shape: 'dot',
-              size: size,
-              color: colors,
-              font: { size: 12, color: isDark ? '#f3f4f6' : '#1f2937', face: 'Tajawal' },
-              borderWidth: 2,
-              shadow: { enabled: true, color: 'rgba(0,0,0,0.3)', size: 4, x: 2, y: 2 }
+          try {
+            const colorMap = {
+              note: { background: '#10b981', border: '#059669', highlight: { background: '#34d399', border: '#10b981' } },
+              skill: { background: '#8b5cf6', border: '#7c3aed', highlight: { background: '#a78bfa', border: '#8b5cf6' } },
+              preference: { background: '#f59e0b', border: '#d97706', highlight: { background: '#fbbf24', border: '#f59e0b' } },
+              env: { background: '#06b6d4', border: '#0891b2', highlight: { background: '#22d3ee', border: '#06b6d4' } },
             };
-          });
 
-          const visEdges = filteredEdges.map(e => ({
-            id: e.id,
-            from: e.from,
-            to: e.to,
-            label: e.label,
-            arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-            color: {
-              color: isDark ? 'rgba(156, 163, 175, 0.4)' : 'rgba(107, 114, 128, 0.4)',
-              highlight: '#3b82f6',
-              hover: '#60a5fa'
-            },
-            font: { size: 10, color: isDark ? '#9ca3af' : '#4b5563', align: 'middle', background: isDark ? '#1f2937' : '#f3f4f6' },
-            width: Math.min(4, Math.max(1, (e.weight || 1) * 1.5)),
-            smooth: { type: 'continuous' }
-          }));
+            const rawNodes = this.graphData.nodes || [];
+            const rawEdges = this.graphData.edges || [];
 
-          const data = {
-            nodes: new vis.DataSet(visNodes),
-            edges: new vis.DataSet(visEdges)
-          };
+            const q = (this.graphSearchQuery || '').toLowerCase();
+            const filteredNodes = rawNodes.filter(n => {
+              const matchType = this.graphFilterType === 'all' || n.type === this.graphFilterType;
+              const matchQuery = !q ||
+                (n.label && n.label.toLowerCase().includes(q)) ||
+                (n.content && n.content.toLowerCase().includes(q));
+              return matchType && matchQuery;
+            });
 
-          const options = {
-            nodes: { scaling: { min: 14, max: 45 } },
-            physics: {
-              enabled: this.graphPhysicsEnabled,
-              solver: 'forceAtlas2Based',
-              forceAtlas2Based: {
-                gravitationalConstant: -40,
-                centralGravity: 0.008,
-                springLength: 90,
-                springConstant: 0.06,
-                damping: 0.45
+            const activeNodeIds = new Set(filteredNodes.map(n => n.id));
+            const filteredEdges = rawEdges.filter(e => activeNodeIds.has(e.from) && activeNodeIds.has(e.to));
+
+            const isDark = this.theme === 'dark';
+            const visNodes = filteredNodes.map(n => {
+              const colors = colorMap[n.type] || colorMap.note;
+              const size = Math.min(38, Math.max(16, 16 + (n.recall_score || 0) * 3));
+              return {
+                id: n.id,
+                label: n.label,
+                title: '[' + n.type.toUpperCase() + '] ' + n.label + '\n\n' + n.content.substring(0, 150) + '...',
+                shape: 'dot',
+                size: size,
+                color: colors,
+                font: { size: 12, color: isDark ? '#f3f4f6' : '#1f2937', face: 'Tajawal' },
+                borderWidth: 2,
+                shadow: { enabled: true, color: 'rgba(0,0,0,0.3)', size: 4, x: 2, y: 2 }
+              };
+            });
+
+            const visEdges = filteredEdges.map(e => ({
+              id: e.id,
+              from: e.from,
+              to: e.to,
+              label: e.label,
+              arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+              color: {
+                color: isDark ? 'rgba(156, 163, 175, 0.4)' : 'rgba(107, 114, 128, 0.4)',
+                highlight: '#3b82f6',
+                hover: '#60a5fa'
               },
-              stabilization: { iterations: 80 }
-            },
-            interaction: {
-              hover: true,
-              tooltipDelay: 150,
-              zoomView: true,
-              dragView: true
-            }
-          };
+              font: { size: 10, color: isDark ? '#9ca3af' : '#4b5563', align: 'middle', background: isDark ? '#1f2937' : '#f3f4f6' },
+              width: Math.min(4, Math.max(1, (e.weight || 1) * 1.5)),
+              smooth: { type: 'continuous' }
+            }));
 
-          if (this.networkInstance) {
-            this.networkInstance.setData(data);
-          } else {
-            this.networkInstance = new vis.Network(container, data, options);
+            const data = {
+              nodes: new vis.DataSet(visNodes),
+              edges: new vis.DataSet(visEdges)
+            };
 
-            this.networkInstance.on('click', (params) => {
-              if (params.nodes && params.nodes.length > 0) {
-                const nodeId = params.nodes[0];
-                const found = this.graphData.nodes.find(n => n.id === nodeId);
-                if (found) {
-                  this.selectedGraphNode = found;
+            const options = {
+              nodes: { scaling: { min: 14, max: 45 } },
+              physics: {
+                enabled: this.graphPhysicsEnabled,
+                solver: 'forceAtlas2Based',
+                forceAtlas2Based: {
+                  gravitationalConstant: -40,
+                  centralGravity: 0.008,
+                  springLength: 90,
+                  springConstant: 0.06,
+                  damping: 0.45
+                },
+                stabilization: { iterations: 80 }
+              },
+              interaction: {
+                hover: true,
+                tooltipDelay: 150,
+                zoomView: true,
+                dragView: true
+              }
+            };
+
+            if (this.networkInstance) {
+              this.networkInstance.setData(data);
+            } else {
+              this.networkInstance = new vis.Network(container, data, options);
+
+              this.networkInstance.on('click', (params) => {
+                if (params.nodes && params.nodes.length > 0) {
+                  const nodeId = params.nodes[0];
+                  const found = this.graphData.nodes.find(n => n.id === nodeId);
+                  if (found) {
+                    this.selectedGraphNode = found;
+                  }
                 }
-              }
-            });
+              });
 
-            this.networkInstance.on('doubleClick', (params) => {
-              if (params.nodes && params.nodes.length > 0) {
-                const nodeId = params.nodes[0];
-                this.networkInstance.focus(nodeId, { scale: 1.4, animation: true });
-              }
-            });
+              this.networkInstance.on('doubleClick', (params) => {
+                if (params.nodes && params.nodes.length > 0) {
+                  const nodeId = params.nodes[0];
+                  this.networkInstance.focus(nodeId, { scale: 1.4, animation: true });
+                }
+              });
+            }
+          } catch (err) {
+            console.error('Failed to initialize vis network:', err);
           }
         },
 
