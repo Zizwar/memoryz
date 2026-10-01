@@ -1,0 +1,71 @@
+{
+  "distractors": [
+    {
+      "id": "dist-001",
+      "type": "note",
+      "content": "Project uses Docker Compose for local orchestration. Redis runs on port 6379 with default config."
+    },
+    {
+      "id": "dist-002",
+      "type": "skill",
+      "content": "To run unit tests with coverage in Deno: deno test --coverage=cov_profile && deno coverage cov_profile"
+    },
+    {
+      "id": "dist-003",
+      "type": "preference",
+      "content": "Always prefer functional programming patterns and avoid mutating function arguments directly."
+    },
+    {
+      "id": "dist-004",
+      "type": "env",
+      "content": "Grafana dashboards are provisioned at monitoring.internal.local on port 3000."
+    },
+    {
+      "id": "dist-005",
+      "type": "note",
+      "content": "Kafka topics are partitioned by tenant_id using MurmurHash3 algorithm for uniform distribution."
+    }
+  ],
+  "needles": [
+    {
+      "id": "needle-001",
+      "type": "env",
+      "content": "The production database read-replica fallback IP address is 10.240.18.99 with TLS port 5433.",
+      "query_exact": "What is the database read-replica fallback IP and TLS port?",
+      "query_paraphrase": "Where does the db failover read connection route in prod?",
+      "goldNeedleId": "needle-001"
+    },
+    {
+      "id": "needle-002",
+      "type": "preference",
+      "content": "When formatting error logs for the telemetry pipeline, always append the correlation tag [CORR-Z9] to the message body.",
+      "query_exact": "What correlation tag must be appended to telemetry error logs?",
+      "query_paraphrase": "Which special tag should be included when logging telemetry errors?",
+      "goldNeedleId": "needle-002"
+    },
+    {
+      "id": "needle-003",
+      "type": "note",
+      "content": "The canary release deployment abort threshold is strictly set to 0.45 percent HTTP 5xx errors over a 3-minute sliding window.",
+      "query_exact": "What is the canary release abort threshold for 5xx errors?",
+      "query_paraphrase": "At what percentage of HTTP server failures is a canary rollout automatically stopped?",
+      "goldNeedleId": "needle-003"
+    },
+    {
+      "id": "needle-004",
+      "type": "skill",
+      "content": "To force-flush the distributed cache without restarting the service pods, send POST to /internal/ops/cache/purge with header X-Bypass-Sync: 1.",
+      "query_exact": "How do you force-flush the cache without restarting pods?",
+      "query_paraphrase": "What API call and header purges service cache dynamically?",
+      "goldNeedleId": "needle-004"
+    },
+    {
+      "id": "needle-005",
+      "type": "env",
+      "content": "The payment gateway webhook secret rotation occurs every 90 days using HMAC-SHA512 key prefix pk_rot_2026.",
+      "query_exact": "What is the payment webhook secret rotation interval and key prefix?",
+      "query_paraphrase": "How frequently are payment webhook keys rotated and what prefix is used?",
+      "goldNeedleId": "needle-005"
+    }
+  ]
+}

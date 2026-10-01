@@ -450,6 +450,119 @@ export class MemoryService {
   }
 
   /**
+   * Fetch memory knowledge graph (nodes + edges) for user
+   */
+  static async getGraph(userId: string, namespace?: string): Promise<{
+    nodes: Array<{
+      id: string;
+      label: string;
+      title: string;
+      type: MemoryType;
+      content: string;
+      namespace: string;
+      recall_count: number;
+      recall_score: number;
+      created_at: number;
+    }>;
+    edges: Array<{
+      id: string;
+      from: string;
+      to: string;
+      label: string;
+      relation: RelationType;
+      weight: number;
+    }>;
+    stats: {
+      totalNodes: number;
+      totalEdges: number;
+    };
+  }> {
+    const db = getDb();
+    let sqlMem = `
+      SELECT hash, type, title, content, namespace, recall_count, recall_score, created_at
+      FROM memories
+      WHERE user_id = ? AND is_deleted = 0
+    `;
+    const argsMem: any[] = [userId];
+    if (namespace && namespace !== "all") {
+      sqlMem += " AND namespace = ?";
+      argsMem.push(namespace);
+    }
+    sqlMem += " ORDER BY created_at DESC LIMIT 300;";
+
+    const resMem = await db.execute({ sql: sqlMem, args: argsMem });
+
+    const nodes = resMem.rows.map((r) => {
+      const hash = r.hash as string;
+      const title = (r.title as string) || (r.content as string).substring(0, 30);
+      return {
+        id: hash,
+        label: title.length > 25 ? title.substring(0, 25) + "..." : title,
+        title: (r.content as string).substring(0, 300),
+        type: r.type as MemoryType,
+        content: r.content as string,
+        namespace: (r.namespace as string) || "default",
+        recall_count: Number(r.recall_count || 0),
+        recall_score: Number(r.recall_score || 0),
+        created_at: Number(r.created_at || 0),
+      };
+    });
+
+    if (nodes.length === 0) {
+      return { nodes: [], edges: [], stats: { totalNodes: 0, totalEdges: 0 } };
+    }
+
+    const nodeIds = nodes.map((n) => n.id);
+    const placeholders = nodeIds.map(() => "?").join(",");
+    const resLinks = await db.execute({
+      sql: `
+        SELECT source_hash, target_hash, relation_type, weight
+        FROM memory_links
+        WHERE source_hash IN (${placeholders}) AND target_hash IN (${placeholders});
+      `,
+      args: [...nodeIds, ...nodeIds],
+    });
+
+    const edges = resLinks.rows.map((l, idx) => ({
+      id: `edge_${idx}_${l.source_hash}_${l.target_hash}`,
+      from: l.source_hash as string,
+      to: l.target_hash as string,
+      label: l.relation_type as string,
+      relation: l.relation_type as RelationType,
+      weight: Number(l.weight || 1.0),
+    }));
+
+    return {
+      nodes,
+      edges,
+      stats: {
+        totalNodes: nodes.length,
+        totalEdges: edges.length,
+      },
+    };
+  }
+
+  /**
+   * Remove a graph link between two memories
+   */
+  static async unlinkMemories(
+    userId: string,
+    sourceHash: string,
+    targetHash: string,
+    relationType?: string
+  ): Promise<boolean> {
+    const db = getDb();
+    let sql = "DELETE FROM memory_links WHERE source_hash = ? AND target_hash = ?";
+    const args: any[] = [sourceHash, targetHash];
+    if (relationType) {
+      sql += " AND relation_type = ?";
+      args.push(relationType);
+    }
+    const res = await db.execute({ sql, args });
+    return res.rowsAffected > 0;
+  }
+
+  /**
    * Delete memory (soft delete)
    */
   static async deleteMemory(userId: string, hash: string): Promise<boolean> {

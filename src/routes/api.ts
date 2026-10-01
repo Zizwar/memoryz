@@ -261,20 +261,48 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     }
   }
 
-  // Link
-  if (path === "/api/memories/link" && method === "POST") {
+  // Graph Visualization Data
+  if (path === "/api/memories/graph" && method === "GET") {
     try {
-      const body = await req.json();
-      await MemoryService.linkMemories(
-        currentUser.id,
-        body.source_hash,
-        body.target_hash,
-        body.relation_type as RelationType,
-        body.weight || 1.0
-      );
-      return json({ success: true, message: "Memories linked successfully" });
+      const namespace = url.searchParams.get("namespace") || undefined;
+      const graph = await MemoryService.getGraph(currentUser.id, namespace);
+      return json(graph);
     } catch (err) {
-      return json({ error: (err as Error).message }, 400);
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Link / Unlink
+  if (path === "/api/memories/link") {
+    if (method === "POST") {
+      try {
+        const body = await req.json();
+        await MemoryService.linkMemories(
+          currentUser.id,
+          body.source_hash,
+          body.target_hash,
+          body.relation_type as RelationType,
+          body.weight || 1.0
+        );
+        return json({ success: true, message: "Memories linked successfully" });
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
+    }
+
+    if (method === "DELETE") {
+      try {
+        const body = await req.json();
+        const success = await MemoryService.unlinkMemories(
+          currentUser.id,
+          body.source_hash,
+          body.target_hash,
+          body.relation_type
+        );
+        return json({ success, message: success ? "Link removed" : "Link not found" });
+      } catch (err) {
+        return json({ error: (err as Error).message }, 400);
+      }
     }
   }
 

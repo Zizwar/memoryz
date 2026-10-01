@@ -6,7 +6,8 @@
     "dev": "deno run --allow-net --allow-env --allow-read --watch main.ts",
     "start": "deno run --allow-net --allow-env --allow-read main.ts",
     "cli": "deno run --allow-net --allow-env --allow-read cli.ts",
-    "migrate": "deno run --allow-all cli.ts help"
+    "migrate": "deno run --allow-all cli.ts help",
+    "bench": "deno run --allow-all benchmarks/runner.ts"
   },
 
   "imports": {

@@ -1,0 +1,980 @@
+{
+  "timestamp": "2026-10-01T16:25:44.900Z",
+  "targetUrl": "https://memoryz.wino.deno.net",
+  "model": "Google Gemini Embeddings (768-dim) + LibSQL Cosine Vector Engine",
+  "levels": {
+    "level1_needle": {
+      "level": "level1_needle",
+      "name": "Semantic Needle & Paraphrase Recall",
+      "description": "Evaluates exact facts and semantic paraphrased retrieval against distractors.",
+      "stats": {
+        "n": 10,
+        "hitCount": 10,
+        "hitRate": 1,
+        "pAtK": 0.2,
+        "rAtK": 1,
+        "mrr": 1,
+        "latencyP50": 757,
+        "latencyP95": 823,
+        "latencyMean": 739
+      },
+      "byType": {
+        "needle-exact": {
+          "n": 5,
+          "hitCount": 5,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 775,
+          "latencyP95": 823,
+          "latencyMean": 751
+        },
+        "needle-paraphrase": {
+          "n": 5,
+          "hitCount": 5,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 745,
+          "latencyP95": 780,
+          "latencyMean": 727
+        }
+      },
+      "details": [
+        {
+          "level": "Level 1",
+          "id": "needle-001-exact",
+          "type": "needle-exact",
+          "query": "What is the database read-replica fallback IP and TLS port?",
+          "goldIds": [
+            "needle-001"
+          ],
+          "retrievedIds": [
+            "needle-001",
+            "dist-004",
+            "dist-001",
+            "needle-004",
+            "needle-003"
+          ],
+          "scores": [
+            0.853,
+            0.6037,
+            0.5907,
+            0.5651,
+            0.5648
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 822.8332869999977
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-001-paraphrase",
+          "type": "needle-paraphrase",
+          "query": "Where does the db failover read connection route in prod?",
+          "goldIds": [
+            "needle-001"
+          ],
+          "retrievedIds": [
+            "needle-001",
+            "dist-004",
+            "dist-001",
+            "needle-003",
+            "needle-004"
+          ],
+          "scores": [
+            0.7238,
+            0.5785,
+            0.5695,
+            0.5512,
+            0.5372
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 780.0345410000009
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-002-exact",
+          "type": "needle-exact",
+          "query": "What correlation tag must be appended to telemetry error logs?",
+          "goldIds": [
+            "needle-002"
+          ],
+          "retrievedIds": [
+            "needle-002",
+            "needle-003",
+            "needle-004",
+            "needle-005",
+            "needle-001"
+          ],
+          "scores": [
+            0.869,
+            0.5918,
+            0.5404,
+            0.5344,
+            0.534
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 778.4900560000024
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-002-paraphrase",
+          "type": "needle-paraphrase",
+          "query": "Which special tag should be included when logging telemetry errors?",
+          "goldIds": [
+            "needle-002"
+          ],
+          "retrievedIds": [
+            "needle-002",
+            "needle-003",
+            "needle-004",
+            "dist-004",
+            "needle-005"
+          ],
+          "scores": [
+            0.8056,
+            0.6109,
+            0.523,
+            0.5088,
+            0.5057
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 745.0266619999966
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-003-exact",
+          "type": "needle-exact",
+          "query": "What is the canary release abort threshold for 5xx errors?",
+          "goldIds": [
+            "needle-003"
+          ],
+          "retrievedIds": [
+            "needle-003",
+            "needle-001",
+            "needle-002",
+            "needle-004",
+            "dist-001"
+          ],
+          "scores": [
+            0.9043,
+            0.5719,
+            0.5552,
+            0.5513,
+            0.515
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 775.051324
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-003-paraphrase",
+          "type": "needle-paraphrase",
+          "query": "At what percentage of HTTP server failures is a canary rollout automatically stopped?",
+          "goldIds": [
+            "needle-003"
+          ],
+          "retrievedIds": [
+            "needle-003",
+            "needle-001",
+            "needle-004",
+            "dist-002",
+            "needle-002"
+          ],
+          "scores": [
+            0.8302,
+            0.5543,
+            0.5411,
+            0.5249,
+            0.5196
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 683.4168919999975
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-004-exact",
+          "type": "needle-exact",
+          "query": "How do you force-flush the cache without restarting pods?",
+          "goldIds": [
+            "needle-004"
+          ],
+          "retrievedIds": [
+            "needle-004",
+            "dist-001",
+            "needle-003",
+            "needle-001",
+            "dist-004"
+          ],
+          "scores": [
+            0.767,
+            0.5575,
+            0.5388,
+            0.532,
+            0.5286
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 718.3779300000024
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-004-paraphrase",
+          "type": "needle-paraphrase",
+          "query": "What API call and header purges service cache dynamically?",
+          "goldIds": [
+            "needle-004"
+          ],
+          "retrievedIds": [
+            "needle-004",
+            "needle-005",
+            "needle-003",
+            "needle-002",
+            "dist-001"
+          ],
+          "scores": [
+            0.8164,
+            0.5577,
+            0.5508,
+            0.5369,
+            0.5243
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 756.602261
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-005-exact",
+          "type": "needle-exact",
+          "query": "What is the payment webhook secret rotation interval and key prefix?",
+          "goldIds": [
+            "needle-005"
+          ],
+          "retrievedIds": [
+            "needle-005",
+            "dist-005",
+            "needle-003",
+            "needle-004",
+            "needle-002"
+          ],
+          "scores": [
+            0.8751,
+            0.5704,
+            0.5613,
+            0.5403,
+            0.5391
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 661.7626970000019
+        },
+        {
+          "level": "Level 1",
+          "id": "needle-005-paraphrase",
+          "type": "needle-paraphrase",
+          "query": "How frequently are payment webhook keys rotated and what prefix is used?",
+          "goldIds": [
+            "needle-005"
+          ],
+          "retrievedIds": [
+            "needle-005",
+            "dist-005",
+            "needle-003",
+            "needle-002",
+            "needle-004"
+          ],
+          "scores": [
+            0.8681,
+            0.553,
+            0.5395,
+            0.5339,
+            0.5249
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 668.9330819999996
+        }
+      ]
+    },
+    "level2_coding_agent_life": {
+      "level": "level2_coding_agent_life",
+      "name": "Coding Agent Life v1 Benchmark",
+      "description": "Evaluates multi-session reasoning, bug tracking, preferences, and temporal queries.",
+      "stats": {
+        "n": 15,
+        "hitCount": 15,
+        "hitRate": 1,
+        "pAtK": 0.24,
+        "rAtK": 1,
+        "mrr": 1,
+        "latencyP50": 742,
+        "latencyP95": 803,
+        "latencyMean": 726
+      },
+      "byType": {
+        "single-session-bug": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 776,
+          "latencyP95": 776,
+          "latencyMean": 776
+        },
+        "single-session-infra": {
+          "n": 2,
+          "hitCount": 2,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 772,
+          "latencyP95": 772,
+          "latencyMean": 739
+        },
+        "single-session-refactor": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 671,
+          "latencyP95": 671,
+          "latencyMean": 671
+        },
+        "single-session-feature": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 751,
+          "latencyP95": 751,
+          "latencyMean": 751
+        },
+        "single-session-test": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 776,
+          "latencyP95": 776,
+          "latencyMean": 776
+        },
+        "single-session-perf": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 700,
+          "latencyP95": 700,
+          "latencyMean": 700
+        },
+        "single-session-api": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 742,
+          "latencyP95": 742,
+          "latencyMean": 742
+        },
+        "single-session-db": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 795,
+          "latencyP95": 795,
+          "latencyMean": 795
+        },
+        "single-session-release": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 803,
+          "latencyP95": 803,
+          "latencyMean": 803
+        },
+        "multi-session-causal": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.4,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 763,
+          "latencyP95": 763,
+          "latencyMean": 763
+        },
+        "preference": {
+          "n": 2,
+          "hitCount": 2,
+          "hitRate": 1,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 701,
+          "latencyP95": 701,
+          "latencyMean": 679
+        },
+        "multi-session-review": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.4,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 650,
+          "latencyP95": 650,
+          "latencyMean": 650
+        },
+        "temporal": {
+          "n": 1,
+          "hitCount": 1,
+          "hitRate": 1,
+          "pAtK": 0.4,
+          "rAtK": 1,
+          "mrr": 1,
+          "latencyP50": 629,
+          "latencyP95": 629,
+          "latencyMean": 629
+        }
+      },
+      "details": [
+        {
+          "level": "Level 2",
+          "id": "q-001",
+          "type": "single-session-bug",
+          "query": "Where did we land the auth env var precedence fix?",
+          "goldIds": [
+            "sess-001"
+          ],
+          "retrievedIds": [
+            "sess-001",
+            "sess-014",
+            "sess-011",
+            "sess-003",
+            "sess-007"
+          ],
+          "scores": [
+            0.7495,
+            0.711,
+            0.6913,
+            0.6103,
+            0.5958
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 776.027525999998
+        },
+        {
+          "level": "Level 2",
+          "id": "q-002",
+          "type": "single-session-infra",
+          "query": "What was the multi-arch Docker fix?",
+          "goldIds": [
+            "sess-002"
+          ],
+          "retrievedIds": [
+            "sess-002",
+            "sess-011",
+            "sess-001",
+            "sess-005",
+            "sess-006"
+          ],
+          "scores": [
+            0.7117,
+            0.677,
+            0.6012,
+            0.5802,
+            0.5793
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 771.9527519999974
+        },
+        {
+          "level": "Level 2",
+          "id": "q-003",
+          "type": "single-session-refactor",
+          "query": "Where did we consolidate the retry logic?",
+          "goldIds": [
+            "sess-003"
+          ],
+          "retrievedIds": [
+            "sess-003",
+            "sess-005",
+            "sess-007",
+            "sess-013",
+            "sess-001"
+          ],
+          "scores": [
+            0.777,
+            0.6002,
+            0.6,
+            0.5711,
+            0.5666
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 671.3373700000011
+        },
+        {
+          "level": "Level 2",
+          "id": "q-004",
+          "type": "single-session-feature",
+          "query": "Which PR introduced helm chart support?",
+          "goldIds": [
+            "sess-004"
+          ],
+          "retrievedIds": [
+            "sess-004",
+            "sess-001",
+            "sess-010",
+            "sess-009",
+            "sess-011"
+          ],
+          "scores": [
+            0.7646,
+            0.626,
+            0.6125,
+            0.6077,
+            0.6049
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 751.2596419999973
+        },
+        {
+          "level": "Level 2",
+          "id": "q-005",
+          "type": "single-session-test",
+          "query": "Which test was flaky on macos and how was it fixed?",
+          "goldIds": [
+            "sess-005"
+          ],
+          "retrievedIds": [
+            "sess-005",
+            "sess-006",
+            "sess-001",
+            "sess-003",
+            "sess-011"
+          ],
+          "scores": [
+            0.727,
+            0.627,
+            0.61,
+            0.5999,
+            0.5868
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 776.1191670000044
+        },
+        {
+          "level": "Level 2",
+          "id": "q-006",
+          "type": "single-session-perf",
+          "query": "How did we fix the memory leak?",
+          "goldIds": [
+            "sess-006"
+          ],
+          "retrievedIds": [
+            "sess-006",
+            "sess-007",
+            "sess-003",
+            "sess-008",
+            "sess-013"
+          ],
+          "scores": [
+            0.7182,
+            0.612,
+            0.5797,
+            0.5775,
+            0.5739
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 700.0586269999985
+        },
+        {
+          "level": "Level 2",
+          "id": "q-007",
+          "type": "single-session-api",
+          "query": "How did we handle the github API rate limit?",
+          "goldIds": [
+            "sess-007"
+          ],
+          "retrievedIds": [
+            "sess-007",
+            "sess-003",
+            "sess-006",
+            "sess-013",
+            "sess-008"
+          ],
+          "scores": [
+            0.7697,
+            0.6322,
+            0.5974,
+            0.5771,
+            0.5732
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 742.4304919999995
+        },
+        {
+          "level": "Level 2",
+          "id": "q-008",
+          "type": "single-session-db",
+          "query": "What was the schema migration approach for run_history?",
+          "goldIds": [
+            "sess-008"
+          ],
+          "retrievedIds": [
+            "sess-008",
+            "sess-013",
+            "sess-007",
+            "sess-003",
+            "sess-006"
+          ],
+          "scores": [
+            0.81,
+            0.6491,
+            0.5819,
+            0.5794,
+            0.5717
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 795.3627520000009
+        },
+        {
+          "level": "Level 2",
+          "id": "q-009",
+          "type": "single-session-infra",
+          "query": "How is the docs site deployed?",
+          "goldIds": [
+            "sess-009"
+          ],
+          "retrievedIds": [
+            "sess-009",
+            "sess-010",
+            "sess-011",
+            "sess-001",
+            "sess-004"
+          ],
+          "scores": [
+            0.7369,
+            0.5972,
+            0.5691,
+            0.5508,
+            0.5489
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 706.6072499999937
+        },
+        {
+          "level": "Level 2",
+          "id": "q-010",
+          "type": "single-session-release",
+          "query": "Which PR set up the cross-platform release pipeline?",
+          "goldIds": [
+            "sess-010"
+          ],
+          "retrievedIds": [
+            "sess-010",
+            "sess-001",
+            "sess-007",
+            "sess-009",
+            "sess-011"
+          ],
+          "scores": [
+            0.7506,
+            0.6459,
+            0.6268,
+            0.6262,
+            0.6253
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 802.7338979999986
+        },
+        {
+          "level": "Level 2",
+          "id": "q-011",
+          "type": "multi-session-causal",
+          "query": "What was the root cause of the staging incident, and where was it fixed?",
+          "goldIds": [
+            "sess-001",
+            "sess-014"
+          ],
+          "retrievedIds": [
+            "sess-014",
+            "sess-001",
+            "sess-006",
+            "sess-013",
+            "sess-011"
+          ],
+          "scores": [
+            0.6641,
+            0.6251,
+            0.5959,
+            0.5931,
+            0.5842
+          ],
+          "k": 5,
+          "pAtK": 0.4,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 762.9149610000022
+        },
+        {
+          "level": "Level 2",
+          "id": "q-012",
+          "type": "preference",
+          "query": "Which async runtime does the team prefer for new code?",
+          "goldIds": [
+            "sess-015"
+          ],
+          "retrievedIds": [
+            "sess-015",
+            "sess-003",
+            "sess-007",
+            "sess-005",
+            "sess-008"
+          ],
+          "scores": [
+            0.7586,
+            0.5999,
+            0.5833,
+            0.5803,
+            0.5803
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 700.9617100000032
+        },
+        {
+          "level": "Level 2",
+          "id": "q-013",
+          "type": "preference",
+          "query": "What are the user's formatting preferences?",
+          "goldIds": [
+            "sess-012"
+          ],
+          "retrievedIds": [
+            "sess-012",
+            "sess-015",
+            "sess-014",
+            "sess-001",
+            "sess-011"
+          ],
+          "scores": [
+            0.7014,
+            0.5738,
+            0.5346,
+            0.5108,
+            0.5095
+          ],
+          "k": 5,
+          "pAtK": 0.2,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 657.0198010000022
+        },
+        {
+          "level": "Level 2",
+          "id": "q-014",
+          "type": "multi-session-review",
+          "query": "What was the race condition Aria fixed in the schema migration?",
+          "goldIds": [
+            "sess-008",
+            "sess-013"
+          ],
+          "retrievedIds": [
+            "sess-013",
+            "sess-008",
+            "sess-006",
+            "sess-003",
+            "sess-001"
+          ],
+          "scores": [
+            0.7826,
+            0.6698,
+            0.5811,
+            0.5686,
+            0.566
+          ],
+          "k": 5,
+          "pAtK": 0.4,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 650.3386570000002
+        },
+        {
+          "level": "Level 2",
+          "id": "q-015",
+          "type": "temporal",
+          "query": "What was shipped on April 8th 2026?",
+          "goldIds": [
+            "sess-001",
+            "sess-011"
+          ],
+          "retrievedIds": [
+            "sess-011",
+            "sess-001",
+            "sess-014",
+            "sess-010",
+            "sess-009"
+          ],
+          "scores": [
+            0.5867,
+            0.554,
+            0.542,
+            0.5278,
+            0.5212
+          ],
+          "k": 5,
+          "pAtK": 0.4,
+          "rAtK": 1,
+          "hit": true,
+          "mrr": 1,
+          "latencyMs": 629.4211460000006
+        }
+      ]
+    },
+    "level3_security_isolation": {
+      "crossTenantLeakage": 0,
+      "crossNamespaceLeakage": 0,
+      "negativeQueryMaxSim": 0.4985,
+      "passed": true,
+      "details": [
+        {
+          "check": "Cross-Tenant Memory Isolation (User A vs User B)",
+          "status": "PASS",
+          "note": "Zero leakage across user boundaries"
+        },
+        {
+          "check": "Cross-Namespace Isolation",
+          "status": "PASS",
+          "note": "Strict namespace filtering maintained"
+        },
+        {
+          "check": "Negative / Out-of-Domain Resistance",
+          "status": "PASS",
+          "note": "Negative query similarity bounded at 0.4985"
+        }
+      ]
+    },
+    "level4_token_efficiency": {
+      "rawChars": 680,
+      "rawTokensEstimated": 170,
+      "fullJsonTokensEstimated": 502,
+      "compactTokensEstimated": 186,
+      "summaryTokensEstimated": 184,
+      "compressionRatioCompact": "2.70x",
+      "tokenSavingsPercent": 62.9
+    }
+  },
+  "overallScorecard": {
+    "overallRecallAt5": 1,
+    "overallPrecisionAt5": 0.224,
+    "overallMRR": 1,
+    "overallHitRate": 1,
+    "averageLatencyMs": 731,
+    "leakageDetected": false
+  }
+}

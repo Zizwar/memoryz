@@ -20,6 +20,7 @@ export function renderAppHtml(): string {
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <script>
@@ -237,7 +238,7 @@ export function renderAppHtml(): string {
     </template>
 
     <!-- NAVIGATION CARDS (Responsive Grid, Mobile-Friendly, No Horizontal Overflow) -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
       <!-- 1. الذاكرة الحية -->
       <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
               :class="activeTab === 'memories' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
@@ -257,7 +258,26 @@ export function renderAppHtml(): string {
         </div>
       </button>
 
-      <!-- 2. المهام والـ TODO -->
+      <!-- 2. شبكة المعرفة (Knowledge Graph) -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'graph' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('graph')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'graph' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-circle-nodes"></i>
+          </div>
+          <span class="badge badge-xs font-mono font-medium"
+                :class="activeTab === 'graph' ? 'badge-primary' : 'badge-ghost'"
+                x-text="graphStats.totalNodes"></span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight">شبكة المعرفة</div>
+          <div class="text-[10px] text-base-content/60 truncate">Graph بياني تفاعلي</div>
+        </div>
+      </button>
+
+      <!-- 3. المهام والـ TODO -->
       <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-right flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
               :class="activeTab === 'tasks' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
               @click="switchTab('tasks')">
@@ -433,6 +453,7 @@ export function renderAppHtml(): string {
       <div class="flex items-center gap-2 min-w-0">
         <span class="text-xs sm:text-sm font-bold text-base-content/90 truncate" x-text="
           activeTab === 'memories' ? 'الذاكرة الحية والمتجهات (Vector Memories)' :
+          activeTab === 'graph' ? 'شبكة المعرفة والروابط البيانية (Interactive Knowledge Graph)' :
           activeTab === 'tasks' ? 'شجرة المهام وتنسيق الوكلاء (Tasks & Multi-Agent TODOs)' :
           activeTab === 'webhooks' ? 'الاشتراكات الفورية في الأحداث (Multi-Agent Webhooks)' :
           activeTab === 'context' ? 'حزم السياق والسجلات اللحظية (Context Packs & Logs)' :
@@ -448,6 +469,17 @@ export function renderAppHtml(): string {
           <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openMemoryModal()">
             <i class="fa-solid fa-plus text-xs"></i> <span>ذاكرة جديدة</span>
           </button>
+        </template>
+
+        <template x-if="activeTab === 'graph'">
+          <div class="flex items-center gap-1.5">
+            <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openCreateLinkModal()">
+              <i class="fa-solid fa-link text-xs"></i> <span>ربط ذكريين</span>
+            </button>
+            <button class="btn btn-ghost btn-xs sm:btn-sm gap-1" @click="loadGraph()" :disabled="loadingGraph" title="تحديث الشبكة">
+              <i class="fa-solid fa-rotate text-xs" :class="loadingGraph ? 'fa-spin' : ''"></i>
+            </button>
+          </div>
         </template>
 
         <template x-if="activeTab === 'tasks'">
@@ -573,6 +605,179 @@ export function renderAppHtml(): string {
       <div x-show="filteredMemories.length === 0 && !loadingMemories" class="card bg-base-200 border border-base-300 p-8 text-center text-base-content/60">
         <i class="fa-solid fa-box-open text-3xl mb-2 text-base-content/30"></i>
         <span>لا توجد ذكريات تطابق هذا البحث أو التصنيف.</span>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB: INTERACTIVE KNOWLEDGE GRAPH VISUALIZER -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'graph'" class="space-y-4">
+      <!-- Toolbar & Filters -->
+      <div class="card bg-base-200 border border-base-300 p-3 sm:p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <!-- Search & Type Filters -->
+        <div class="flex items-center gap-2 flex-wrap w-full md:w-auto">
+          <div class="relative flex-1 sm:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-base-content/40 text-xs"></i>
+            <input type="text"
+                   class="input input-sm input-bordered w-full pr-8 pl-3 text-xs bg-base-100"
+                   placeholder="بحث في شبكة الذكريات..."
+                   x-model="graphSearchQuery"
+                   @input="filterGraph()">
+          </div>
+
+          <!-- Type filter buttons -->
+          <div class="join">
+            <button class="btn btn-xs join-item" :class="graphFilterType === 'all' ? 'btn-primary' : 'btn-ghost'" @click="setGraphFilter('all')">الكل</button>
+            <button class="btn btn-xs join-item text-emerald-500 font-medium" :class="graphFilterType === 'note' ? 'btn-active bg-emerald-500/20' : 'btn-ghost'" @click="setGraphFilter('note')">Note</button>
+            <button class="btn btn-xs join-item text-indigo-400 font-medium" :class="graphFilterType === 'skill' ? 'btn-active bg-indigo-500/20' : 'btn-ghost'" @click="setGraphFilter('skill')">Skill</button>
+            <button class="btn btn-xs join-item text-amber-500 font-medium" :class="graphFilterType === 'preference' ? 'btn-active bg-amber-500/20' : 'btn-ghost'" @click="setGraphFilter('preference')">Pref</button>
+            <button class="btn btn-xs join-item text-cyan-400 font-medium" :class="graphFilterType === 'env' ? 'btn-active bg-cyan-500/20' : 'btn-ghost'" @click="setGraphFilter('env')">Env</button>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+          <div class="flex items-center gap-2 font-mono text-xs text-base-content/70">
+            <span class="badge badge-sm badge-outline gap-1 font-mono">
+              <i class="fa-solid fa-circle-dot text-[9px] text-primary"></i>
+              <span x-text="graphStats.totalNodes + ' عقدة'"></span>
+            </span>
+            <span class="badge badge-sm badge-outline gap-1 font-mono">
+              <i class="fa-solid fa-arrow-right-arrow-left text-[9px] text-secondary"></i>
+              <span x-text="graphStats.totalEdges + ' رابط'"></span>
+            </span>
+          </div>
+
+          <button class="btn btn-sm btn-ghost btn-circle tooltip tooltip-bottom" data-tip="ملاءمة الرؤية (Fit View)" @click="fitGraph()">
+            <i class="fa-solid fa-expand text-xs"></i>
+          </button>
+
+          <button class="btn btn-sm btn-ghost btn-circle tooltip tooltip-bottom"
+                  :data-tip="graphPhysicsEnabled ? 'إيقاف حركة الجاذبية' : 'تفعيل حركة الجاذبية'"
+                  @click="toggleGraphPhysics()">
+            <i class="fa-solid text-xs" :class="graphPhysicsEnabled ? 'fa-atom text-primary animate-pulse' : 'fa-pause text-base-content/40'"></i>
+          </button>
+
+          <button class="btn btn-sm btn-primary gap-1 shadow-sm text-xs font-bold" @click="openCreateLinkModal()">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>ربط ذكريين</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Graph Workspace: Network Canvas + Side Inspector -->
+      <div class="relative card bg-base-200 border border-base-300 shadow-sm overflow-hidden min-h-[580px] h-[640px]">
+        <!-- Vis.js Canvas Container -->
+        <div id="memory-network-canvas" class="w-full h-full bg-base-300/30"></div>
+
+        <!-- Empty State overlay if no memories -->
+        <div x-show="!loadingGraph && graphStats.totalNodes === 0" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-base-200/80 backdrop-blur-sm pointer-events-none">
+          <div class="w-16 h-16 rounded-2xl bg-base-300 flex items-center justify-center text-primary text-2xl mb-3 shadow-inner">
+            <i class="fa-solid fa-diagram-project"></i>
+          </div>
+          <h4 class="font-bold text-base">لا توجد ذكريات في هذا النطاق لعرضها في الشبكة</h4>
+          <p class="text-xs text-base-content/60 max-w-sm mt-1">أضف ذكريات جديدة أو قم بتغيير النطاق (Namespace) لعرض العلاقات والروابط البيانية.</p>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div x-show="loadingGraph" class="absolute inset-0 flex flex-col items-center justify-center bg-base-200/60 backdrop-blur-xs z-10">
+          <span class="loading loading-spinner loading-md text-primary"></span>
+          <span class="text-xs text-base-content/70 mt-2 font-medium">جاري بناء وتنسيق شبكة الذكريات...</span>
+        </div>
+
+        <!-- Side Inspector Drawer (pops up when a node is clicked) -->
+        <div x-show="selectedGraphNode"
+             x-transition:enter="transition ease-out duration-200 transform"
+             x-transition:enter-start="translate-x-full opacity-0"
+             x-transition:enter-end="translate-x-0 opacity-100"
+             x-transition:leave="transition ease-in duration-150 transform"
+             x-transition:leave-start="translate-x-0 opacity-100"
+             x-transition:leave-end="translate-x-full opacity-0"
+             class="absolute top-3 left-3 bottom-3 w-80 sm:w-96 bg-base-100/95 backdrop-blur-md border border-base-300 rounded-xl shadow-xl p-4 flex flex-col justify-between z-20 overflow-y-auto scrollbar-thin">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-base-300 pb-2">
+              <div class="flex items-center gap-1.5">
+                <span class="badge badge-sm font-mono uppercase text-[10px]"
+                      :class="{
+                        'badge-success text-success-content': selectedGraphNode?.type === 'note',
+                        'badge-secondary text-secondary-content': selectedGraphNode?.type === 'skill',
+                        'badge-warning text-warning-content': selectedGraphNode?.type === 'preference',
+                        'badge-info text-info-content': selectedGraphNode?.type === 'env'
+                      }"
+                      x-text="selectedGraphNode?.type"></span>
+                <span class="badge badge-ghost badge-sm text-[10px] font-mono" x-text="selectedGraphNode?.namespace"></span>
+              </div>
+              <button class="btn btn-ghost btn-xs btn-circle" @click="selectedGraphNode = null">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-sm text-base-content" x-text="selectedGraphNode?.label"></h4>
+              <div class="font-mono text-[10px] text-base-content/50 truncate mt-0.5" x-text="selectedGraphNode?.id"></div>
+            </div>
+
+            <!-- Content preview -->
+            <div class="bg-base-200/80 p-3 rounded-lg border border-base-300/60 text-xs leading-relaxed max-h-48 overflow-y-auto scrollbar-thin select-text"
+                 x-text="selectedGraphNode?.content"></div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-2 text-center text-xs">
+              <div class="bg-base-200 p-2 rounded-lg border border-base-300">
+                <div class="text-[10px] text-base-content/60">مرات الاسترجاع</div>
+                <div class="font-mono font-bold text-primary mt-0.5" x-text="selectedGraphNode?.recall_count || 0"></div>
+              </div>
+              <div class="bg-base-200 p-2 rounded-lg border border-base-300">
+                <div class="text-[10px] text-base-content/60">درجة التضاؤل (Decay)</div>
+                <div class="font-mono font-bold text-secondary mt-0.5" x-text="selectedGraphNode?.recall_score || 0"></div>
+              </div>
+            </div>
+
+            <!-- Connected Edges list -->
+            <div>
+              <div class="text-[11px] font-bold text-base-content/70 mb-1.5 flex items-center justify-between">
+                <span>الروابط المتصلة:</span>
+                <button class="btn btn-ghost btn-xs text-primary gap-1" @click="openCreateLinkModal(selectedGraphNode?.id)">
+                  <i class="fa-solid fa-plus text-[9px]"></i> إضافة رابط
+                </button>
+              </div>
+              <div class="space-y-1.5 max-h-36 overflow-y-auto scrollbar-thin">
+                <template x-for="edge in getNodeEdges(selectedGraphNode?.id)" :key="edge.id">
+                  <div class="flex items-center justify-between bg-base-200/70 border border-base-300/70 px-2.5 py-1.5 rounded text-[11px]">
+                    <div class="flex items-center gap-1.5 truncate">
+                      <span class="badge badge-xs badge-outline font-mono text-[9px]" x-text="edge.label"></span>
+                      <span class="truncate font-medium" x-text="getNeighborTitle(edge, selectedGraphNode?.id)"></span>
+                    </div>
+                    <button class="btn btn-ghost btn-xs text-error p-1" title="حذف الرابط" @click="deleteGraphLink(edge.from, edge.to, edge.label)">
+                      <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                  </div>
+                </template>
+                <div x-show="getNodeEdges(selectedGraphNode?.id).length === 0" class="text-[10px] text-base-content/40 text-center py-2">
+                  لا توجد روابط متصلة بهذه الذاكرة بعد
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-base-300 flex items-center gap-2">
+            <button class="btn btn-primary btn-xs flex-1 gap-1" @click="searchFromNode(selectedGraphNode?.content)">
+              <i class="fa-solid fa-brain text-[10px]"></i>
+              <span>استرجاع ذكريات مشابهة</span>
+            </button>
+            <button class="btn btn-ghost btn-xs tooltip tooltip-top" data-tip="نسخ الـ Hash" @click="copyText(selectedGraphNode?.id)">
+              <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Legend Overlay in Bottom-Right -->
+        <div class="absolute bottom-3 right-3 bg-base-100/80 backdrop-blur-xs border border-base-300/80 rounded-lg px-2.5 py-1.5 text-[10px] flex items-center gap-2.5 shadow-sm pointer-events-none">
+          <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span>Note</span></div>
+          <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> <span>Skill</span></div>
+          <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> <span>Preference</span></div>
+          <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> <span>Env</span></div>
+        </div>
       </div>
     </div>
 
@@ -1320,9 +1525,60 @@ export function renderAppHtml(): string {
     </template>
   </main>
 
-  <!-- ============================================================= -->
-  <!-- MODALS (DaisyUI standard modal dialogs) -->
-  <!-- ============================================================= -->
+  <!-- Modal: Link Memories (Graph Edge) -->
+  <dialog class="modal" :class="{ 'modal-open': modals.link }">
+    <div class="modal-box bg-base-200 border border-base-300 max-w-lg">
+      <h3 class="font-bold text-base mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-link text-primary"></i>
+        <span>إنشاء رابط بياني بين ذكريين (Knowledge Graph Edge)</span>
+      </h3>
+      <form @submit.prevent="submitCreateLink()" class="space-y-3 text-xs">
+        <div class="form-control">
+          <label class="label"><span class="label-text font-bold">الذاكرة المصدر (Source)</span></label>
+          <select class="select select-sm select-bordered w-full bg-base-100" x-model="linkModalData.sourceHash" required>
+            <option value="" disabled>اختر الذاكرة المصدر...</option>
+            <template x-for="m in memories" :key="m.hash">
+              <option :value="m.hash" x-text="'[' + m.type + '] ' + (m.title || m.content.substring(0, 35))"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text font-bold">الذاكرة الهدف (Target)</span></label>
+          <select class="select select-sm select-bordered w-full bg-base-100" x-model="linkModalData.targetHash" required>
+            <option value="" disabled>اختر الذاكرة الهدف...</option>
+            <template x-for="m in memories" :key="m.hash">
+              <option :value="m.hash" x-text="'[' + m.type + '] ' + (m.title || m.content.substring(0, 35))"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="form-control">
+            <label class="label"><span class="label-text font-bold">نوع العلاقة (Relation)</span></label>
+            <select class="select select-sm select-bordered font-mono" x-model="linkModalData.relationType" required>
+              <option value="related">related (مرتبط)</option>
+              <option value="depends_on">depends_on (يعتمد على)</option>
+              <option value="context_for">context_for (سياق لـ)</option>
+              <option value="supersedes">supersedes (يستبدل/يحدث)</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-bold">وزن الرابط (Weight)</span></label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="input input-sm input-bordered font-mono" x-model.number="linkModalData.weight" required />
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" @click="modals.link = false">إلغاء</button>
+          <button type="submit" class="btn btn-primary btn-sm gap-1" :disabled="creatingLink">
+            <span x-show="creatingLink" class="loading loading-spinner loading-xs"></span>
+            <span>حفظ الرابط</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
 
   <!-- Modal: Memory Form (New / Edit) -->
   <dialog class="modal" :class="{ 'modal-open': modals.memory }">
@@ -1691,9 +1947,22 @@ export function renderAppHtml(): string {
         jevEnabled: false,
         loadingJevSetting: false,
 
+        // Knowledge Graph
+        graphData: { nodes: [], edges: [], stats: { totalNodes: 0, totalEdges: 0 } },
+        graphStats: { totalNodes: 0, totalEdges: 0 },
+        loadingGraph: false,
+        selectedGraphNode: null,
+        graphFilterType: 'all',
+        graphSearchQuery: '',
+        graphPhysicsEnabled: true,
+        networkInstance: null,
+        creatingLink: false,
+        linkModalData: { sourceHash: '', targetHash: '', relationType: 'related', weight: 1.0 },
+
         // Modals
         modals: {
           memory: false,
+          link: false,
           task: false,
           webhook: false,
           r2Upload: false,
@@ -1735,6 +2004,7 @@ export function renderAppHtml(): string {
         setNamespace(ns) {
           this.currentNamespace = ns;
           this.loadMemories();
+          this.loadGraph();
           this.loadTasks();
           if (this.activeTab === 'webhooks') this.loadWebhooks();
           if (this.activeTab === 'r2') this.loadR2Files();
@@ -1805,6 +2075,7 @@ export function renderAppHtml(): string {
           }
           await this.loadSystemSettings();
           await this.loadMemories();
+          await this.loadGraph();
           await this.loadTasks();
           await this.loadWebhooks();
           await this.loadR2Files();
@@ -1814,6 +2085,7 @@ export function renderAppHtml(): string {
         switchTab(tab) {
           this.activeTab = tab;
           if (tab === 'memories') this.loadMemories();
+          if (tab === 'graph') this.loadGraph();
           if (tab === 'tasks') this.loadTasks();
           if (tab === 'webhooks') this.loadWebhooks();
           if (tab === 'r2') this.loadR2Files();
@@ -1953,6 +2225,7 @@ export function renderAppHtml(): string {
               this.modals.memory = false;
               this.showToast('تم حفظ ذرة الذاكرة بنجاح ⚡');
               this.loadMemories();
+              this.loadGraph();
             } else {
               const d = await res.json();
               alert(d.error);
@@ -1972,10 +2245,241 @@ export function renderAppHtml(): string {
             if (res.ok) {
               this.showToast('تم حذف الذاكرة');
               this.loadMemories();
+              this.loadGraph();
             }
           } catch (err) {
             alert(err.message);
           }
+        },
+
+        // --- KNOWLEDGE GRAPH ---
+        async loadGraph() {
+          this.loadingGraph = true;
+          try {
+            const nsParam = this.currentNamespace !== 'all' ? '?namespace=' + encodeURIComponent(this.currentNamespace) : '';
+            const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
+            const res = await fetch('/api/memories/graph' + nsParam, { headers });
+            if (res.ok) {
+              const data = await res.json();
+              this.graphData = data;
+              this.graphStats = data.stats || { totalNodes: (data.nodes ? data.nodes.length : 0), totalEdges: (data.edges ? data.edges.length : 0) };
+              this.$nextTick(() => {
+                this.initOrUpdateNetwork();
+              });
+            }
+          } catch (e) {
+            console.error('Error loading graph:', e);
+          } finally {
+            this.loadingGraph = false;
+          }
+        },
+
+        initOrUpdateNetwork() {
+          const container = document.getElementById('memory-network-canvas');
+          if (!container || typeof vis === 'undefined') return;
+
+          const colorMap = {
+            note: { background: '#10b981', border: '#059669', highlight: { background: '#34d399', border: '#10b981' } },
+            skill: { background: '#8b5cf6', border: '#7c3aed', highlight: { background: '#a78bfa', border: '#8b5cf6' } },
+            preference: { background: '#f59e0b', border: '#d97706', highlight: { background: '#fbbf24', border: '#f59e0b' } },
+            env: { background: '#06b6d4', border: '#0891b2', highlight: { background: '#22d3ee', border: '#06b6d4' } },
+          };
+
+          const rawNodes = this.graphData.nodes || [];
+          const rawEdges = this.graphData.edges || [];
+
+          const q = (this.graphSearchQuery || '').toLowerCase();
+          const filteredNodes = rawNodes.filter(n => {
+            const matchType = this.graphFilterType === 'all' || n.type === this.graphFilterType;
+            const matchQuery = !q ||
+              (n.label && n.label.toLowerCase().includes(q)) ||
+              (n.content && n.content.toLowerCase().includes(q));
+            return matchType && matchQuery;
+          });
+
+          const activeNodeIds = new Set(filteredNodes.map(n => n.id));
+          const filteredEdges = rawEdges.filter(e => activeNodeIds.has(e.from) && activeNodeIds.has(e.to));
+
+          const isDark = this.theme === 'dark';
+          const visNodes = filteredNodes.map(n => {
+            const colors = colorMap[n.type] || colorMap.note;
+            const size = Math.min(38, Math.max(16, 16 + (n.recall_score || 0) * 3));
+            return {
+              id: n.id,
+              label: n.label,
+              title: '[' + n.type.toUpperCase() + '] ' + n.label + '\n\n' + n.content.substring(0, 150) + '...',
+              shape: 'dot',
+              size: size,
+              color: colors,
+              font: { size: 12, color: isDark ? '#f3f4f6' : '#1f2937', face: 'Tajawal' },
+              borderWidth: 2,
+              shadow: { enabled: true, color: 'rgba(0,0,0,0.3)', size: 4, x: 2, y: 2 }
+            };
+          });
+
+          const visEdges = filteredEdges.map(e => ({
+            id: e.id,
+            from: e.from,
+            to: e.to,
+            label: e.label,
+            arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+            color: {
+              color: isDark ? 'rgba(156, 163, 175, 0.4)' : 'rgba(107, 114, 128, 0.4)',
+              highlight: '#3b82f6',
+              hover: '#60a5fa'
+            },
+            font: { size: 10, color: isDark ? '#9ca3af' : '#4b5563', align: 'middle', background: isDark ? '#1f2937' : '#f3f4f6' },
+            width: Math.min(4, Math.max(1, (e.weight || 1) * 1.5)),
+            smooth: { type: 'continuous' }
+          }));
+
+          const data = {
+            nodes: new vis.DataSet(visNodes),
+            edges: new vis.DataSet(visEdges)
+          };
+
+          const options = {
+            nodes: { scaling: { min: 14, max: 45 } },
+            physics: {
+              enabled: this.graphPhysicsEnabled,
+              solver: 'forceAtlas2Based',
+              forceAtlas2Based: {
+                gravitationalConstant: -40,
+                centralGravity: 0.008,
+                springLength: 90,
+                springConstant: 0.06,
+                damping: 0.45
+              },
+              stabilization: { iterations: 80 }
+            },
+            interaction: {
+              hover: true,
+              tooltipDelay: 150,
+              zoomView: true,
+              dragView: true
+            }
+          };
+
+          if (this.networkInstance) {
+            this.networkInstance.setData(data);
+          } else {
+            this.networkInstance = new vis.Network(container, data, options);
+
+            this.networkInstance.on('click', (params) => {
+              if (params.nodes && params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const found = this.graphData.nodes.find(n => n.id === nodeId);
+                if (found) {
+                  this.selectedGraphNode = found;
+                }
+              }
+            });
+
+            this.networkInstance.on('doubleClick', (params) => {
+              if (params.nodes && params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                this.networkInstance.focus(nodeId, { scale: 1.4, animation: true });
+              }
+            });
+          }
+        },
+
+        filterGraph() {
+          this.initOrUpdateNetwork();
+        },
+
+        setGraphFilter(type) {
+          this.graphFilterType = type;
+          this.initOrUpdateNetwork();
+        },
+
+        fitGraph() {
+          if (this.networkInstance) {
+            this.networkInstance.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+          }
+        },
+
+        toggleGraphPhysics() {
+          this.graphPhysicsEnabled = !this.graphPhysicsEnabled;
+          if (this.networkInstance) {
+            this.networkInstance.setOptions({ physics: { enabled: this.graphPhysicsEnabled } });
+          }
+        },
+
+        getNodeEdges(nodeId) {
+          if (!nodeId || !this.graphData.edges) return [];
+          return this.graphData.edges.filter(e => e.from === nodeId || e.to === nodeId);
+        },
+
+        getNeighborTitle(edge, currentNodeId) {
+          const neighborId = edge.from === currentNodeId ? edge.to : edge.from;
+          const found = this.graphData.nodes.find(n => n.id === neighborId);
+          return found ? found.label : neighborId.substring(0, 8);
+        },
+
+        openCreateLinkModal(sourceHash) {
+          this.linkModalData.sourceHash = sourceHash || (this.selectedGraphNode ? this.selectedGraphNode.id : '');
+          this.linkModalData.targetHash = '';
+          this.linkModalData.relationType = 'related';
+          this.linkModalData.weight = 1.0;
+          this.modals.link = true;
+        },
+
+        async submitCreateLink() {
+          if (!this.linkModalData.sourceHash || !this.linkModalData.targetHash) return;
+          if (this.linkModalData.sourceHash === this.linkModalData.targetHash) {
+            alert('لا يمكن ربط الذاكرة بنفسها');
+            return;
+          }
+          this.creatingLink = true;
+          try {
+            const res = await fetch('/api/memories/link', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify(this.linkModalData)
+            });
+            if (res.ok) {
+              this.modals.link = false;
+              this.showToast('تم إنشاء الرابط البياني بنجاح 🔗');
+              await this.loadGraph();
+            } else {
+              const err = await res.json();
+              alert(err.error || 'فشل إنشاء الرابط');
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            this.creatingLink = false;
+          }
+        },
+
+        async deleteGraphLink(sourceHash, targetHash, relationType) {
+          if (!confirm('هل أنت متأكد من حذف هذا الرابط البياني؟')) return;
+          try {
+            const res = await fetch('/api/memories/link', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.authToken
+              },
+              body: JSON.stringify({ source_hash: sourceHash, target_hash: targetHash, relation_type: relationType })
+            });
+            if (res.ok) {
+              this.showToast('تم حذف الرابط');
+              await this.loadGraph();
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        },
+
+        searchFromNode(content) {
+          this.activeTab = 'memories';
+          this.memoryQuery = (content || '').substring(0, 60);
+          this.searchMemories();
         },
 
         // --- TASKS ---
