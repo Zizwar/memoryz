@@ -8,6 +8,7 @@ import { registerWebhook, listWebhooks, deleteWebhook, dispatchWebhookEvent } fr
 import { runMemoryMaintenance } from "../services/cron.ts";
 import { R2Service } from "../services/r2.ts";
 import { SettingsService } from "../services/settings.ts";
+import { config } from "../config.ts";
 
 export async function handleApiRoute(req: Request, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -139,12 +140,18 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
     return json(stats);
   }
 
-  // System Settings: Jev AI & Automation Control
+  // System Settings: Jev AI & R2 & Automation Control
   if (path === "/api/admin/settings" && method === "GET") {
     const jevEnabled = await SettingsService.isJevEnabled();
+    const r2Token = (await SettingsService.get("r2_api_token", "")) || config.r2ApiToken;
+    const r2AccountId = (await SettingsService.get("r2_account_id", "")) || config.r2AccountId;
+    const r2Bucket = (await SettingsService.get("r2_default_bucket", "")) || config.r2DefaultBucket;
     return json({
       jev_enabled: jevEnabled,
       jev_key_configured: Boolean(Deno.env.get("JEV_AI_KEY")),
+      r2_configured: Boolean(r2Token),
+      r2_account_id: r2AccountId ? `${r2AccountId.substring(0, 6)}...` : "",
+      r2_default_bucket: r2Bucket,
     });
   }
 
@@ -157,10 +164,24 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       if (typeof body.jev_enabled === "boolean") {
         await SettingsService.setJevEnabled(body.jev_enabled);
       }
+      if (typeof body.r2_api_token === "string" && body.r2_api_token.trim()) {
+        await SettingsService.set("r2_api_token", body.r2_api_token.trim().replace(/^["']|["']$/g, ""));
+        R2Service.clearCache();
+      }
+      if (typeof body.r2_account_id === "string" && body.r2_account_id.trim()) {
+        await SettingsService.set("r2_account_id", body.r2_account_id.trim().replace(/^["']|["']$/g, ""));
+        R2Service.clearCache();
+      }
+      if (typeof body.r2_default_bucket === "string" && body.r2_default_bucket.trim()) {
+        await SettingsService.set("r2_default_bucket", body.r2_default_bucket.trim().replace(/^["']|["']$/g, ""));
+        R2Service.clearCache();
+      }
       const jevEnabled = await SettingsService.isJevEnabled();
+      const r2Token = (await SettingsService.get("r2_api_token", "")) || config.r2ApiToken;
       return json({
         success: true,
         jev_enabled: jevEnabled,
+        r2_configured: Boolean(r2Token),
       });
     } catch (e) {
       return json({ error: (e as Error).message }, 400);

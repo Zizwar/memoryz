@@ -107,3 +107,21 @@ memoryz vault get --key="<name>" --pass="<passphrase>"
 ```
 
 Never put a credential in a regular memory — use the vault.
+
+## 8. Cloudflare R2 Object & File Storage
+
+Host artifacts, upload generated images, datasets, and files to Cloudflare R2 object storage with fast global CDN delivery.
+
+```
+# Over MCP:
+r2_upload key="diagram.png" base64="<base64_data>" content_type="image/png"
+r2_upload key="report.json" content="{\"status\": \"ok\"}"
+r2_list [prefix="..."] [bucket="memoryz"]
+r2_get_url key="diagram.png"
+r2_download key="diagram.png"
+r2_delete key="diagram.png"
+```
+
+Files are accessible directly via `https://memoryz.wino.deno.net/api/r2/raw/<key>`.
+`r2_upload` returns `full_url` and `markdown_link` for immediate preview in chat and markdown.
+

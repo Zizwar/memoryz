@@ -11,3 +11,7 @@ This project connects to MemoryZ v2 (`memoryz.wino.deno.net`):
   - Update status: `memoryz task update <id> --status=<todo|in_progress|done|blocked>`
 - **Ephemeral Logs**: Use `memoryz log "<message>"` for fast trace logs without vector overhead.
 - **Persistent Rules**: Use `memoryz store --type=preference|env|skill|note --content="..."` to save persistent knowledge.
+- **Cloudflare R2 Object & File Storage**:
+  - Upload file/image: Use MCP `r2_upload` with `key` and either `base64` (for binary/images) or `content` (for text/JSON). Returns direct CDN link (`full_url`) and ready-to-embed `markdown_link`.
+  - Fetch/List files: Use MCP `r2_list`, `r2_get_url`, or `r2_download`.
+  - Direct public access: `https://memoryz.wino.deno.net/api/r2/raw/<key>?bucket=memoryz`.

@@ -871,7 +871,9 @@ export class McpServer {
           size: res.size,
           size_formatted: R2Service.formatBytes(res.size),
           url: res.url,
-          download_url: `${res.url}&download=true`,
+          download_url: res.download_url,
+          full_url: res.full_url,
+          markdown_link: `![${res.key}](${res.full_url})`,
         };
       }
 
@@ -954,11 +956,14 @@ export class McpServer {
         const bucket = args.bucket || "memoryz";
         const cleanKey = args.key.trim().replace(/^\/+/, "");
         const base = `/api/r2/raw/${encodeURIComponent(cleanKey)}?bucket=${encodeURIComponent(bucket)}`;
+        const fullUrl = `https://memoryz.wino.deno.net${base}`;
         return {
           key: cleanKey,
           bucket,
           url: base,
           download_url: `${base}&download=true`,
+          full_url: fullUrl,
+          markdown_link: `![${cleanKey}](${fullUrl})`,
         };
       }
 
