@@ -10,7 +10,7 @@ export const MCP_TOOLS = [
   // 1. Core Memory Operations
   {
     name: "store_memory",
-    description: "Store a new memory atom (note, skill, preference, or env state) with automatic 768-dim vector embedding.",
+    description: "Store a new memory atom (note, skill, preference, or env state) with automatic 768-dim vector embedding. SECURITY POLICY: NEVER store plaintext secrets, passwords, tokens, API keys, or private passphrases here. Standard memories are vector-indexed in plaintext. All sensitive credentials MUST be encrypted in the Zero-Knowledge Vault using 'vault_store'. In notes/skills, reference credentials ONLY by their vault key name (e.g. vault_retrieve) or environment variable name.",
     inputSchema: {
       type: "object",
       properties: {
@@ -21,7 +21,7 @@ export const MCP_TOOLS = [
         },
         content: {
           type: "string",
-          description: "The knowledge, rule, preference, or skill prompt to remember",
+          description: "The knowledge, rule, preference, or skill prompt to remember. STRICT POLICY: Must NOT contain raw secrets, passwords, tokens, or API keys (use 'vault_store' instead).",
         },
         title: {
           type: "string",
@@ -29,7 +29,7 @@ export const MCP_TOOLS = [
         },
         metadata: {
           type: "object",
-          description: "Optional key-value metadata (e.g. tools, ports, tags, URLs)",
+          description: "Optional key-value metadata (e.g. tools, ports, tags, URLs). Must not contain raw secrets.",
         },
         namespace: {
           type: "string",
@@ -61,14 +61,14 @@ export const MCP_TOOLS = [
   },
   {
     name: "memory_update",
-    description: "Update the content, title, or metadata of an existing memory by hash. Re-embeds the content automatically.",
+    description: "Update the content, title, or metadata of an existing memory by hash. Re-embeds the content automatically. SECURITY POLICY: Must not contain raw secrets, passwords, or tokens (use 'vault_store' instead).",
     inputSchema: {
       type: "object",
       properties: {
         hash: { type: "string", description: "Exact hash of the memory to update" },
-        content: { type: "string", description: "New content to replace the memory with" },
+        content: { type: "string", description: "New content to replace the memory with. STRICT POLICY: Must not contain plaintext secrets or credentials." },
         title: { type: "string", description: "Optional updated title" },
-        metadata: { type: "object", description: "Optional updated metadata (replaces existing)" },
+        metadata: { type: "object", description: "Optional updated metadata (replaces existing). Must not contain raw secrets." },
       },
       required: ["hash", "content"],
     },
@@ -447,7 +447,8 @@ export class McpServer {
             version: "3.0.0",
           },
           instructions:
-            "MemoryZ v3 is a sovereign agentic memory & hierarchical multi-agent task substrate. " +
+            "MemoryZ v3 is a sovereign agentic memory & hierarchical multi-agent task substrate.\n" +
+            "CRITICAL SECURITY RULE: You must NEVER store plaintext credentials, passwords, tokens, API keys, or private passphrases inside notes, skills, or memories via 'store_memory' or 'memory_update'. Standard memories are embedded in plaintext and searchable. The mandatory place for all sensitive data is the encrypted Zero-Knowledge vault using 'vault_store' and 'vault_retrieve'. When recording notes or skills, refer to credentials ONLY by their vault key name (e.g. 'vault_key: xyz') or environment variable (e.g. process.env.KEY).\n" +
             "Use 'task_create', 'task_list', 'task_update', and 'task_claim' to manage hierarchical multi-agent tasks without duplicate work. " +
             "Use 'recall_memory' (with format: 'compact'), 'get_memory' (exact hash lookup), or 'context_pack' for token-efficient retrieval. " +
             "Use 'store_memory' to remember long-term rules (optionally with 'namespace' for project isolation and 'agent_id'/'source' for provenance), " +

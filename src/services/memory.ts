@@ -79,6 +79,52 @@ export class MemoryService {
   }
 
   /**
+   * Enforce Zero-Leak Policy: Reject plaintext secrets, private keys, and credentials
+   */
+  public static assertNoSensitiveSecrets(content: string, metadataStr?: string): void {
+    const textToCheck = `${content}\n${metadataStr || ""}`;
+
+    // 1. Private Cryptographic Keys
+    if (/-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----/i.test(textToCheck)) {
+      throw new Error(
+        "🚨 [SECURITY POLICY VIOLATION] Private cryptographic key detected. Plaintext secrets are strictly forbidden in standard memories. Use 'vault_store' to encrypt credentials in the Zero-Knowledge Vault."
+      );
+    }
+
+    // 2. High-Entropy API Tokens & Keys
+    const tokenRules: [RegExp, string][] = [
+      [/\b(?:sk|pk)_(?:live|test)_[0-9a-zA-Z]{20,}\b/, "Stripe/Live API Key"],
+      [/\bsk_[0-9a-zA-Z]{24,}\b/, "AI/Provider Secret Key (e.g., ElevenLabs, OpenAI)"],
+      [/\bAIzaSy[0-9a-zA-Z_-]{30,}\b/, "Google Cloud/Gemini API Key"],
+      [/\b(?:ghp|gho|ghu|ghs|ghr)_[0-9a-zA-Z]{30,}\b/, "GitHub Personal Access Token"],
+      [/\b(?:npm|vck|ddp|cfat)_[0-9a-zA-Z]{20,}\b/, "Provider Access Token (NPM, Vercel, Deno, Cloudflare)"],
+      [/\beyJ[a-zA-Z0-9_-]{20,}\.eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}\b/, "JWT Secret/Bearer Token"],
+    ];
+
+    for (const [pattern, label] of tokenRules) {
+      if (pattern.test(textToCheck)) {
+        throw new Error(
+          `🚨 [SECURITY POLICY VIOLATION] ${label} detected in memory text. Standard memories are vector-indexed in plaintext. You MUST encrypt this credential using 'vault_store' and reference it only by key name (e.g., 'vault_key: <name>') or environment variable name.`
+        );
+      }
+    }
+
+    // 3. Explicit Plaintext Password / Passphrase assignments
+    const passwordMatch = textToCheck.match(
+      /(?:password|passphrase|secret_key|api_secret|admin_pass|vault_pass|كلمة\s*(?:المرور|السر))\s*(?:[:=]|is|هي)?\s*[:=\s]*[`'"]([^\s`'",;]{6,})[`'"]/i
+    );
+    if (passwordMatch) {
+      const val = passwordMatch[1];
+      const isPlaceholder = /^(\*+|placeholder|<[^>]+>|\$[A-Z0-9_]+|process\.env\.[A-Z0-9_]+|env\([A-Z0-9_]+\)|\{\{[^}]+\}\}|REDACTED|undefined|null)$/i.test(val);
+      if (!isPlaceholder) {
+        throw new Error(
+          `🚨 [SECURITY ZERO-LEAK POLICY] Plaintext password/secret assignment detected. Plaintext secrets are strictly prohibited in standard memory atoms. Store credentials in the encrypted Zero-Knowledge vault via 'vault_store' and refer to them only by environment variable or vault key name.`
+        );
+      }
+    }
+  }
+
+  /**
    * Store a new memory atom with automated 768-dim embedding
    */
   static async store(params: StoreMemoryParams): Promise<MemoryNode> {
@@ -87,8 +133,12 @@ export class MemoryService {
     const content = params.content.trim();
     if (!content) throw new Error("Memory content cannot be empty");
 
-    const hash = await this.computeHash(params.userId, content, params.type, now);
     const metadataStr = JSON.stringify(params.metadata || {});
+
+    // Enforce Zero-Leak policy before embedding or storing
+    this.assertNoSensitiveSecrets(content, metadataStr);
+
+    const hash = await this.computeHash(params.userId, content, params.type, now);
     const namespace = params.namespace?.trim() || "default";
     const agentId = params.agentId || null;
     const source = params.source || null;
@@ -589,8 +639,11 @@ export class MemoryService {
     const trimmed = content.trim();
     if (!trimmed) throw new Error("Content cannot be empty");
 
-    const embedding = await EmbeddingService.embed(trimmed);
     const metaStr = metadata ? JSON.stringify(metadata) : undefined;
+    // Enforce Zero-Leak policy
+    this.assertNoSensitiveSecrets(trimmed, metaStr);
+
+    const embedding = await EmbeddingService.embed(trimmed);
     const embStr = JSON.stringify(embedding);
 
     // Re-embed alongside the content so semantic recall does not match stale text

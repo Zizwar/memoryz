@@ -538,6 +538,28 @@ async function runStore() {
     process.exit(1);
   }
 
+  // Pre-flight check: Zero-Leak Policy
+  const tokenPatterns = [
+    /-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----/i,
+    /\b(?:sk|pk)_(?:live|test)_[0-9a-zA-Z]{20,}\b/,
+    /\bsk_[0-9a-zA-Z]{24,}\b/,
+    /\bAIzaSy[0-9a-zA-Z_-]{30,}\b/,
+    /\b(?:ghp|gho|ghu|ghs|ghr)_[0-9a-zA-Z]{30,}\b/,
+    /\b(?:npm|vck|ddp|cfat)_[0-9a-zA-Z]{20,}\b/,
+    /(?:password|passphrase|vault_pass|admin_pass)\s*(?:[:=]|is)\s*[`'"][^\s`'"]{6,}[`'"]/i,
+  ];
+  for (const pat of tokenPatterns) {
+    if (pat.test(content)) {
+      console.error(
+        `${c.red}✘ [SECURITY ZERO-LEAK POLICY] Sensitive credentials or plaintext secrets detected in memory content.${c.reset}\n` +
+        `${c.yellow}👉 Secrets MUST NOT be stored in standard memories. Use the encrypted vault instead:\n` +
+        `   npx memoryz vault store --key="<name>" --secret="<val>" --pass="<passphrase>"${c.reset}\n` +
+        `   Reference credentials in notes/skills only by environment variable or vault key name.`
+      );
+      process.exit(1);
+    }
+  }
+
   try {
     const res = await fetch(`${serverUrl}/api/memories`, {
       method: "POST",

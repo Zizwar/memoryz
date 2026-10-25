@@ -184,6 +184,9 @@ export class ContextService {
     let out = "";
     if (format === "xml") {
       out += "<memoryz_context>\n";
+      out += "  <security_policy>\n";
+      out += "    CRITICAL ZERO-LEAK RULE: Plaintext credentials, passwords, tokens, and API keys are strictly prohibited in memories/notes/skills. Secrets must always be encrypted in the vault using vault_store and referenced only by key name or environment variable.\n";
+      out += "  </security_policy>\n";
 
       if (taskTree.length > 0) {
         out += "  <active_tasks>\n";
@@ -214,6 +217,7 @@ export class ContextService {
       out += "</memoryz_context>";
     } else if (format === "markdown") {
       out += "# MemoryZ Context Pack\n\n";
+      out += "> **CRITICAL SECURITY RULE**: Plaintext passwords, tokens, and API keys must NEVER be stored in memories/skills. Always use `vault_store` for credentials and reference them by key name.\n\n";
 
       if (taskTree.length > 0) {
         out += "## Active Task Tree\n```text\n";

@@ -73,6 +73,10 @@ puts the memory hash in the task description. Agent B claims the task and calls
 
 Store when the developer gives a durable instruction, not for transient state.
 
+> 🚨 **CRITICAL SECURITY RULE — ZERO-LEAK POLICY**:
+> You must **NEVER** put any plaintext passwords, API keys, tokens, or private passphrases into regular memories, notes, or skills!
+> Standard memories are stored and vector-indexed in plaintext. The mandatory place for all confidential credentials is the **Zero-Knowledge Vault (Section 7)** via `vault store`. In notes and skills, reference secrets **ONLY** by their vault key name (e.g. `vault_retrieve: "my_key"`) or environment variable name (`$MY_KEY`), NEVER the raw value.
+
 ```
 memoryz store --type=<type> --content="<text>" [--title="..."] [--ns=<project>]
 memoryz edit <hash> --content="<corrected text>"   # (memory_update) re-embeds

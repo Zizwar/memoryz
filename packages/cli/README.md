@@ -203,7 +203,7 @@ MemoryZ implements the **Model Context Protocol (MCP)** specification and provid
 | Tool | Parameters | Description |
 | :--- | :--- | :--- |
 | `recall_memory` | `query`, `type`, `limit` | Semantic vector search across stored memory atoms |
-| `store_memory` | `type`, `content`, `title` | Persists a memory atom with automatic Gemini embedding |
+| `store_memory` | `type`, `content`, `title` | Persists a memory atom with automatic Gemini embedding (STRICT: No plaintext secrets; use vault_store) |
 | `link_memory` | `sourceHash`, `targetHash`, `relation` | Connects memories in the knowledge graph |
 | `vault_store` | `key_name`, `secret_value`, `passphrase` | Encrypts and stores confidential secrets |
 | `vault_retrieve` | `key_name`, `passphrase` | Decrypts a vault secret in memory |

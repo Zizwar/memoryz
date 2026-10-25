@@ -451,6 +451,7 @@ switch (command) {
                  Semantic vector recall with time-decay scoring.
   \x1b[33mstore\x1b[0m         --type=env|skill|preference|note --content="..." [--title="..."] [--ns=<project>] [--agent=<id>]
                  Store a memory atom with automatic 768-dim Gemini vector embedding.
+                 \x1b[31m(NEVER store plaintext secrets/passwords here; use 'vault store')\x1b[0m
   \x1b[33mget\x1b[0m           <hash> [--links] [--json]
                  Fetch an exact memory by hash (resolve a hash another agent referenced).
   \x1b[33medit\x1b[0m          <hash> --content="..." [--title="..."]
