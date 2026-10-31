@@ -73,6 +73,33 @@ Deno.serve({ port: config.port }, async (req: Request) => {
     });
   }
 
+  // Static Assets (/js/*, /css/*, /assets/*)
+  if (path.startsWith("/js/") || path.startsWith("/css/") || path.startsWith("/assets/")) {
+    try {
+      const filePath = `./public${path}`;
+      const content = await Deno.readTextFile(filePath);
+      const contentType = path.endsWith(".js")
+        ? "application/javascript; charset=utf-8"
+        : path.endsWith(".css")
+        ? "text/css; charset=utf-8"
+        : path.endsWith(".svg")
+        ? "image/svg+xml"
+        : path.endsWith(".json")
+        ? "application/json; charset=utf-8"
+        : "text/plain; charset=utf-8";
+      return new Response(content, {
+        status: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (_e) {
+      return new Response("Not Found", { status: 404 });
+    }
+  }
+
   // Documentation Portal (/docs)
   if (path === "/docs" || path === "/docs.html") {
     return new Response(renderDocsHtml(), {
