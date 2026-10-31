@@ -89,27 +89,60 @@ export async function handleMcpRoute(req: Request, url: URL): Promise<Response> 
     const codeChallenge = url.searchParams.get("code_challenge") || "";
     const state = url.searchParams.get("state") || "";
 
-    // If client provided, serve instant auto-grant consent page or redirect
+    const authHeader = req.headers.get("Authorization");
+    const apiKeyHeader = req.headers.get("X-API-Key");
+    const queryToken = url.searchParams.get("token") || url.searchParams.get("key") || url.searchParams.get("api_key");
+    let detectedUser: User | null = null;
+    if (apiKeyHeader) {
+      detectedUser = await AuthService.findByApiKey(apiKeyHeader);
+    } else if (authHeader?.startsWith("Bearer ")) {
+      const t = authHeader.substring(7).trim();
+      const dec = await AuthService.verifyToken(t);
+      if (dec) detectedUser = await AuthService.findById(dec.sub);
+      else detectedUser = await AuthService.findByApiKey(t);
+    } else if (queryToken) {
+      detectedUser = await AuthService.findByApiKey(queryToken.trim());
+      if (!detectedUser) {
+        const dec = await AuthService.verifyToken(queryToken.trim());
+        if (dec) detectedUser = await AuthService.findById(dec.sub);
+      }
+    }
+
     const consentHtml = `<!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
       <meta charset="UTF-8"><title>MemoryZ — ربط المحادثة</title>
-      <style>body{background:#090d16;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
-      .box{background:#0f172a;border:1px solid #38bdf8;border-radius:16px;padding:32px;max-width:420px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+      <style>body{background:#090d16;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+      .box{background:#0f172a;border:1px solid #38bdf8;border-radius:16px;padding:32px;max-width:440px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+      input{background:#1e293b;border:1px solid #475569;color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;margin-top:8px;}
       button{background:#0284c7;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:16px;cursor:pointer;margin-top:16px;width:100%;font-weight:700;}
+      button:hover{background:#0369a1;}
+      .user-badge{background:#0369a1;padding:6px 14px;border-radius:20px;font-size:13px;display:inline-block;margin-top:10px;}
       </style>
     </head>
     <body>
       <div class="box">
         <div style="font-size:40px; margin-bottom:12px;">🧠</div>
         <h2>ربط MemoryZ مع تطبيق الدردشة</h2>
-        <p style="color:#94a3b8; font-size:14px; margin-top:10px;">سيسمح هذا للتطبيق باستدعاء وتخزين ذكرياتك الحية تلقائياً.</p>
+        <p style="color:#94a3b8; font-size:14px; margin-top:10px;">سيسمح هذا للتطبيق باستدعاء وتخزين ذكرياتك الحية عبر بروتوكول MCP.</p>
+        
         <form method="POST" action="/oauth/approve">
           <input type="hidden" name="client_id" value="${clientId}">
           <input type="hidden" name="redirect_uri" value="${redirectUri}">
           <input type="hidden" name="code_challenge" value="${codeChallenge}">
           <input type="hidden" name="state" value="${state}">
-          <button type="submit">الموافقة والربط الفوري ✓</button>
+
+          ${detectedUser ? `
+            <div class="user-badge">المستخدم الحالي: <b>${detectedUser.username}</b></div>
+            <input type="hidden" name="user_key" value="${detectedUser.api_key}">
+            <button type="submit">الموافقة والربط الفوري ✓</button>
+          ` : `
+            <div style="text-align:right; margin-top:16px;">
+              <label style="font-size:13px; color:#cbd5e1;">أدخل مفتاح API Key لتأكيد الربط بحسابك:</label>
+              <input type="password" name="user_key" placeholder="mz_..." required>
+            </div>
+            <button type="submit">الموافقة والمتابعة ✓</button>
+          `}
         </form>
       </div>
     </body>
@@ -128,11 +161,35 @@ export async function handleMcpRoute(req: Request, url: URL): Promise<Response> 
     const redirectUri = formData.get("redirect_uri")?.toString() || "";
     const codeChallenge = formData.get("code_challenge")?.toString() || "";
     const state = formData.get("state")?.toString() || "";
+    const userKey = formData.get("user_key")?.toString()?.trim() || "";
 
-    // Pick first active user or admin
-    const stats = await AuthService.getPlatformStats();
-    const userId = stats.users && stats.users.length > 0 ? stats.users[0].id : "default_user";
+    const authHeader = req.headers.get("Authorization");
+    const apiKeyHeader = req.headers.get("X-API-Key");
 
+    let authenticatedUser: User | null = null;
+    if (userKey) {
+      authenticatedUser = await AuthService.findByApiKey(userKey);
+      if (!authenticatedUser) {
+        const dec = await AuthService.verifyToken(userKey);
+        if (dec) authenticatedUser = await AuthService.findById(dec.sub);
+      }
+    } else if (apiKeyHeader) {
+      authenticatedUser = await AuthService.findByApiKey(apiKeyHeader);
+    } else if (authHeader?.startsWith("Bearer ")) {
+      const t = authHeader.substring(7).trim();
+      const dec = await AuthService.verifyToken(t);
+      if (dec) authenticatedUser = await AuthService.findById(dec.sub);
+      else authenticatedUser = await AuthService.findByApiKey(t);
+    }
+
+    if (!authenticatedUser) {
+      return new Response(JSON.stringify({ error: "unauthorized", message: "Invalid API key or session. Authentication required to approve OAuth grant." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = authenticatedUser.id;
     const code = "mz_code_" + crypto.randomUUID().replace(/-/g, "");
     OAuthService.putCode(code, {
       userId,

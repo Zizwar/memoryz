@@ -131,23 +131,24 @@ export async function runMemoryMaintenance(): Promise<CronMaintenanceResult> {
     try {
       const candidatesRes = await db.execute({
         sql: `
-          SELECT hash, title, substr(content, 1, 400) as snippet, type, namespace, created_at
+          SELECT hash, user_id, title, substr(content, 1, 400) as snippet, type, namespace, created_at
           FROM memories
           WHERE is_deleted = 0 AND type IN ('note', 'preference')
-          ORDER BY created_at DESC
-          LIMIT 15
+          ORDER BY user_id, created_at DESC
+          LIMIT 20
         `,
         args: [],
       });
 
       const candidates = candidatesRes.rows;
       if (candidates.length >= 2) {
-        // Compare top recent pair
+        // Compare top recent pair belonging strictly to the SAME user and namespace
         for (let i = 0; i < candidates.length - 1 && compactedMemoriesCount < 2; i++) {
           const memA = candidates[i];
           const memB = candidates[i + 1];
 
-          if (memA.namespace === memB.namespace && memA.hash !== memB.hash) {
+          // Strictly enforce multi-tenant isolation: both memories must belong to the exact same user
+          if (memA.user_id === memB.user_id && memA.namespace === memB.namespace && memA.hash !== memB.hash) {
             const stateToCompare = `Memory A (${memA.title || 'Untitled'}):\n${memA.snippet}\n\nMemory B (${memB.title || 'Untitled'}):\n${memB.snippet}`;
             
             const evalRes = await JevService.evaluate(stateToCompare, {

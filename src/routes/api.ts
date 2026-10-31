@@ -142,6 +142,9 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
 
   // System Settings: Jev AI & R2 & Automation Control
   if (path === "/api/admin/settings" && method === "GET") {
+    if (currentUser.role !== "admin") {
+      return json({ error: "Forbidden. Admin privileges required." }, 403);
+    }
     const jevEnabled = await SettingsService.isJevEnabled();
     const r2Token = (await SettingsService.get("r2_api_token", "")) || config.r2ApiToken;
     const r2AccountId = (await SettingsService.get("r2_account_id", "")) || config.r2AccountId;
@@ -741,6 +744,9 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
 
   // Cron Maintenance: Manual Trigger
   if (path === "/api/cron/run" && method === "POST") {
+    if (currentUser.role !== "admin") {
+      return json({ error: "Forbidden. Admin privileges required." }, 403);
+    }
     try {
       const res = await runMemoryMaintenance();
       return json({ success: true, result: res });
@@ -879,6 +885,9 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
   if (path.startsWith("/api/r2/objects/") && method === "DELETE") {
     const rawKey = decodeURIComponent(path.replace("/api/r2/objects/", ""));
     const bucket = url.searchParams.get("bucket") || undefined;
+    if (currentUser.role !== "admin" && !rawKey.startsWith(`${currentUser.id}/`) && !rawKey.startsWith(`${currentUser.username}/`)) {
+      return json({ error: "Forbidden. You can only delete your own stored objects." }, 403);
+    }
     try {
       const res = await R2Service.deleteObject(rawKey, bucket);
       return json(res);

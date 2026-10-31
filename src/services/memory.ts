@@ -602,6 +602,16 @@ export class MemoryService {
     relationType?: string
   ): Promise<boolean> {
     const db = getDb();
+
+    // Verify ownership: both memories must belong to the requesting user
+    const check = await db.execute({
+      sql: "SELECT hash FROM memories WHERE user_id = ? AND hash IN (?, ?);",
+      args: [userId, sourceHash, targetHash],
+    });
+    if (check.rows.length < 2) {
+      return false;
+    }
+
     let sql = "DELETE FROM memory_links WHERE source_hash = ? AND target_hash = ?";
     const args: any[] = [sourceHash, targetHash];
     if (relationType) {

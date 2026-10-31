@@ -27,6 +27,29 @@ export interface RegisterWebhookParams {
 
 export async function registerWebhook(params: RegisterWebhookParams): Promise<WebhookRecord> {
   const db = getDb();
+  
+  // SSRF Protection: Validate URL and block private/loopback targets
+  try {
+    const parsed = new URL(params.url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("Webhook URL must use http or https protocol");
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host === "::1" ||
+      host === "169.254.169.254" ||
+      host.endsWith(".internal") ||
+      host.endsWith(".local")
+    ) {
+      throw new Error("Webhook URL cannot target loopback, internal, or cloud metadata addresses");
+    }
+  } catch (e) {
+    throw new Error(`Invalid webhook URL: ${(e as Error).message}`);
+  }
+
   const id = `wh_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`;
   const now = Math.floor(Date.now() / 1000);
   const events = params.events && params.events.length > 0 ? params.events : ["*"];

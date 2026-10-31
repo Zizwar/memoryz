@@ -185,6 +185,7 @@ export async function initDb(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
   `);
+  await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_context_user_name ON context_snapshots(user_id, name);`);
   // 10. Multi-Agent Webhooks & Event Subscriptions
   await db.execute(`
     CREATE TABLE IF NOT EXISTS webhooks (
