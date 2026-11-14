@@ -83,8 +83,15 @@ export async function initDb(): Promise<void> {
         tokenize='porter unicode61'
       );
     `);
+    // Backfill pre-existing memories into memories_fts if missing
+    await db.execute(`
+      INSERT INTO memories_fts(hash, user_id, namespace, title, content)
+      SELECT hash, user_id, namespace, title, content
+      FROM memories
+      WHERE hash NOT IN (SELECT hash FROM memories_fts) AND is_deleted = 0;
+    `);
   } catch (err) {
-    console.warn("Notice: FTS5 virtual table creation warning (LIKE fallback will be active):", (err as Error).message);
+    console.warn("Notice: FTS5 virtual table creation/backfill warning (LIKE fallback will be active):", (err as Error).message);
   }
 
   // 3. Memory Links (Graph Relationships)

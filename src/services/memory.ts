@@ -527,24 +527,26 @@ export class MemoryService {
       const vecRanks = new Map<string, { rank: number; sim: number; row: any }>();
       const ftsRanks = new Map<string, { rank: number; row: any }>();
 
-      // 1. Native Vector Search
-      try {
-        const queryVec = await EmbeddingService.embed(query);
-        const f = buildFilters();
-        const sql = `
-          SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
-                 recall_count, recall_score, last_recalled_at, event_time, is_superseded, created_at, updated_at,
-                 (1.0 - vector_distance_cos(embedding, vector32(?))) as sim
-          FROM memories
-          WHERE ${f.clause} AND embedding IS NOT NULL
-          ORDER BY sim DESC LIMIT ?;
-        `;
-        const res = await db.execute({ sql, args: [JSON.stringify(queryVec), ...f.args, candidateLimit] });
-        res.rows.forEach((row: any, idx: number) => {
-          vecRanks.set(row.hash as string, { rank: idx + 1, sim: Number(row.sim || 0), row });
-        });
-      } catch (err) {
-        console.warn("Vector search fallback:", (err as Error).message);
+      // 1. Native Vector Search (only when real embeddings are available, avoiding pseudo-vector contamination)
+      const embRes = await EmbeddingService.embedWithMeta(query);
+      if (!embRes.isFallback) {
+        try {
+          const f = buildFilters();
+          const sql = `
+            SELECT hash, user_id, type, title, content, metadata, namespace, agent_id, source,
+                   recall_count, recall_score, last_recalled_at, event_time, is_superseded, created_at, updated_at,
+                   (1.0 - vector_distance_cos(embedding, vector32(?))) as sim
+            FROM memories
+            WHERE ${f.clause} AND embedding IS NOT NULL
+            ORDER BY sim DESC LIMIT ?;
+          `;
+          const res = await db.execute({ sql, args: [JSON.stringify(embRes.embedding), ...f.args, candidateLimit] });
+          res.rows.forEach((row: any, idx: number) => {
+            vecRanks.set(row.hash as string, { rank: idx + 1, sim: Number(row.sim || 0), row });
+          });
+        } catch (err) {
+          console.warn("Vector search fallback:", (err as Error).message);
+        }
       }
 
       // 2. Hybrid FTS5 BM25 Search (with LIKE fallback)
@@ -593,10 +595,17 @@ export class MemoryService {
         }
       }
 
-      // 3. Reciprocal Rank Fusion (RRF) + Threshold Abstention + Recall Score Boost
+      // 3. Reciprocal Rank Fusion (RRF) + Threshold Abstention + Lexical Coverage Verification
       const allHashes = new Set<string>([...vecRanks.keys(), ...ftsRanks.keys()]);
       const rrfK = 60;
       const scored: Array<{ row: any; fusedScore: number; sim: number }> = [];
+
+      const queryTerms = query
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}_-]+/gu, " ")
+        .trim()
+        .split(/\s+/)
+        .filter((t) => t.length >= 2 && !this.STOP_WORDS.has(t));
 
       for (const h of allHashes) {
         const v = vecRanks.get(h);
@@ -604,14 +613,24 @@ export class MemoryService {
         const row = v?.row || f?.row;
         const sim = v ? v.sim : 0;
 
-        // Abstention gate: drop weak vector-only matches below threshold
-        if (!f && threshold > 0 && sim < threshold) {
+        // Check lexical coverage to avoid stray single-word false matches in multi-word queries
+        let validFts = Boolean(f);
+        if (f && queryTerms.length >= 3 && !v) {
+          const docText = `${row.title || ""} ${row.content || ""}`.toLowerCase();
+          const matchCount = queryTerms.filter((t) => docText.includes(t)).length;
+          if (matchCount < 2 || (matchCount / queryTerms.length) < 0.25) {
+            validFts = false;
+          }
+        }
+
+        // Abstention gate: drop weak vector-only matches below threshold or stray lexical coincidences
+        if (!validFts && (threshold > 0 && sim < threshold)) {
           continue;
         }
 
         let rrf = 0;
         if (v) rrf += 1 / (rrfK + v.rank);
-        if (f) rrf += 1 / (rrfK + f.rank);
+        if (validFts && f) rrf += 1 / (rrfK + f.rank);
         const recallBoost = Math.log1p(Math.max(0, Number(row.recall_score || 0))) * 0.002;
         const fusedScore = rrf + recallBoost;
 
