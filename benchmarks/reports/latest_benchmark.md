@@ -1,7 +1,7 @@
 # MemoryZ Standardized Benchmark Scorecard
 
-- **Date:** 2026-11-14T22:03:22.641Z
-- **Target Substrate:** `http://localhost:8000`
+- **Date:** 2026-11-14T22:04:31.550Z
+- **Target Substrate:** `https://memoryz.wino.deno.net`
 - **Embedding Architecture:** `Hybrid Engine: Gemini 768-dim Vector + SQLite FTS5 BM25 (RRF) + Bi-Temporal + Supersede`
 
 ---
@@ -13,7 +13,7 @@
 | **Overall Hit Rate @ 5** | **92.0%** | >= 90% | 🟢 Excellent |
 | **Overall Recall @ 5** | **92.0%** | >= 85% | 🟢 High |
 | **Mean Reciprocal Rank (MRR)** | **0.723** | >= 0.70 | 🟢 Strong |
-| **P50 Recall Latency** | **764 ms** | < 1500 ms (Cloud Vector) | 🟢 Fast |
+| **P50 Recall Latency** | **267 ms** | < 1500 ms (Cloud Vector) | 🟢 Fast |
 | **Tenant Data Leakage** | **0 items** | 0 items (Strict Zero-Knowledge) | 🟢 100% Isolated |
 | **Namespace Leakage** | **0 items** | 0 items | 🟢 100% Isolated |
 | **Token Reduction (Compact)** | **65.2%** | >= 60% token savings | 🟢 Ultra-Efficient |
@@ -29,11 +29,11 @@ Evaluates the ability to extract exact configurations, IPs, tokens, and threshol
 - **Recall @ 5:** 100.0%
 - **Precision @ 5:** 20.0%
 - **MRR:** 1.000
-- **Average Latency:** 757 ms
+- **Average Latency:** 302 ms
 
 ### Breakdown by Query Style:
-- **needle-exact:** Recall@5 = 100.0%, MRR = 1.000, P50 Latency = 743ms
-- **needle-paraphrase:** Recall@5 = 100.0%, MRR = 1.000, P50 Latency = 754ms
+- **needle-exact:** Recall@5 = 100.0%, MRR = 1.000, P50 Latency = 276ms
+- **needle-paraphrase:** Recall@5 = 100.0%, MRR = 1.000, P50 Latency = 312ms
 
 ---
 
@@ -47,24 +47,24 @@ Directly reproduced from the **agentmemory** (ICLR 2025 LongMemEval style) bench
 - **Recall @ 5:** 86.7%
 - **Precision @ 5:** 21.3%
 - **MRR:** 0.539
-- **P50 Latency:** 764 ms (P95: 789 ms)
+- **P50 Latency:** 267 ms (P95: 330 ms)
 
 ### Breakdown by Question Type:
 | Question Type | N | Hit Rate | Recall @ 5 | MRR | Latency P50 |
 |---|---|---|---|---|---|
-| `single-session-bug` | 1 | 100% | 100.0% | 1.000 | 750 ms |
-| `single-session-infra` | 2 | 100% | 100.0% | 0.667 | 775 ms |
-| `single-session-refactor` | 1 | 100% | 100.0% | 1.000 | 746 ms |
-| `single-session-feature` | 1 | 100% | 100.0% | 0.500 | 746 ms |
-| `single-session-test` | 1 | 100% | 100.0% | 0.333 | 744 ms |
-| `single-session-perf` | 1 | 100% | 100.0% | 0.333 | 778 ms |
-| `single-session-api` | 1 | 100% | 100.0% | 0.500 | 788 ms |
-| `single-session-db` | 1 | 100% | 100.0% | 0.500 | 780 ms |
-| `single-session-release` | 1 | 0% | 0.0% | 0.000 | 768 ms |
-| `multi-session-causal` | 1 | 100% | 100.0% | 1.000 | 789 ms |
-| `preference` | 2 | 50% | 50.0% | 0.125 | 770 ms |
-| `multi-session-review` | 1 | 100% | 100.0% | 0.333 | 758 ms |
-| `temporal` | 1 | 100% | 100.0% | 1.000 | 764 ms |
+| `single-session-bug` | 1 | 100% | 100.0% | 1.000 | 251 ms |
+| `single-session-infra` | 2 | 100% | 100.0% | 0.667 | 330 ms |
+| `single-session-refactor` | 1 | 100% | 100.0% | 1.000 | 270 ms |
+| `single-session-feature` | 1 | 100% | 100.0% | 0.500 | 272 ms |
+| `single-session-test` | 1 | 100% | 100.0% | 0.333 | 273 ms |
+| `single-session-perf` | 1 | 100% | 100.0% | 0.333 | 259 ms |
+| `single-session-api` | 1 | 100% | 100.0% | 0.500 | 297 ms |
+| `single-session-db` | 1 | 100% | 100.0% | 0.500 | 259 ms |
+| `single-session-release` | 1 | 0% | 0.0% | 0.000 | 267 ms |
+| `multi-session-causal` | 1 | 100% | 100.0% | 1.000 | 267 ms |
+| `preference` | 2 | 50% | 50.0% | 0.125 | 292 ms |
+| `multi-session-review` | 1 | 100% | 100.0% | 0.333 | 255 ms |
+| `temporal` | 1 | 100% | 100.0% | 1.000 | 250 ms |
 
 ---
 

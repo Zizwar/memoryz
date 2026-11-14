@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-11-14T22:03:22.641Z",
-  "targetUrl": "http://localhost:8000",
+  "timestamp": "2026-11-14T22:04:31.550Z",
+  "targetUrl": "https://memoryz.wino.deno.net",
   "model": "Hybrid Engine: Gemini 768-dim Vector + SQLite FTS5 BM25 (RRF) + Bi-Temporal + Supersede",
   "levels": {
     "level1_needle": {
@@ -14,9 +14,9 @@
         "pAtK": 0.2,
         "rAtK": 1,
         "mrr": 1,
-        "latencyP50": 754,
-        "latencyP95": 800,
-        "latencyMean": 757
+        "latencyP50": 287,
+        "latencyP95": 413,
+        "latencyMean": 302
       },
       "byType": {
         "needle-exact": {
@@ -26,9 +26,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 743,
-          "latencyP95": 800,
-          "latencyMean": 756
+          "latencyP50": 276,
+          "latencyP95": 413,
+          "latencyMean": 301
         },
         "needle-paraphrase": {
           "n": 5,
@@ -37,9 +37,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 754,
-          "latencyP95": 786,
-          "latencyMean": 758
+          "latencyP50": 312,
+          "latencyP95": 334,
+          "latencyMean": 304
         }
       },
       "details": [
@@ -66,7 +66,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 799.9539440000008
+          "latencyMs": 275.80795000000035
         },
         {
           "level": "Level 1",
@@ -87,7 +87,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 744.2316470000005
+          "latencyMs": 333.8486160000002
         },
         {
           "level": "Level 1",
@@ -110,7 +110,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 742.5571610000006
+          "latencyMs": 413.4026839999997
         },
         {
           "level": "Level 1",
@@ -133,7 +133,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 745.3759719999998
+          "latencyMs": 271.73341400000027
         },
         {
           "level": "Level 1",
@@ -156,7 +156,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 742.832362000001
+          "latencyMs": 263.0458200000003
         },
         {
           "level": "Level 1",
@@ -177,7 +177,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 754.2961269999996
+          "latencyMs": 279.85512500000004
         },
         {
           "level": "Level 1",
@@ -198,7 +198,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 738.8300670000008
+          "latencyMs": 286.9461530000008
         },
         {
           "level": "Level 1",
@@ -219,7 +219,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 785.8966490000003
+          "latencyMs": 320.2809219999999
         },
         {
           "level": "Level 1",
@@ -240,7 +240,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 757.2408579999992
+          "latencyMs": 266.7511949999989
         },
         {
           "level": "Level 1",
@@ -265,7 +265,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 758.1253020000004
+          "latencyMs": 312.0145700000012
         }
       ]
     },
@@ -280,9 +280,9 @@
         "pAtK": 0.2133,
         "rAtK": 0.8667,
         "mrr": 0.5389,
-        "latencyP50": 764,
-        "latencyP95": 789,
-        "latencyMean": 764
+        "latencyP50": 267,
+        "latencyP95": 330,
+        "latencyMean": 273
       },
       "byType": {
         "single-session-bug": {
@@ -292,9 +292,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 750,
-          "latencyP95": 750,
-          "latencyMean": 750
+          "latencyP50": 251,
+          "latencyP95": 251,
+          "latencyMean": 251
         },
         "single-session-infra": {
           "n": 2,
@@ -303,9 +303,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 0.6667,
-          "latencyP50": 775,
-          "latencyP95": 775,
-          "latencyMean": 761
+          "latencyP50": 330,
+          "latencyP95": 330,
+          "latencyMean": 297
         },
         "single-session-refactor": {
           "n": 1,
@@ -314,9 +314,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 746,
-          "latencyP95": 746,
-          "latencyMean": 746
+          "latencyP50": 270,
+          "latencyP95": 270,
+          "latencyMean": 270
         },
         "single-session-feature": {
           "n": 1,
@@ -325,9 +325,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 0.5,
-          "latencyP50": 746,
-          "latencyP95": 746,
-          "latencyMean": 746
+          "latencyP50": 272,
+          "latencyP95": 272,
+          "latencyMean": 272
         },
         "single-session-test": {
           "n": 1,
@@ -336,9 +336,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 0.3333,
-          "latencyP50": 744,
-          "latencyP95": 744,
-          "latencyMean": 744
+          "latencyP50": 273,
+          "latencyP95": 273,
+          "latencyMean": 273
         },
         "single-session-perf": {
           "n": 1,
@@ -347,9 +347,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 0.3333,
-          "latencyP50": 778,
-          "latencyP95": 778,
-          "latencyMean": 778
+          "latencyP50": 259,
+          "latencyP95": 259,
+          "latencyMean": 259
         },
         "single-session-api": {
           "n": 1,
@@ -358,9 +358,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 0.5,
-          "latencyP50": 788,
-          "latencyP95": 788,
-          "latencyMean": 788
+          "latencyP50": 297,
+          "latencyP95": 297,
+          "latencyMean": 297
         },
         "single-session-db": {
           "n": 1,
@@ -369,9 +369,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 0.5,
-          "latencyP50": 780,
-          "latencyP95": 780,
-          "latencyMean": 780
+          "latencyP50": 259,
+          "latencyP95": 259,
+          "latencyMean": 259
         },
         "single-session-release": {
           "n": 1,
@@ -380,9 +380,9 @@
           "pAtK": 0,
           "rAtK": 0,
           "mrr": 0,
-          "latencyP50": 768,
-          "latencyP95": 768,
-          "latencyMean": 768
+          "latencyP50": 267,
+          "latencyP95": 267,
+          "latencyMean": 267
         },
         "multi-session-causal": {
           "n": 1,
@@ -391,9 +391,9 @@
           "pAtK": 0.4,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 789,
-          "latencyP95": 789,
-          "latencyMean": 789
+          "latencyP50": 267,
+          "latencyP95": 267,
+          "latencyMean": 267
         },
         "preference": {
           "n": 2,
@@ -402,9 +402,9 @@
           "pAtK": 0.1,
           "rAtK": 0.5,
           "mrr": 0.125,
-          "latencyP50": 770,
-          "latencyP95": 770,
-          "latencyMean": 760
+          "latencyP50": 292,
+          "latencyP95": 292,
+          "latencyMean": 286
         },
         "multi-session-review": {
           "n": 1,
@@ -413,9 +413,9 @@
           "pAtK": 0.4,
           "rAtK": 1,
           "mrr": 0.3333,
-          "latencyP50": 758,
-          "latencyP95": 758,
-          "latencyMean": 758
+          "latencyP50": 255,
+          "latencyP95": 255,
+          "latencyMean": 255
         },
         "temporal": {
           "n": 1,
@@ -424,9 +424,9 @@
           "pAtK": 0.4,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 764,
-          "latencyP95": 764,
-          "latencyMean": 764
+          "latencyP50": 250,
+          "latencyP95": 250,
+          "latencyMean": 250
         }
       },
       "details": [
@@ -453,7 +453,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 750.1697510000013
+          "latencyMs": 251.1192540000011
         },
         {
           "level": "Level 2",
@@ -478,7 +478,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.3333333333333333,
-          "latencyMs": 775.0255670000006
+          "latencyMs": 265.04210800000146
         },
         {
           "level": "Level 2",
@@ -501,7 +501,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 746.3500959999983
+          "latencyMs": 269.88640699999996
         },
         {
           "level": "Level 2",
@@ -530,7 +530,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.5,
-          "latencyMs": 746.4790960000028
+          "latencyMs": 272.41717699999936
         },
         {
           "level": "Level 2",
@@ -559,7 +559,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.3333333333333333,
-          "latencyMs": 744.1424479999987
+          "latencyMs": 273.44890099999975
         },
         {
           "level": "Level 2",
@@ -584,7 +584,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.3333333333333333,
-          "latencyMs": 777.9189380000025
+          "latencyMs": 259.026044000002
         },
         {
           "level": "Level 2",
@@ -609,7 +609,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.5,
-          "latencyMs": 788.0659779999987
+          "latencyMs": 296.86903200000233
         },
         {
           "level": "Level 2",
@@ -632,7 +632,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.5,
-          "latencyMs": 779.9975459999987
+          "latencyMs": 259.2017659999983
         },
         {
           "level": "Level 2",
@@ -653,7 +653,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 747.4408600000024
+          "latencyMs": 329.5488789999981
         },
         {
           "level": "Level 2",
@@ -682,7 +682,7 @@
           "rAtK": 0,
           "hit": false,
           "mrr": 0,
-          "latencyMs": 767.8305790000013
+          "latencyMs": 266.72939399999814
         },
         {
           "level": "Level 2",
@@ -712,7 +712,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 788.6679799999984
+          "latencyMs": 266.67415400000027
         },
         {
           "level": "Level 2",
@@ -741,7 +741,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.25,
-          "latencyMs": 770.3161089999994
+          "latencyMs": 292.3047750000005
         },
         {
           "level": "Level 2",
@@ -770,7 +770,7 @@
           "rAtK": 0,
           "hit": false,
           "mrr": 0,
-          "latencyMs": 749.3497480000005
+          "latencyMs": 280.2740870000016
         },
         {
           "level": "Level 2",
@@ -800,7 +800,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 0.3333333333333333,
-          "latencyMs": 758.3112620000029
+          "latencyMs": 255.24574999999822
         },
         {
           "level": "Level 2",
@@ -824,7 +824,7 @@
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 764.2259249999988
+          "latencyMs": 250.23261099999945
         }
       ]
     },
@@ -909,7 +909,7 @@
     "overallPrecisionAt5": 0.208,
     "overallMRR": 0.7233,
     "overallHitRate": 0.92,
-    "averageLatencyMs": 761,
+    "averageLatencyMs": 284,
     "leakageDetected": false,
     "longMemEvalPassRate": 1
   }
