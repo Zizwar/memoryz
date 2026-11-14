@@ -1,0 +1,93 @@
+{
+  "knowledge_updates": [
+    {
+      "id": "ku_port_change",
+      "old": {
+        "id": "ku_port_v1",
+        "type": "env",
+        "content": "The production API gateway runs on port 8080 behind Nginx."
+      },
+      "new": {
+        "id": "ku_port_v2",
+        "type": "env",
+        "content": "The production API gateway was migrated to port 9443 with TLS termination."
+      },
+      "query": "What port does the production API gateway run on?",
+      "expectedTopId": "ku_port_v2",
+      "forbiddenId": "ku_port_v1"
+    },
+    {
+      "id": "ku_db_change",
+      "old": {
+        "id": "ku_db_v1",
+        "type": "preference",
+        "content": "We use PostgreSQL 15 with Prisma ORM for the billing microservice."
+      },
+      "new": {
+        "id": "ku_db_v2",
+        "type": "preference",
+        "content": "We migrated the billing microservice from PostgreSQL to Turso libSQL for edge replication."
+      },
+      "query": "Which database is used for the billing microservice?",
+      "expectedTopId": "ku_db_v2",
+      "forbiddenId": "ku_db_v1"
+    }
+  ],
+  "temporal_queries": [
+    {
+      "id": "temp_oct_incident",
+      "memories": [
+        {
+          "id": "inc_aug",
+          "type": "note",
+          "event_time": "2026-08-10T10:00:00Z",
+          "content": "August outage: Redis cache eviction caused elevated checkout latency."
+        },
+        {
+          "id": "inc_oct",
+          "type": "note",
+          "event_time": "2026-10-18T14:30:00Z",
+          "content": "October outage: DNS propagation delay broke webhook callbacks for 18 minutes."
+        }
+      ],
+      "query": "What caused the production outage?",
+      "after": "2026-10-01T00:00:00Z",
+      "before": "2026-10-31T23:59:59Z",
+      "expectedId": "inc_oct",
+      "excludedId": "inc_aug"
+    }
+  ],
+  "exact_identifier_queries": [
+    {
+      "id": "exact_err_code",
+      "memories": [
+        {
+          "id": "err_4291",
+          "type": "note",
+          "content": "Error code ERR_LIBSQL_4291 occurs when vector32 dimension mismatches 768."
+        },
+        {
+          "id": "err_5002",
+          "type": "note",
+          "content": "Error code ERR_GATEWAY_5002 indicates upstream timeout in Nginx."
+        }
+      ],
+      "query": "ERR_LIBSQL_4291",
+      "expectedTopId": "err_4291"
+    }
+  ],
+  "abstention_queries": [
+    {
+      "id": "abs_quantum",
+      "query": "Quantum Warp Drive Engine tachyon emission frequency calculations",
+      "threshold": 0.45,
+      "expectedCount": 0
+    },
+    {
+      "id": "abs_recipe",
+      "query": "Authentic Neapolitan pizza dough hydration percentage and fermentation hours",
+      "threshold": 0.45,
+      "expectedCount": 0
+    }
+  ]
+}

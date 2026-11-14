@@ -3,6 +3,7 @@ import { config } from "../config.ts";
 export interface EmbeddingResult {
   embedding: number[];
   dimension: number;
+  isFallback: boolean;
 }
 
 export class EmbeddingService {
@@ -11,17 +12,26 @@ export class EmbeddingService {
   private static targetDim = 768;
 
   /**
-   * Generates a 768-dimensional vector embedding for the input text using Google Gemini API.
+   * Generates a 768-dimensional vector embedding with metadata indicating whether
+   * a real semantic vector or an offline fallback was produced.
    */
-  static async embed(text: string): Promise<number[]> {
+  static async embedWithMeta(text: string): Promise<EmbeddingResult> {
     const trimmed = text.trim();
     if (!trimmed) {
-      return new Array(this.targetDim).fill(0);
+      return {
+        embedding: new Array(this.targetDim).fill(0),
+        dimension: this.targetDim,
+        isFallback: true,
+      };
     }
 
     if (!this.apiKey) {
       console.warn("Warning: GEMINI_API_KEY not set. Generating deterministic pseudo-vector.");
-      return this.generatePseudoEmbedding(trimmed, this.targetDim);
+      return {
+        embedding: this.generatePseudoEmbedding(trimmed, this.targetDim),
+        dimension: this.targetDim,
+        isFallback: true,
+      };
     }
 
     try {
@@ -38,19 +48,43 @@ export class EmbeddingService {
       if (!response.ok) {
         const errText = await response.text();
         console.error(`Gemini Embedding error (${response.status}):`, errText);
-        return this.generatePseudoEmbedding(trimmed, this.targetDim);
+        return {
+          embedding: this.generatePseudoEmbedding(trimmed, this.targetDim),
+          dimension: this.targetDim,
+          isFallback: true,
+        };
       }
 
       const data = await response.json();
       const values = data.embedding?.values;
       if (Array.isArray(values) && values.length > 0) {
-        return values;
+        return {
+          embedding: values,
+          dimension: values.length,
+          isFallback: false,
+        };
       }
-      return this.generatePseudoEmbedding(trimmed, this.targetDim);
+      return {
+        embedding: this.generatePseudoEmbedding(trimmed, this.targetDim),
+        dimension: this.targetDim,
+        isFallback: true,
+      };
     } catch (err) {
       console.error("Embedding generation exception:", err);
-      return this.generatePseudoEmbedding(trimmed, this.targetDim);
+      return {
+        embedding: this.generatePseudoEmbedding(trimmed, this.targetDim),
+        dimension: this.targetDim,
+        isFallback: true,
+      };
     }
+  }
+
+  /**
+   * Backward-compatible embedding helper returning the 768-dim vector.
+   */
+  static async embed(text: string): Promise<number[]> {
+    const res = await this.embedWithMeta(text);
+    return res.embedding;
   }
 
   /**
@@ -80,7 +114,6 @@ export class EmbeddingService {
       const idx = (code * 31 + i * 17) % dim;
       vec[idx] += (code % 10) / 10;
     }
-    // Normalize vector
     const norm = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0)) || 1;
     return vec.map((v) => v / norm);
   }

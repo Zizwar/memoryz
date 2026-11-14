@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-01T16:25:44.900Z",
-  "targetUrl": "https://memoryz.wino.deno.net",
-  "model": "Google Gemini Embeddings (768-dim) + LibSQL Cosine Vector Engine",
+  "timestamp": "2026-11-14T22:03:22.641Z",
+  "targetUrl": "http://localhost:8000",
+  "model": "Hybrid Engine: Gemini 768-dim Vector + SQLite FTS5 BM25 (RRF) + Bi-Temporal + Supersede",
   "levels": {
     "level1_needle": {
       "level": "level1_needle",
@@ -14,9 +14,9 @@
         "pAtK": 0.2,
         "rAtK": 1,
         "mrr": 1,
-        "latencyP50": 757,
-        "latencyP95": 823,
-        "latencyMean": 739
+        "latencyP50": 754,
+        "latencyP95": 800,
+        "latencyMean": 757
       },
       "byType": {
         "needle-exact": {
@@ -26,9 +26,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 775,
-          "latencyP95": 823,
-          "latencyMean": 751
+          "latencyP50": 743,
+          "latencyP95": 800,
+          "latencyMean": 756
         },
         "needle-paraphrase": {
           "n": 5,
@@ -37,9 +37,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 745,
-          "latencyP95": 780,
-          "latencyMean": 727
+          "latencyP50": 754,
+          "latencyP95": 786,
+          "latencyMean": 758
         }
       },
       "details": [
@@ -54,23 +54,19 @@
           "retrievedIds": [
             "needle-001",
             "dist-004",
-            "dist-001",
-            "needle-004",
-            "needle-003"
+            "dist-001"
           ],
           "scores": [
-            0.853,
-            0.6037,
-            0.5907,
-            0.5651,
-            0.5648
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 822.8332869999977
+          "latencyMs": 799.9539440000008
         },
         {
           "level": "Level 1",
@@ -81,25 +77,17 @@
             "needle-001"
           ],
           "retrievedIds": [
-            "needle-001",
-            "dist-004",
-            "dist-001",
-            "needle-003",
-            "needle-004"
+            "needle-001"
           ],
           "scores": [
-            0.7238,
-            0.5785,
-            0.5695,
-            0.5512,
-            0.5372
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 780.0345410000009
+          "latencyMs": 744.2316470000005
         },
         {
           "level": "Level 1",
@@ -111,24 +99,18 @@
           ],
           "retrievedIds": [
             "needle-002",
-            "needle-003",
-            "needle-004",
-            "needle-005",
-            "needle-001"
+            "needle-003"
           ],
           "scores": [
-            0.869,
-            0.5918,
-            0.5404,
-            0.5344,
-            0.534
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 778.4900560000024
+          "latencyMs": 742.5571610000006
         },
         {
           "level": "Level 1",
@@ -140,24 +122,18 @@
           ],
           "retrievedIds": [
             "needle-002",
-            "needle-003",
-            "needle-004",
-            "dist-004",
-            "needle-005"
+            "needle-003"
           ],
           "scores": [
-            0.8056,
-            0.6109,
-            0.523,
-            0.5088,
-            0.5057
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 745.0266619999966
+          "latencyMs": 745.3759719999998
         },
         {
           "level": "Level 1",
@@ -169,24 +145,18 @@
           ],
           "retrievedIds": [
             "needle-003",
-            "needle-001",
-            "needle-002",
-            "needle-004",
-            "dist-001"
+            "needle-002"
           ],
           "scores": [
-            0.9043,
-            0.5719,
-            0.5552,
-            0.5513,
-            0.515
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 775.051324
+          "latencyMs": 742.832362000001
         },
         {
           "level": "Level 1",
@@ -197,25 +167,17 @@
             "needle-003"
           ],
           "retrievedIds": [
-            "needle-003",
-            "needle-001",
-            "needle-004",
-            "dist-002",
-            "needle-002"
+            "needle-003"
           ],
           "scores": [
-            0.8302,
-            0.5543,
-            0.5411,
-            0.5249,
-            0.5196
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 683.4168919999975
+          "latencyMs": 754.2961269999996
         },
         {
           "level": "Level 1",
@@ -226,25 +188,17 @@
             "needle-004"
           ],
           "retrievedIds": [
-            "needle-004",
-            "dist-001",
-            "needle-003",
-            "needle-001",
-            "dist-004"
+            "needle-004"
           ],
           "scores": [
-            0.767,
-            0.5575,
-            0.5388,
-            0.532,
-            0.5286
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 718.3779300000024
+          "latencyMs": 738.8300670000008
         },
         {
           "level": "Level 1",
@@ -255,25 +209,17 @@
             "needle-004"
           ],
           "retrievedIds": [
-            "needle-004",
-            "needle-005",
-            "needle-003",
-            "needle-002",
-            "dist-001"
+            "needle-004"
           ],
           "scores": [
-            0.8164,
-            0.5577,
-            0.5508,
-            0.5369,
-            0.5243
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 756.602261
+          "latencyMs": 785.8966490000003
         },
         {
           "level": "Level 1",
@@ -284,25 +230,17 @@
             "needle-005"
           ],
           "retrievedIds": [
-            "needle-005",
-            "dist-005",
-            "needle-003",
-            "needle-004",
-            "needle-002"
+            "needle-005"
           ],
           "scores": [
-            0.8751,
-            0.5704,
-            0.5613,
-            0.5403,
-            0.5391
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 661.7626970000019
+          "latencyMs": 757.2408579999992
         },
         {
           "level": "Level 1",
@@ -314,24 +252,20 @@
           ],
           "retrievedIds": [
             "needle-005",
-            "dist-005",
-            "needle-003",
-            "needle-002",
-            "needle-004"
+            "dist-001",
+            "dist-005"
           ],
           "scores": [
-            0.8681,
-            0.553,
-            0.5395,
-            0.5339,
-            0.5249
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 668.9330819999996
+          "latencyMs": 758.1253020000004
         }
       ]
     },
@@ -341,14 +275,14 @@
       "description": "Evaluates multi-session reasoning, bug tracking, preferences, and temporal queries.",
       "stats": {
         "n": 15,
-        "hitCount": 15,
-        "hitRate": 1,
-        "pAtK": 0.24,
-        "rAtK": 1,
-        "mrr": 1,
-        "latencyP50": 742,
-        "latencyP95": 803,
-        "latencyMean": 726
+        "hitCount": 13,
+        "hitRate": 0.8667,
+        "pAtK": 0.2133,
+        "rAtK": 0.8667,
+        "mrr": 0.5389,
+        "latencyP50": 764,
+        "latencyP95": 789,
+        "latencyMean": 764
       },
       "byType": {
         "single-session-bug": {
@@ -358,9 +292,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 776,
-          "latencyP95": 776,
-          "latencyMean": 776
+          "latencyP50": 750,
+          "latencyP95": 750,
+          "latencyMean": 750
         },
         "single-session-infra": {
           "n": 2,
@@ -368,10 +302,10 @@
           "hitRate": 1,
           "pAtK": 0.2,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 772,
-          "latencyP95": 772,
-          "latencyMean": 739
+          "mrr": 0.6667,
+          "latencyP50": 775,
+          "latencyP95": 775,
+          "latencyMean": 761
         },
         "single-session-refactor": {
           "n": 1,
@@ -380,9 +314,9 @@
           "pAtK": 0.2,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 671,
-          "latencyP95": 671,
-          "latencyMean": 671
+          "latencyP50": 746,
+          "latencyP95": 746,
+          "latencyMean": 746
         },
         "single-session-feature": {
           "n": 1,
@@ -390,10 +324,10 @@
           "hitRate": 1,
           "pAtK": 0.2,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 751,
-          "latencyP95": 751,
-          "latencyMean": 751
+          "mrr": 0.5,
+          "latencyP50": 746,
+          "latencyP95": 746,
+          "latencyMean": 746
         },
         "single-session-test": {
           "n": 1,
@@ -401,10 +335,10 @@
           "hitRate": 1,
           "pAtK": 0.2,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 776,
-          "latencyP95": 776,
-          "latencyMean": 776
+          "mrr": 0.3333,
+          "latencyP50": 744,
+          "latencyP95": 744,
+          "latencyMean": 744
         },
         "single-session-perf": {
           "n": 1,
@@ -412,10 +346,10 @@
           "hitRate": 1,
           "pAtK": 0.2,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 700,
-          "latencyP95": 700,
-          "latencyMean": 700
+          "mrr": 0.3333,
+          "latencyP50": 778,
+          "latencyP95": 778,
+          "latencyMean": 778
         },
         "single-session-api": {
           "n": 1,
@@ -423,10 +357,10 @@
           "hitRate": 1,
           "pAtK": 0.2,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 742,
-          "latencyP95": 742,
-          "latencyMean": 742
+          "mrr": 0.5,
+          "latencyP50": 788,
+          "latencyP95": 788,
+          "latencyMean": 788
         },
         "single-session-db": {
           "n": 1,
@@ -434,21 +368,21 @@
           "hitRate": 1,
           "pAtK": 0.2,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 795,
-          "latencyP95": 795,
-          "latencyMean": 795
+          "mrr": 0.5,
+          "latencyP50": 780,
+          "latencyP95": 780,
+          "latencyMean": 780
         },
         "single-session-release": {
           "n": 1,
-          "hitCount": 1,
-          "hitRate": 1,
-          "pAtK": 0.2,
-          "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 803,
-          "latencyP95": 803,
-          "latencyMean": 803
+          "hitCount": 0,
+          "hitRate": 0,
+          "pAtK": 0,
+          "rAtK": 0,
+          "mrr": 0,
+          "latencyP50": 768,
+          "latencyP95": 768,
+          "latencyMean": 768
         },
         "multi-session-causal": {
           "n": 1,
@@ -457,20 +391,20 @@
           "pAtK": 0.4,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 763,
-          "latencyP95": 763,
-          "latencyMean": 763
+          "latencyP50": 789,
+          "latencyP95": 789,
+          "latencyMean": 789
         },
         "preference": {
           "n": 2,
-          "hitCount": 2,
-          "hitRate": 1,
-          "pAtK": 0.2,
-          "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 701,
-          "latencyP95": 701,
-          "latencyMean": 679
+          "hitCount": 1,
+          "hitRate": 0.5,
+          "pAtK": 0.1,
+          "rAtK": 0.5,
+          "mrr": 0.125,
+          "latencyP50": 770,
+          "latencyP95": 770,
+          "latencyMean": 760
         },
         "multi-session-review": {
           "n": 1,
@@ -478,10 +412,10 @@
           "hitRate": 1,
           "pAtK": 0.4,
           "rAtK": 1,
-          "mrr": 1,
-          "latencyP50": 650,
-          "latencyP95": 650,
-          "latencyMean": 650
+          "mrr": 0.3333,
+          "latencyP50": 758,
+          "latencyP95": 758,
+          "latencyMean": 758
         },
         "temporal": {
           "n": 1,
@@ -490,9 +424,9 @@
           "pAtK": 0.4,
           "rAtK": 1,
           "mrr": 1,
-          "latencyP50": 629,
-          "latencyP95": 629,
-          "latencyMean": 629
+          "latencyP50": 764,
+          "latencyP95": 764,
+          "latencyMean": 764
         }
       },
       "details": [
@@ -506,24 +440,20 @@
           ],
           "retrievedIds": [
             "sess-001",
-            "sess-014",
             "sess-011",
-            "sess-003",
-            "sess-007"
+            "sess-014"
           ],
           "scores": [
-            0.7495,
-            0.711,
-            0.6913,
-            0.6103,
-            0.5958
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 776.027525999998
+          "latencyMs": 750.1697510000013
         },
         {
           "level": "Level 2",
@@ -534,25 +464,21 @@
             "sess-002"
           ],
           "retrievedIds": [
-            "sess-002",
             "sess-011",
             "sess-001",
-            "sess-005",
-            "sess-006"
+            "sess-002"
           ],
           "scores": [
-            0.7117,
-            0.677,
-            0.6012,
-            0.5802,
-            0.5793
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 771.9527519999974
+          "mrr": 0.3333333333333333,
+          "latencyMs": 775.0255670000006
         },
         {
           "level": "Level 2",
@@ -564,24 +490,18 @@
           ],
           "retrievedIds": [
             "sess-003",
-            "sess-005",
-            "sess-007",
-            "sess-013",
-            "sess-001"
+            "sess-005"
           ],
           "scores": [
-            0.777,
-            0.6002,
-            0.6,
-            0.5711,
-            0.5666
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 671.3373700000011
+          "latencyMs": 746.3500959999983
         },
         {
           "level": "Level 2",
@@ -592,25 +512,25 @@
             "sess-004"
           ],
           "retrievedIds": [
-            "sess-004",
             "sess-001",
-            "sess-010",
+            "sess-004",
+            "sess-013",
             "sess-009",
-            "sess-011"
+            "sess-006"
           ],
           "scores": [
-            0.7646,
-            0.626,
-            0.6125,
-            0.6077,
-            0.6049
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 751.2596419999973
+          "mrr": 0.5,
+          "latencyMs": 746.4790960000028
         },
         {
           "level": "Level 2",
@@ -621,25 +541,25 @@
             "sess-005"
           ],
           "retrievedIds": [
-            "sess-005",
-            "sess-006",
             "sess-001",
-            "sess-003",
-            "sess-011"
+            "sess-011",
+            "sess-005",
+            "sess-004",
+            "sess-006"
           ],
           "scores": [
-            0.727,
-            0.627,
-            0.61,
-            0.5999,
-            0.5868
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 776.1191670000044
+          "mrr": 0.3333333333333333,
+          "latencyMs": 744.1424479999987
         },
         {
           "level": "Level 2",
@@ -650,25 +570,21 @@
             "sess-006"
           ],
           "retrievedIds": [
-            "sess-006",
-            "sess-007",
-            "sess-003",
-            "sess-008",
-            "sess-013"
+            "sess-001",
+            "sess-011",
+            "sess-006"
           ],
           "scores": [
-            0.7182,
-            0.612,
-            0.5797,
-            0.5775,
-            0.5739
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 700.0586269999985
+          "mrr": 0.3333333333333333,
+          "latencyMs": 777.9189380000025
         },
         {
           "level": "Level 2",
@@ -679,25 +595,21 @@
             "sess-007"
           ],
           "retrievedIds": [
+            "sess-009",
             "sess-007",
-            "sess-003",
-            "sess-006",
-            "sess-013",
-            "sess-008"
+            "sess-010"
           ],
           "scores": [
-            0.7697,
-            0.6322,
-            0.5974,
-            0.5771,
-            0.5732
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 742.4304919999995
+          "mrr": 0.5,
+          "latencyMs": 788.0659779999987
         },
         {
           "level": "Level 2",
@@ -708,25 +620,19 @@
             "sess-008"
           ],
           "retrievedIds": [
-            "sess-008",
             "sess-013",
-            "sess-007",
-            "sess-003",
-            "sess-006"
+            "sess-008"
           ],
           "scores": [
-            0.81,
-            0.6491,
-            0.5819,
-            0.5794,
-            0.5717
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 795.3627520000009
+          "mrr": 0.5,
+          "latencyMs": 779.9975459999987
         },
         {
           "level": "Level 2",
@@ -737,25 +643,17 @@
             "sess-009"
           ],
           "retrievedIds": [
-            "sess-009",
-            "sess-010",
-            "sess-011",
-            "sess-001",
-            "sess-004"
+            "sess-009"
           ],
           "scores": [
-            0.7369,
-            0.5972,
-            0.5691,
-            0.5508,
-            0.5489
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 706.6072499999937
+          "latencyMs": 747.4408600000024
         },
         {
           "level": "Level 2",
@@ -766,25 +664,25 @@
             "sess-010"
           ],
           "retrievedIds": [
-            "sess-010",
-            "sess-001",
-            "sess-007",
             "sess-009",
-            "sess-011"
+            "sess-001",
+            "sess-006",
+            "sess-013",
+            "sess-004"
           ],
           "scores": [
-            0.7506,
-            0.6459,
-            0.6268,
-            0.6262,
-            0.6253
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
-          "pAtK": 0.2,
-          "rAtK": 1,
-          "hit": true,
-          "mrr": 1,
-          "latencyMs": 802.7338979999986
+          "pAtK": 0,
+          "rAtK": 0,
+          "hit": false,
+          "mrr": 0,
+          "latencyMs": 767.8305790000013
         },
         {
           "level": "Level 2",
@@ -796,25 +694,25 @@
             "sess-014"
           ],
           "retrievedIds": [
-            "sess-014",
             "sess-001",
-            "sess-006",
-            "sess-013",
-            "sess-011"
+            "sess-011",
+            "sess-014",
+            "sess-002",
+            "sess-008"
           ],
           "scores": [
-            0.6641,
-            0.6251,
-            0.5959,
-            0.5931,
-            0.5842
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.4,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 762.9149610000022
+          "latencyMs": 788.6679799999984
         },
         {
           "level": "Level 2",
@@ -825,25 +723,25 @@
             "sess-015"
           ],
           "retrievedIds": [
+            "sess-004",
+            "sess-008",
+            "sess-010",
             "sess-015",
-            "sess-003",
-            "sess-007",
-            "sess-005",
-            "sess-008"
+            "sess-012"
           ],
           "scores": [
-            0.7586,
-            0.5999,
-            0.5833,
-            0.5803,
-            0.5803
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.2,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 700.9617100000032
+          "mrr": 0.25,
+          "latencyMs": 770.3161089999994
         },
         {
           "level": "Level 2",
@@ -854,25 +752,25 @@
             "sess-012"
           ],
           "retrievedIds": [
-            "sess-012",
-            "sess-015",
-            "sess-014",
             "sess-001",
-            "sess-011"
+            "sess-011",
+            "sess-004",
+            "sess-009",
+            "sess-006"
           ],
           "scores": [
-            0.7014,
-            0.5738,
-            0.5346,
-            0.5108,
-            0.5095
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
-          "pAtK": 0.2,
-          "rAtK": 1,
-          "hit": true,
-          "mrr": 1,
-          "latencyMs": 657.0198010000022
+          "pAtK": 0,
+          "rAtK": 0,
+          "hit": false,
+          "mrr": 0,
+          "latencyMs": 749.3497480000005
         },
         {
           "level": "Level 2",
@@ -884,25 +782,25 @@
             "sess-013"
           ],
           "retrievedIds": [
+            "sess-001",
+            "sess-011",
             "sess-013",
-            "sess-008",
-            "sess-006",
-            "sess-003",
-            "sess-001"
+            "sess-004",
+            "sess-008"
           ],
           "scores": [
-            0.7826,
-            0.6698,
-            0.5811,
-            0.5686,
-            0.566
+            0.75,
+            0.75,
+            0.75,
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.4,
           "rAtK": 1,
           "hit": true,
-          "mrr": 1,
-          "latencyMs": 650.3386570000002
+          "mrr": 0.3333333333333333,
+          "latencyMs": 758.3112620000029
         },
         {
           "level": "Level 2",
@@ -914,32 +812,26 @@
             "sess-011"
           ],
           "retrievedIds": [
-            "sess-011",
             "sess-001",
-            "sess-014",
-            "sess-010",
-            "sess-009"
+            "sess-011"
           ],
           "scores": [
-            0.5867,
-            0.554,
-            0.542,
-            0.5278,
-            0.5212
+            0.75,
+            0.75
           ],
           "k": 5,
           "pAtK": 0.4,
           "rAtK": 1,
           "hit": true,
           "mrr": 1,
-          "latencyMs": 629.4211460000006
+          "latencyMs": 764.2259249999988
         }
       ]
     },
     "level3_security_isolation": {
       "crossTenantLeakage": 0,
       "crossNamespaceLeakage": 0,
-      "negativeQueryMaxSim": 0.4985,
+      "negativeQueryMaxSim": 0,
       "passed": true,
       "details": [
         {
@@ -955,26 +847,70 @@
         {
           "check": "Negative / Out-of-Domain Resistance",
           "status": "PASS",
-          "note": "Negative query similarity bounded at 0.4985"
+          "note": "Returned 0 items (max sim: 0)"
         }
       ]
     },
     "level4_token_efficiency": {
       "rawChars": 680,
       "rawTokensEstimated": 170,
-      "fullJsonTokensEstimated": 502,
+      "fullJsonTokensEstimated": 535,
       "compactTokensEstimated": 186,
       "summaryTokensEstimated": 184,
-      "compressionRatioCompact": "2.70x",
-      "tokenSavingsPercent": 62.9
+      "compressionRatioCompact": "2.88x",
+      "tokenSavingsPercent": 65.2
+    },
+    "level5_longmem_eval": {
+      "totalChecks": 6,
+      "passedChecks": 6,
+      "passRate": 1,
+      "details": [
+        {
+          "id": "ku_port_change",
+          "category": "knowledge_update",
+          "passed": true,
+          "note": "top=ku_port_v2, hasForbidden=false"
+        },
+        {
+          "id": "ku_db_change",
+          "category": "knowledge_update",
+          "passed": true,
+          "note": "top=ku_db_v2, hasForbidden=false"
+        },
+        {
+          "id": "temp_oct_incident",
+          "category": "temporal_reasoning",
+          "passed": true,
+          "note": "ids=[inc_oct]"
+        },
+        {
+          "id": "exact_err_code",
+          "category": "exact_hybrid_bm25",
+          "passed": true,
+          "note": "top=err_4291"
+        },
+        {
+          "id": "abs_quantum",
+          "category": "abstention",
+          "passed": true,
+          "note": "returned=0 (expected 0)"
+        },
+        {
+          "id": "abs_recipe",
+          "category": "abstention",
+          "passed": true,
+          "note": "returned=0 (expected 0)"
+        }
+      ]
     }
   },
   "overallScorecard": {
-    "overallRecallAt5": 1,
-    "overallPrecisionAt5": 0.224,
-    "overallMRR": 1,
-    "overallHitRate": 1,
-    "averageLatencyMs": 731,
-    "leakageDetected": false
+    "overallRecallAt5": 0.92,
+    "overallPrecisionAt5": 0.208,
+    "overallMRR": 0.7233,
+    "overallHitRate": 0.92,
+    "averageLatencyMs": 761,
+    "leakageDetected": false,
+    "longMemEvalPassRate": 1
   }
 }

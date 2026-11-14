@@ -43,6 +43,18 @@ export const MCP_TOOLS = [
           type: "string",
           description: "Optional origin of this memory (e.g. 'human', 'claude', 'cursor-agent')",
         },
+        event_time: {
+          type: "string",
+          description: "Optional ISO date or Unix timestamp when the fact/event occurred (bi-temporal support)",
+        },
+        auto_supersede: {
+          type: "boolean",
+          description: "Automatically detect and mark older conflicting/similar memories as superseded (default: false)",
+        },
+        supersedes_hash: {
+          type: "string",
+          description: "Optional hash of an older memory that this new memory explicitly replaces",
+        },
       },
       required: ["type", "content"],
     },
@@ -111,6 +123,26 @@ export const MCP_TOOLS = [
         namespace: {
           type: "string",
           description: "Optional project/namespace filter (default: 'default')",
+        },
+        threshold: {
+          type: "number",
+          description: "Minimum similarity threshold (0..1) for abstention on out-of-domain queries (default: 0.32)",
+        },
+        after: {
+          type: "string",
+          description: "Optional start time filter (ISO date or Unix timestamp) on event_time",
+        },
+        before: {
+          type: "string",
+          description: "Optional end time filter (ISO date or Unix timestamp) on event_time",
+        },
+        include_superseded: {
+          type: "boolean",
+          description: "Include older memories marked as superseded (default: false)",
+        },
+        hybrid: {
+          type: "boolean",
+          description: "Enable Hybrid Vector + FTS5 BM25 RRF fusion (default: true)",
         },
       },
     },
@@ -254,6 +286,8 @@ export const MCP_TOOLS = [
         include_tasks: { type: "boolean", description: "Include active task tree (default: true)" },
         include_logs: { type: "boolean", description: "Include recent logs (default: false)" },
         format: { type: "string", enum: ["xml", "markdown", "compact"], description: "Context packaging format" },
+        namespace: { type: "string", description: "Optional project/namespace filter" },
+        threshold: { type: "number", description: "Minimum similarity threshold for recalled memories" },
       },
     },
   },
@@ -528,6 +562,9 @@ export class McpServer {
           namespace: args.namespace,
           agentId: args.agent_id,
           source: args.source,
+          eventTime: args.event_time,
+          autoSupersede: args.auto_supersede === true,
+          supersedesHash: args.supersedes_hash,
         });
         return {
           status: "stored",
@@ -578,6 +615,11 @@ export class McpServer {
           type: args.type as MemoryType,
           limit: args.limit ? parseInt(args.limit, 10) : 5,
           namespace: args.namespace,
+          threshold: args.threshold !== undefined ? Number(args.threshold) : undefined,
+          after: args.after,
+          before: args.before,
+          includeSuperseded: args.include_superseded === true,
+          hybrid: args.hybrid !== false,
         });
 
         if (format === "compact") {
@@ -757,6 +799,8 @@ export class McpServer {
           includeTasks: args.include_tasks !== false,
           includeLogs: args.include_logs === true,
           format: args.format || "xml",
+          namespace: args.namespace,
+          threshold: args.threshold !== undefined ? Number(args.threshold) : undefined,
         });
         return pack;
       }

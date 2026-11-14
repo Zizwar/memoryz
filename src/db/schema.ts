@@ -19,7 +19,7 @@ export async function initDb(): Promise<void> {
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key);`);
 
-  // 2. Core Memories Table (Multi-tenant with 768-dim Vector)
+  // 2. Core Memories Table (Multi-tenant with 768-dim Vector + Bi-Temporal & Supersede Support)
   await db.execute(`
     CREATE TABLE IF NOT EXISTS memories (
       hash TEXT PRIMARY KEY,
@@ -35,6 +35,8 @@ export async function initDb(): Promise<void> {
       recall_count INTEGER DEFAULT 0,
       recall_score REAL DEFAULT 0,
       last_recalled_at INTEGER,
+      event_time INTEGER,
+      is_superseded INTEGER DEFAULT 0,
       is_deleted INTEGER DEFAULT 0,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
@@ -43,11 +45,13 @@ export async function initDb(): Promise<void> {
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_user_type ON memories(user_id, type, is_deleted);`);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_recall ON memories(user_id, recall_score DESC);`);
 
-  // Migration: v3 provenance & namespace columns for pre-existing memories table (no-op on fresh installs)
+  // Migration: v3 & v4 columns for pre-existing memories table (no-op on fresh installs)
   for (const stmt of [
     "ALTER TABLE memories ADD COLUMN namespace TEXT DEFAULT 'default';",
     "ALTER TABLE memories ADD COLUMN agent_id TEXT;",
     "ALTER TABLE memories ADD COLUMN source TEXT;",
+    "ALTER TABLE memories ADD COLUMN event_time INTEGER;",
+    "ALTER TABLE memories ADD COLUMN is_superseded INTEGER DEFAULT 0;",
   ]) {
     try {
       await db.execute(stmt);
@@ -57,12 +61,30 @@ export async function initDb(): Promise<void> {
   }
 
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_namespace ON memories(user_id, namespace, type, is_deleted);`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_event_time ON memories(user_id, namespace, event_time DESC, is_deleted);`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_active ON memories(user_id, is_deleted, is_superseded);`);
 
   // Try creating vector index if supported by backend
   try {
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories(libsql_vector_idx(embedding));`);
   } catch (err) {
     console.warn("Notice: Vector index creation warning (fallback will be active):", (err as Error).message);
+  }
+
+  // 2b. Full-Text Search (FTS5 BM25) Index for Hybrid Retrieval
+  try {
+    await db.execute(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+        hash UNINDEXED,
+        user_id UNINDEXED,
+        namespace UNINDEXED,
+        title,
+        content,
+        tokenize='porter unicode61'
+      );
+    `);
+  } catch (err) {
+    console.warn("Notice: FTS5 virtual table creation warning (LIKE fallback will be active):", (err as Error).message);
   }
 
   // 3. Memory Links (Graph Relationships)
@@ -186,6 +208,7 @@ export async function initDb(): Promise<void> {
     );
   `);
   await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_context_user_name ON context_snapshots(user_id, name);`);
+
   // 10. Multi-Agent Webhooks & Event Subscriptions
   await db.execute(`
     CREATE TABLE IF NOT EXISTS webhooks (
@@ -224,6 +247,5 @@ export async function initDb(): Promise<void> {
   `);
 
   // stderr, not stdout: stdout is the JSON-RPC framing channel for the stdio MCP bridge
-  console.error("MemoryZ v3 Database schema initialized successfully on Turso Cloud.");
+  console.error("MemoryZ v4 Database schema initialized successfully (Hybrid FTS5 + Bi-Temporal + Vector).");
 }
-

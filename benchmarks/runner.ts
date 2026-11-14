@@ -3,6 +3,7 @@ import {
   FullBenchmarkReport,
   IsolationReport,
   LevelReport,
+  LongMemEvalReport,
   NeedleData,
   QuestionData,
   ScoreRow,
@@ -56,6 +57,9 @@ class MemoryZClient {
     title?: string;
     namespace?: string;
     metadata?: Record<string, unknown>;
+    event_time?: string;
+    supersedes_hash?: string;
+    auto_supersede?: boolean;
   }): Promise<{ hash: string }> {
     const res = await fetch(`${this.baseUrl}/api/memories`, {
       method: "POST",
@@ -79,6 +83,10 @@ class MemoryZClient {
     namespace?: string;
     type?: string;
     format?: "full" | "compact" | "summary";
+    threshold?: number;
+    after?: string;
+    before?: string;
+    hybrid?: boolean;
   }): Promise<{
     count: number;
     memories?: Array<{
@@ -351,9 +359,12 @@ async function runBenchmark(baseUrl: string): Promise<FullBenchmarkReport> {
     query: "Quantum Warp Drive Engine tachyon emission frequency calculations",
     namespace: l2Namespace,
     limit: 1,
+    threshold: 0.45,
   });
+  const negativeCount = (negativeRes.memories || []).length;
   const maxNegativeSim = negativeRes.memories?.[0]?.score || 0;
-  console.log(`    Max Negative Query Similarity Score: ${maxNegativeSim}`);
+  const negativePassed = negativeCount === 0 || maxNegativeSim < 0.60;
+  console.log(`    Negative Query Returned: ${negativeCount}, Max Sim: ${maxNegativeSim}`);
 
   const isolationDetails = [
     {
@@ -368,8 +379,8 @@ async function runBenchmark(baseUrl: string): Promise<FullBenchmarkReport> {
     },
     {
       check: "Negative / Out-of-Domain Resistance",
-      status: "PASS" as const,
-      note: `Negative query similarity bounded at ${maxNegativeSim}`,
+      status: (negativePassed ? "PASS" : "FAIL") as "PASS" | "FAIL",
+      note: `Returned ${negativeCount} items (max sim: ${maxNegativeSim})`,
     },
   ];
 
@@ -377,7 +388,7 @@ async function runBenchmark(baseUrl: string): Promise<FullBenchmarkReport> {
     crossTenantLeakage: userBLeaked,
     crossNamespaceLeakage: nsLeaked,
     negativeQueryMaxSim: maxNegativeSim,
-    passed: userBLeaked === 0 && nsLeaked === 0,
+    passed: userBLeaked === 0 && nsLeaked === 0 && negativePassed,
     details: isolationDetails,
   };
 
@@ -439,6 +450,125 @@ async function runBenchmark(baseUrl: string): Promise<FullBenchmarkReport> {
   };
 
   // =========================================================================
+  // LEVEL 5: LongMemEval Capabilities (Knowledge Updates, Temporal, Exact ID, Abstention)
+  // =========================================================================
+  console.log(`\n--- [LEVEL 5] LongMemEval Capabilities (Updates, Temporal, Hybrid, Abstention) ---`);
+  const l5Namespace = "eval-longmem-v4";
+  const longMemData = JSON.parse(
+    await Deno.readTextFile("./benchmarks/data/longmem_eval_cases.json")
+  );
+  const l5Details: Array<{ id: string; category: string; passed: boolean; note: string }> = [];
+
+  for (const ku of longMemData.knowledge_updates) {
+    const oldMem = await clientA.storeMemory({
+      type: ku.old.type,
+      title: ku.old.id,
+      content: ku.old.content,
+      namespace: l5Namespace,
+      metadata: { id: ku.old.id },
+    });
+    await sleep(80);
+    await clientA.storeMemory({
+      type: ku.new.type,
+      title: ku.new.id,
+      content: ku.new.content,
+      namespace: l5Namespace,
+      metadata: { id: ku.new.id },
+      supersedes_hash: oldMem.hash,
+    });
+    await sleep(80);
+    const res = await clientA.recall({ query: ku.query, limit: 3, namespace: l5Namespace });
+    const ids = (res.memories || []).map((m) => (m.metadata?.id as string) || m.title || m.hash);
+    const passed = ids[0] === ku.expectedTopId && !ids.includes(ku.forbiddenId);
+    l5Details.push({
+      id: ku.id,
+      category: "knowledge_update",
+      passed,
+      note: `top=${ids[0] || "none"}, hasForbidden=${ids.includes(ku.forbiddenId)}`,
+    });
+    console.log(`    ${passed ? "✓" : "✗"} [KnowledgeUpdate] ${ku.id}: top=${ids[0] || "none"}`);
+  }
+
+  for (const tq of longMemData.temporal_queries) {
+    for (const m of tq.memories) {
+      await clientA.storeMemory({
+        type: m.type,
+        title: m.id,
+        content: m.content,
+        namespace: l5Namespace,
+        event_time: m.event_time,
+        metadata: { id: m.id },
+      });
+      await sleep(80);
+    }
+    const res = await clientA.recall({
+      query: tq.query,
+      limit: 5,
+      namespace: l5Namespace,
+      after: tq.after,
+      before: tq.before,
+    });
+    const ids = (res.memories || []).map((m) => (m.metadata?.id as string) || m.title || m.hash);
+    const passed = ids.includes(tq.expectedId) && !ids.includes(tq.excludedId);
+    l5Details.push({
+      id: tq.id,
+      category: "temporal_reasoning",
+      passed,
+      note: `ids=[${ids.join(",")}]`,
+    });
+    console.log(`    ${passed ? "✓" : "✗"} [Temporal] ${tq.id}: ids=[${ids.join(",")}]`);
+  }
+
+  for (const eq of longMemData.exact_identifier_queries) {
+    for (const m of eq.memories) {
+      await clientA.storeMemory({
+        type: m.type,
+        title: m.id,
+        content: m.content,
+        namespace: l5Namespace,
+        metadata: { id: m.id },
+      });
+      await sleep(80);
+    }
+    const res = await clientA.recall({ query: eq.query, limit: 3, namespace: l5Namespace, hybrid: true });
+    const ids = (res.memories || []).map((m) => (m.metadata?.id as string) || m.title || m.hash);
+    const passed = ids[0] === eq.expectedTopId;
+    l5Details.push({
+      id: eq.id,
+      category: "exact_hybrid_bm25",
+      passed,
+      note: `top=${ids[0] || "none"}`,
+    });
+    console.log(`    ${passed ? "✓" : "✗"} [HybridBM25] ${eq.id}: top=${ids[0] || "none"}`);
+  }
+
+  for (const aq of longMemData.abstention_queries) {
+    const res = await clientA.recall({
+      query: aq.query,
+      limit: 3,
+      namespace: l5Namespace,
+      threshold: aq.threshold,
+    });
+    const count = (res.memories || []).length;
+    const passed = count === aq.expectedCount;
+    l5Details.push({
+      id: aq.id,
+      category: "abstention",
+      passed,
+      note: `returned=${count} (expected ${aq.expectedCount})`,
+    });
+    console.log(`    ${passed ? "✓" : "✗"} [Abstention] ${aq.id}: returned=${count}`);
+  }
+
+  const l5Passed = l5Details.filter((d) => d.passed).length;
+  const longMemEvalReport: LongMemEvalReport = {
+    totalChecks: l5Details.length,
+    passedChecks: l5Passed,
+    passRate: l5Details.length > 0 ? parseFloat((l5Passed / l5Details.length).toFixed(4)) : 0,
+    details: l5Details,
+  };
+
+  // =========================================================================
   // OVERALL AGGREGATION & REPORT
   // =========================================================================
   const allRows = [...level1Rows, ...level2Rows];
@@ -447,12 +577,13 @@ async function runBenchmark(baseUrl: string): Promise<FullBenchmarkReport> {
   const finalReport: FullBenchmarkReport = {
     timestamp: new Date().toISOString(),
     targetUrl: baseUrl,
-    model: "Google Gemini Embeddings (768-dim) + LibSQL Cosine Vector Engine",
+    model: "Hybrid Engine: Gemini 768-dim Vector + SQLite FTS5 BM25 (RRF) + Bi-Temporal + Supersede",
     levels: {
       level1_needle: level1Report,
       level2_coding_agent_life: level2Report,
       level3_security_isolation: isolationReport,
       level4_token_efficiency: tokenReport,
+      level5_longmem_eval: longMemEvalReport,
     },
     overallScorecard: {
       overallRecallAt5: overallStats.rAtK,
@@ -461,6 +592,7 @@ async function runBenchmark(baseUrl: string): Promise<FullBenchmarkReport> {
       overallHitRate: overallStats.hitRate,
       averageLatencyMs: overallStats.latencyMean,
       leakageDetected: !isolationReport.passed,
+      longMemEvalPassRate: longMemEvalReport.passRate,
     },
   };
 

@@ -1,5 +1,5 @@
 import { getDb } from "../db/client.ts";
-import { MemoryService, MemoryType } from "./memory.ts";
+import { MemoryNode, MemoryService } from "./memory.ts";
 import { TaskService } from "./task.ts";
 import { LogService } from "./log.ts";
 
@@ -17,6 +17,8 @@ export interface ContextSnapshot {
 export interface BuildContextPackOptions {
   userId: string;
   query?: string;
+  namespace?: string;
+  threshold?: number;
   tokenBudget?: number; // default ~1200 tokens
   includeTasks?: boolean; // default true
   includeLogs?: boolean; // default false
@@ -146,8 +148,7 @@ export class ContextService {
   }
 
   /**
-   * Build an ultra-compact, token-budgeted context pack combining
-   * relevant memories, active hierarchical tasks, and environment rules
+   * Build an ultra-compact, token-budgeted context pack without breaking XML/Markdown tags
    */
   static async buildContextPack(options: BuildContextPackOptions): Promise<ContextPackResult> {
     const tokenBudget = options.tokenBudget || 1200;
@@ -155,49 +156,76 @@ export class ContextService {
     const includeTasks = options.includeTasks !== false;
     const includeLogs = options.includeLogs === true;
 
-    // 1. Fetch relevant memories (preferences, env, notes, skills)
     const memories = await MemoryService.recall({
       userId: options.userId,
       query: options.query,
-      limit: 6,
+      namespace: options.namespace,
+      threshold: options.threshold,
+      limit: 10,
     });
 
-    // 2. Fetch active tasks if requested
     let taskTree: any[] = [];
     let tasksCount = 0;
     if (includeTasks) {
       taskTree = await TaskService.getTree(options.userId, {
         status: options.taskStatus || "active",
+        namespace: options.namespace,
       });
       const flatTasks = await TaskService.list(options.userId, {
         status: options.taskStatus || "active",
+        namespace: options.namespace,
       });
       tasksCount = flatTasks.length;
     }
 
-    // 3. Fetch recent logs if requested
     let logs: any[] = [];
     if (includeLogs) {
       logs = await LogService.list(options.userId, { limit: 5 });
     }
 
-    let out = "";
-    if (format === "xml") {
-      out += "<memoryz_context>\n";
-      out += "  <security_policy>\n";
-      out += "    CRITICAL ZERO-LEAK RULE: Plaintext credentials, passwords, tokens, and API keys are strictly prohibited in memories/notes/skills. Secrets must always be encrypted in the vault using vault_store and referenced only by key name or environment variable.\n";
-      out += "  </security_policy>\n";
+    // Fit memories greedily into remaining token budget so XML/Markdown structure never breaks
+    const fitMemories = (headerTokens: number, footerTokens: number): MemoryNode[] => {
+      const kept: MemoryNode[] = [];
+      let used = headerTokens + footerTokens;
+      for (const m of memories) {
+        const itemCost = this.estimateTokens(m.content) + 18;
+        if (used + itemCost > tokenBudget && kept.length > 0) break;
+        used += itemCost;
+        kept.push(m);
+      }
+      return kept;
+    };
 
-      if (taskTree.length > 0) {
-        out += "  <active_tasks>\n";
-        const treeText = TaskService.formatTreeAscii(taskTree, 2);
-        out += treeText;
-        out += "  </active_tasks>\n";
+    let out = "";
+    let keptMemories: MemoryNode[] = [];
+
+    if (format === "xml") {
+      const secBlock =
+        "  <security_policy>\n" +
+        "    CRITICAL ZERO-LEAK RULE: Plaintext credentials, passwords, tokens, and API keys are strictly prohibited in memories/notes/skills. Secrets must always be encrypted in the vault using vault_store and referenced only by key name or environment variable.\n" +
+        "  </security_policy>\n";
+      const taskBlock =
+        taskTree.length > 0
+          ? "  <active_tasks>\n" + TaskService.formatTreeAscii(taskTree, 2) + "  </active_tasks>\n"
+          : "";
+      let logBlock = "";
+      if (logs.length > 0) {
+        logBlock += "  <recent_logs>\n";
+        for (const l of logs) {
+          logBlock += `    [${l.level}] ${l.source}: ${l.message}\n`;
+        }
+        logBlock += "  </recent_logs>\n";
       }
 
-      if (memories.length > 0) {
+      const baseTokens = this.estimateTokens(`<memoryz_context>\n${secBlock}${taskBlock}${logBlock}</memoryz_context>`);
+      keptMemories = fitMemories(baseTokens, 20);
+
+      out += "<memoryz_context>\n";
+      out += secBlock;
+      out += taskBlock;
+      if (keptMemories.length > 0) {
         out += "  <recalled_memories>\n";
-        for (const m of memories) {
+        for (const m of keptMemories) {
           const titleAttr = m.title ? ` title="${m.title.replace(/"/g, "'")}"` : "";
           out += `    <item type="${m.type}"${titleAttr} score="${m.recall_score}">\n`;
           out += `      ${m.content.trim()}\n`;
@@ -205,71 +233,52 @@ export class ContextService {
         }
         out += "  </recalled_memories>\n";
       }
-
-      if (logs.length > 0) {
-        out += "  <recent_logs>\n";
-        for (const l of logs) {
-          out += `    [${l.level}] ${l.source}: ${l.message}\n`;
-        }
-        out += "  </recent_logs>\n";
-      }
-
+      out += logBlock;
       out += "</memoryz_context>";
     } else if (format === "markdown") {
-      out += "# MemoryZ Context Pack\n\n";
-      out += "> **CRITICAL SECURITY RULE**: Plaintext passwords, tokens, and API keys must NEVER be stored in memories/skills. Always use `vault_store` for credentials and reference them by key name.\n\n";
-
-      if (taskTree.length > 0) {
-        out += "## Active Task Tree\n```text\n";
-        out += TaskService.formatTreeAscii(taskTree, 0);
-        out += "```\n\n";
+      const header =
+        "# MemoryZ Context Pack\n\n" +
+        "> **CRITICAL SECURITY RULE**: Plaintext passwords, tokens, and API keys must NEVER be stored in memories/skills. Always use `vault_store` for credentials and reference them by key name.\n\n";
+      const taskBlock =
+        taskTree.length > 0 ? "## Active Task Tree\n```text\n" + TaskService.formatTreeAscii(taskTree, 0) + "```\n\n" : "";
+      let logBlock = "";
+      if (logs.length > 0) {
+        logBlock += "## Recent Logs\n";
+        for (const l of logs) {
+          logBlock += `- [${l.level.toUpperCase()}] \`${l.source}\`: ${l.message}\n`;
+        }
+        logBlock += "\n";
       }
 
-      if (memories.length > 0) {
+      keptMemories = fitMemories(this.estimateTokens(header + taskBlock + logBlock), 10);
+      out += header + taskBlock;
+      if (keptMemories.length > 0) {
         out += "## Recalled Knowledge & Preferences\n";
-        for (const m of memories) {
+        for (const m of keptMemories) {
           out += `- **[${m.type.toUpperCase()}] ${m.title || "Rule"}**: ${m.content.trim()}\n`;
         }
         out += "\n";
       }
-
-      if (logs.length > 0) {
-        out += "## Recent Logs\n";
-        for (const l of logs) {
-          out += `- [${l.level.toUpperCase()}] \`${l.source}\`: ${l.message}\n`;
-        }
-        out += "\n";
-      }
+      out += logBlock;
     } else {
-      // compact text
-      out += "=== MEMORYZ CONTEXT ===\n";
-      if (taskTree.length > 0) {
-        out += "[TASKS]\n" + TaskService.formatTreeAscii(taskTree, 0);
-      }
-      if (memories.length > 0) {
+      const taskBlock = taskTree.length > 0 ? "[TASKS]\n" + TaskService.formatTreeAscii(taskTree, 0) : "";
+      const logBlock = logs.length > 0 ? "[LOGS]\n" + LogService.formatCompact(logs) + "\n" : "";
+      keptMemories = fitMemories(this.estimateTokens("=== MEMORYZ CONTEXT ===\n" + taskBlock + logBlock), 10);
+
+      out += "=== MEMORYZ CONTEXT ===\n" + taskBlock;
+      if (keptMemories.length > 0) {
         out += "[MEMORIES]\n";
-        for (const m of memories) {
+        for (const m of keptMemories) {
           out += `• [${m.type}] ${m.title ? m.title + ": " : ""}${m.content.trim()}\n`;
         }
       }
-      if (logs.length > 0) {
-        out += "[LOGS]\n" + LogService.formatCompact(logs) + "\n";
-      }
-    }
-
-    // Token budget check
-    let estimated = this.estimateTokens(out);
-    if (estimated > tokenBudget) {
-      // Trim down content to fit token budget
-      const maxChars = tokenBudget * 3.5;
-      out = out.substring(0, Math.floor(maxChars)) + "\n... [Context truncated to fit token budget]";
-      estimated = this.estimateTokens(out);
+      out += logBlock;
     }
 
     return {
       content: out,
-      estimatedTokens: estimated,
-      memoryCount: memories.length,
+      estimatedTokens: this.estimateTokens(out),
+      memoryCount: keptMemories.length,
       taskCount: tasksCount,
       logCount: logs.length,
     };

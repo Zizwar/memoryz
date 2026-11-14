@@ -203,6 +203,11 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       let limit = 10;
       let format: string | undefined;
       let namespace: string | undefined;
+      let threshold: number | undefined;
+      let after: string | number | undefined;
+      let before: string | number | undefined;
+      let includeSuperseded = false;
+      let hybrid = true;
 
       if (method === "POST") {
         const body = await req.json();
@@ -211,6 +216,11 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         format = body.format;
         namespace = body.namespace;
         if (body.limit) limit = parseInt(body.limit, 10);
+        if (body.threshold !== undefined) threshold = Number(body.threshold);
+        after = body.after;
+        before = body.before;
+        includeSuperseded = body.include_superseded === true;
+        if (body.hybrid === false) hybrid = false;
       } else {
         query = url.searchParams.get("query") || undefined;
         type = (url.searchParams.get("type") as MemoryType) || undefined;
@@ -218,6 +228,12 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         namespace = url.searchParams.get("namespace") || undefined;
         const limParam = url.searchParams.get("limit");
         if (limParam) limit = parseInt(limParam, 10);
+        const thrParam = url.searchParams.get("threshold");
+        if (thrParam !== null) threshold = Number(thrParam);
+        after = url.searchParams.get("after") || undefined;
+        before = url.searchParams.get("before") || undefined;
+        includeSuperseded = url.searchParams.get("include_superseded") === "true";
+        if (url.searchParams.get("hybrid") === "false") hybrid = false;
       }
 
       const memories = await MemoryService.recall({
@@ -226,6 +242,11 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
         type,
         limit,
         namespace,
+        threshold,
+        after,
+        before,
+        includeSuperseded,
+        hybrid,
       });
 
       if (format === "compact") {
@@ -277,6 +298,9 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
           namespace: body.namespace,
           agentId: body.agent_id,
           source: body.source,
+          eventTime: body.event_time,
+          autoSupersede: body.auto_supersede === true,
+          supersedesHash: body.supersedes_hash,
         });
         return json(memory, 201);
       } catch (err) {

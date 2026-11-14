@@ -83,6 +83,13 @@ export interface TokenFootprintReport {
   tokenSavingsPercent: number;
 }
 
+export interface LongMemEvalReport {
+  totalChecks: number;
+  passedChecks: number;
+  passRate: number;
+  details: Array<{ id: string; category: string; passed: boolean; note: string }>;
+}
+
 export interface FullBenchmarkReport {
   timestamp: string;
   targetUrl: string;
@@ -92,6 +99,7 @@ export interface FullBenchmarkReport {
     level2_coding_agent_life: LevelReport;
     level3_security_isolation: IsolationReport;
     level4_token_efficiency: TokenFootprintReport;
+    level5_longmem_eval?: LongMemEvalReport;
   };
   overallScorecard: {
     overallRecallAt5: number;
@@ -100,5 +108,6 @@ export interface FullBenchmarkReport {
     overallHitRate: number;
     averageLatencyMs: number;
     leakageDetected: boolean;
+    longMemEvalPassRate?: number;
   };
 }
