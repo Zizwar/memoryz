@@ -489,7 +489,7 @@ export class MemoryService {
     const limit = params.limit || 10;
     const query = params.query?.trim();
     const now = Math.floor(Date.now() / 1000);
-    const threshold = params.threshold !== undefined ? params.threshold : (query ? 0.32 : 0);
+    const threshold = params.threshold !== undefined ? params.threshold : (query ? 0.53 : 0);
     const useHybrid = params.hybrid !== false;
     const afterTs = this.parseEventTime(params.after);
     const beforeTs = this.parseEventTime(params.before);
@@ -615,9 +615,12 @@ export class MemoryService {
 
         // Check lexical coverage to avoid stray single-word false matches in multi-word queries
         let validFts = Boolean(f);
-        if (f && queryTerms.length >= 3 && !v) {
+        if (f && queryTerms.length >= 3 && (!v || sim < threshold)) {
           const docText = `${row.title || ""} ${row.content || ""}`.toLowerCase();
-          const matchCount = queryTerms.filter((t) => docText.includes(t)).length;
+          const matchCount = queryTerms.filter((t) => {
+            const re = new RegExp(`(^|[^\\p{L}\\p{N}])${t}([^\\p{L}\\p{N}]|$)`, "u");
+            return re.test(docText);
+          }).length;
           if (matchCount < 2 || (matchCount / queryTerms.length) < 0.25) {
             validFts = false;
           }
@@ -630,7 +633,7 @@ export class MemoryService {
 
         let rrf = 0;
         if (v) rrf += 1 / (rrfK + v.rank);
-        if (validFts && f) rrf += 1 / (rrfK + f.rank);
+        if (validFts && f) rrf += 1.6 / (rrfK + f.rank);
         const recallBoost = Math.log1p(Math.max(0, Number(row.recall_score || 0))) * 0.002;
         const fusedScore = rrf + recallBoost;
 
