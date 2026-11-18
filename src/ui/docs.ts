@@ -184,7 +184,7 @@ export function renderDocsHtml(): string {
   <!-- NAVBAR -->
   <header class="navbar bg-base-200/90 backdrop-blur border-b border-base-300 sticky top-0 z-40 px-3 sm:px-6 h-14 min-h-14">
     <div class="flex-1 flex items-center gap-3">
-      <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <a href="/dash" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center font-black shadow-md text-sm">
           <i class="fa-solid fa-brain"></i>
         </div>
@@ -198,7 +198,7 @@ export function renderDocsHtml(): string {
 
     <div class="flex-none flex items-center gap-1 sm:gap-2">
       <!-- Return to App -->
-      <a href="/" class="btn btn-ghost btn-xs sm:btn-sm gap-1">
+      <a href="/dash" class="btn btn-ghost btn-xs sm:btn-sm gap-1">
         <i class="fa-solid fa-arrow-left text-xs"></i>
         <span class="hidden sm:inline">العودة للتطبيق</span>
       </a>

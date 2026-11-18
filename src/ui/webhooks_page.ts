@@ -51,7 +51,7 @@ export function renderWebhooksHtml(): string {
   <!-- TOP HEADER -->
   <header class="navbar bg-base-200/90 backdrop-blur border-b border-base-300 h-16 min-h-16 px-4 z-30 flex items-center justify-between gap-3 sticky top-0">
     <div class="flex items-center gap-3">
-      <a href="/" class="btn btn-ghost btn-sm gap-1.5 rounded-xl border border-base-300" title="العودة للوحة الرئيسية">
+      <a href="/dash" class="btn btn-ghost btn-sm gap-1.5 rounded-xl border border-base-300" title="العودة للوحة الرئيسية">
         <i class="fa-solid fa-arrow-right text-xs"></i>
         <span class="text-xs font-bold hidden sm:inline">اللوحة الرئيسية</span>
       </a>

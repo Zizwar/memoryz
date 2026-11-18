@@ -4,6 +4,7 @@ import { handleApiRoute } from "./src/routes/api.ts";
 import { handleMcpRoute } from "./src/routes/mcp.ts";
 import { generateOpenApiSpec } from "./src/routes/openapi.ts";
 import { renderAppHtml } from "./src/ui/html.ts";
+import { renderLandingHtml } from "./src/ui/landing.ts";
 import { DEFAULT_SKILL_MD, renderDocsHtml } from "./src/ui/docs.ts";
 import { renderGraphHtml } from "./src/ui/graph_page.ts";
 import { renderWebhooksHtml } from "./src/ui/webhooks_page.ts";
@@ -65,8 +66,16 @@ Deno.serve({ port: config.port }, async (req: Request) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Root Web Application
+  // Public Landing Page (bilingual EN/AR intro to MemoryZ v4)
   if (path === "/" || path === "/index.html") {
+    return new Response(renderLandingHtml(), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  // Dashboard Web Application (/dash)
+  if (path === "/dash" || path === "/dash.html") {
     return new Response(renderAppHtml(), {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },
