@@ -1,4 +1,5 @@
 import { getDb } from "./client.ts";
+import { initParliamentSchema } from "../parliament/schema.ts";
 
 export async function initDb(): Promise<void> {
   const db = getDb();
@@ -252,6 +253,9 @@ export async function initDb(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
   `);
+
+  // 11. Parliament (agent voting & deliberation module)
+  await initParliamentSchema();
 
   // stderr, not stdout: stdout is the JSON-RPC framing channel for the stdio MCP bridge
   console.error("MemoryZ v4 Database schema initialized successfully (Hybrid FTS5 + Bi-Temporal + Vector).");

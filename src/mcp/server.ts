@@ -5,6 +5,7 @@ import { LogService, LogLevel } from "../services/log.ts";
 import { ContextService } from "../services/context.ts";
 import { registerWebhook, listWebhooks, deleteWebhook } from "../services/webhook.ts";
 import { R2Service } from "../services/r2.ts";
+import { PARLIAMENT_TOOLS, PARLIAMENT_TOOL_NAMES, executeParliamentTool } from "../parliament/tools.ts";
 
 export const MCP_TOOLS = [
   // 1. Core Memory Operations
@@ -506,7 +507,7 @@ export class McpServer {
         jsonrpc: "2.0",
         id,
         result: {
-          tools: MCP_TOOLS,
+          tools: [...MCP_TOOLS, ...PARLIAMENT_TOOLS],
         },
       };
     }
@@ -550,6 +551,7 @@ export class McpServer {
   }
 
   private static async executeTool(userId: string, name: string, args: any): Promise<any> {
+    if (PARLIAMENT_TOOL_NAMES.has(name)) return await executeParliamentTool(userId, name, args);
     switch (name) {
       // --- Core Memory ---
       case "store_memory": {
