@@ -430,6 +430,11 @@ export class ParliamentService {
         priority: "high", metadata: { parliament_proposal: id },
       });
       task_id = task.id;
+      (outcome as any).task_id = task_id;
+      await getDb().execute({
+        sql: "UPDATE parliament_proposals SET outcome=? WHERE id=?",
+        args: [JSON.stringify(outcome), id],
+      });
     }
     await dispatchWebhookEvent({
       userId, event: "parliament.closed", namespace: String(p.namespace),
@@ -457,12 +462,27 @@ export class ParliamentService {
     const waiting = (status === "open" || status === "revealed")
       ? invited.filter((n) => !ballotsRes.rows.some((b) => b.agent === n && Number(b.round) === curRound))
       : [];
+    const whoVoted = (status === "open" || status === "revealed")
+      ? invited.filter((n) => !waiting.includes(n))
+      : invited.filter((n) => ballotsRes.rows.some((b) => b.agent === n));
     let args: unknown[] = [];
     if (status === "revealed" || status === "closed") {
       args = (await getDb().execute({
         sql: "SELECT id, agent, stance, text, reply_to, created_at FROM parliament_arguments WHERE proposal_id = ? ORDER BY created_at",
         args: [id],
       })).rows;
+    }
+    const outcomeData = parse<any>(p.outcome, null);
+    if (outcomeData && !outcomeData.task_id && Number(p.on_pass_task) === 1) {
+      try {
+        const taskRes = await getDb().execute({
+          sql: "SELECT id FROM tasks WHERE user_id = ? AND metadata LIKE ?",
+          args: [userId, `%"parliament_proposal":"${id}"%`],
+        });
+        if (taskRes.rows.length) {
+          outcomeData.task_id = String(taskRes.rows[0].id);
+        }
+      } catch (_e) { /* ignore */ }
     }
     return {
       id, title: p.title, namespace: p.namespace, kind: p.kind, status, round: curRound, rounds: p.rounds,
@@ -474,8 +494,12 @@ export class ParliamentService {
       opposition_brief: p.da_brief ?? null,
       brief_status: !p.devils_advocate ? "none" : (p.da_brief ? "submitted" : "pending"),
       attachments: parse(p.attachments, []), created_by: p.created_by,
-      waiting_for: waiting, ballots: visible, arguments: args,
-      outcome: parse(p.outcome, null),
+      on_pass_task: Boolean(p.on_pass_task),
+      created_at: p.created_at ? Number(p.created_at) : null,
+      opened_at: p.opened_at ? Number(p.opened_at) : null,
+      closed_at: p.closed_at ? Number(p.closed_at) : null,
+      waiting_for: waiting, who_voted: whoVoted, ballots: visible, arguments: args,
+      outcome: outcomeData,
     };
   }
 
@@ -485,11 +509,68 @@ export class ParliamentService {
     if (f.status) { where.push("status = ?"); args.push(f.status); }
     if (f.namespace) { where.push("namespace = ?"); args.push(f.namespace); }
     const res = await getDb().execute({
-      sql: `SELECT id, title, namespace, kind, status, round, deadline, created_by FROM parliament_proposals
+      sql: `SELECT id, title, namespace, kind, status, round, rounds, majority, quorum, invited, deadline, created_by, created_at, outcome FROM parliament_proposals
             WHERE ${where.join(" AND ")} ORDER BY created_at DESC LIMIT ?`,
       args: [...args, f.limit ?? 50],
     });
-    return res.rows;
+    const proposals = [];
+    for (const r of res.rows) {
+      const invited = parse<string[]>(r.invited, []);
+      const curRound = Number(r.round ?? 1);
+      const bRes = await getDb().execute({
+        sql: "SELECT count(*) as c FROM parliament_ballots WHERE proposal_id = ? AND round = ?",
+        args: [String(r.id), curRound],
+      });
+      const castCount = Number(bRes.rows[0]?.c ?? 0);
+      proposals.push({
+        id: String(r.id),
+        title: String(r.title),
+        namespace: String(r.namespace),
+        kind: String(r.kind),
+        status: String(r.status),
+        round: curRound,
+        rounds: Number(r.rounds ?? 2),
+        majority: String(r.majority),
+        quorum: Number(r.quorum),
+        deadline: r.deadline ? Number(r.deadline) : null,
+        created_by: String(r.created_by),
+        created_at: r.created_at ? Number(r.created_at) : null,
+        invited_count: invited.length,
+        cast_count: castCount,
+        quorum_met: castCount >= Number(r.quorum),
+        outcome: parse(r.outcome, null),
+      });
+    }
+    return proposals;
+  }
+
+  /**
+   * Returns an AgentRow for the user (dashboard owner), creating an owner agent record if not present.
+   */
+  static async getOrCreateOwnerActor(userId: string, username: string): Promise<AgentRow> {
+    const cleanName = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "_");
+    const name = cleanName.length >= 2 ? cleanName.slice(0, 40) : `owner_${cleanName}`;
+    const db = getDb();
+    const res = await db.execute({
+      sql: "SELECT name, role, weight, tags FROM parliament_agents WHERE user_id = ? AND name = ?",
+      args: [userId, name],
+    });
+    if (res.rows.length) {
+      const r = res.rows[0];
+      return {
+        name: String(r.name),
+        role: String(r.role) as "agent" | "owner",
+        weight: Number(r.weight),
+        tags: parse<string[]>(r.tags, []),
+      };
+    }
+    const dummyToken = `pz_${randomHex(24)}`;
+    await db.execute({
+      sql: `INSERT INTO parliament_agents (id, user_id, name, role, weight, tags, token_hash, created_at)
+            VALUES (?, ?, ?, 'owner', 1, '["owner","admin"]', ?, ?)`,
+      args: [newId("pa"), userId, name, await sha256(dummyToken), now()],
+    });
+    return { name, role: "owner", weight: 1, tags: ["owner", "admin"] };
   }
 
   // ---------- internal coordinator (no external watcher agent needed) ----------

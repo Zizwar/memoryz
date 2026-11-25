@@ -9,6 +9,7 @@ document.addEventListener('alpine:init', () => {
     ...MZ.memories,
     ...MZ.graph,
     ...MZ.tasks,
+    ...MZ.parliament,
     ...MZ.webhooks,
     ...MZ.context,
     ...MZ.agent,
@@ -33,6 +34,7 @@ document.addEventListener('alpine:init', () => {
       r2Upload: false,
       vault: false,
       decrypt: false,
+      parliamentProposal: false,
       auth: false,
     },
 
@@ -73,6 +75,7 @@ document.addEventListener('alpine:init', () => {
       this.loadMemories();
       this.loadGraph();
       this.loadTasks();
+      if (this.activeTab === 'parliament') this.loadProposals();
       if (this.activeTab === 'webhooks') this.loadWebhooks();
       if (this.activeTab === 'r2') this.loadR2Files();
     },
@@ -86,6 +89,13 @@ document.addEventListener('alpine:init', () => {
         });
       }
       if (tab === 'tasks') this.loadTasks();
+      if (tab === 'parliament') {
+        this.loadProposals();
+        this.loadParliamentAgents();
+        if (typeof this.startParliamentPolling === 'function') this.startParliamentPolling();
+      } else {
+        if (typeof this.stopParliamentPolling === 'function') this.stopParliamentPolling();
+      }
       if (tab === 'webhooks') this.loadWebhooks();
       if (tab === 'r2') this.loadR2Files();
       if (tab === 'context') this.loadLogs();
@@ -125,6 +135,9 @@ document.addEventListener('alpine:init', () => {
       await this.loadSystemSettings();
       await this.loadMemories();
       await this.loadTasks();
+      await this.loadProposals(true);
+      await this.loadParliamentAgents();
+      if (typeof this.startParliamentClock === 'function') this.startParliamentClock();
       await this.loadWebhooks();
       await this.loadR2Files();
       await this.loadR2Buckets();

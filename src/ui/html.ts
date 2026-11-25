@@ -5,6 +5,7 @@ import { renderMemoriesTab } from "./tabs/tab_memories.ts";
 import { renderGraphTab } from "./tabs/tab_graph.ts";
 import { renderTasksTab } from "./tabs/tab_tasks.ts";
 import { renderWebhooksTab } from "./tabs/tab_webhooks.ts";
+import { renderParliamentTab } from "./tabs/tab_parliament.ts";
 import { renderContextTab } from "./tabs/tab_context.ts";
 import { renderAgentTab } from "./tabs/tab_agent.ts";
 import { renderVaultTab } from "./tabs/tab_vault.ts";
@@ -95,6 +96,7 @@ export function renderAppHtml(): string {
     ${renderMemoriesTab()}
     ${renderGraphTab()}
     ${renderTasksTab()}
+    ${renderParliamentTab()}
     ${renderWebhooksTab()}
     ${renderContextTab()}
     ${renderAgentTab()}
@@ -113,6 +115,7 @@ export function renderAppHtml(): string {
   <script src="/js/memories.js"></script>
   <script src="/js/graph.js"></script>
   <script src="/js/tasks.js"></script>
+  <script src="/js/parliament.js"></script>
   <script src="/js/webhooks.js"></script>
   <script src="/js/context.js"></script>
   <script src="/js/agent.js"></script>

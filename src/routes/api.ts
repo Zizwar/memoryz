@@ -8,6 +8,7 @@ import { registerWebhook, listWebhooks, deleteWebhook, dispatchWebhookEvent } fr
 import { runMemoryMaintenance } from "../services/cron.ts";
 import { R2Service } from "../services/r2.ts";
 import { SettingsService } from "../services/settings.ts";
+import { ParliamentService, Choice } from "../parliament/service.ts";
 import { config } from "../config.ts";
 
 export async function handleApiRoute(req: Request, url: URL): Promise<Response> {
@@ -917,6 +918,163 @@ export async function handleApiRoute(req: Request, url: URL): Promise<Response> 
       return json(res);
     } catch (err) {
       return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // ==========================================
+  // PARLIAMENT - MULTI-AGENT GOVERNANCE & PROPOSALS
+  // ==========================================
+
+  // List proposals (supports status, namespace, limit)
+  if (path === "/api/parliament/proposals" && method === "GET") {
+    try {
+      const status = url.searchParams.get("status") || undefined;
+      const namespace = url.searchParams.get("namespace") || undefined;
+      const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+      const proposals = await ParliamentService.listProposals(currentUser.id, {
+        status,
+        namespace: namespace === "all" ? undefined : namespace,
+        limit,
+      });
+      return json({ proposals });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Create new proposal
+  if (path === "/api/parliament/proposals" && method === "POST") {
+    try {
+      const body = await req.json();
+      const actor = await ParliamentService.getOrCreateOwnerActor(currentUser.id, currentUser.username);
+      const result = await ParliamentService.createProposal(currentUser.id, actor, {
+        title: body.title,
+        problem: body.problem,
+        solution: body.solution,
+        impact: body.impact,
+        kind: body.kind,
+        namespace: body.namespace || "default",
+        invited: body.invited,
+        majority: body.majority,
+        quorum: body.quorum ? parseInt(body.quorum, 10) : undefined,
+        deadline_hours: body.deadline_hours ? parseFloat(body.deadline_hours) : undefined,
+        rounds: body.rounds ? (parseInt(body.rounds, 10) as 1 | 2) : undefined,
+        devils_advocate: Boolean(body.devils_advocate),
+        attachments: body.attachments,
+        on_pass_task: Boolean(body.on_pass_task),
+        open: Boolean(body.open),
+      });
+      return json(result, 201);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Open draft proposal for voting
+  if (path.startsWith("/api/parliament/proposals/") && path.endsWith("/open") && method === "POST") {
+    const id = path.slice("/api/parliament/proposals/".length, -"/open".length);
+    try {
+      const actor = await ParliamentService.getOrCreateOwnerActor(currentUser.id, currentUser.username);
+      const result = await ParliamentService.openProposal(currentUser.id, actor, id);
+      return json(result);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Reveal round 1 (or advance)
+  if (path.startsWith("/api/parliament/proposals/") && path.endsWith("/reveal") && method === "POST") {
+    const id = path.slice("/api/parliament/proposals/".length, -"/reveal".length);
+    try {
+      const result = await ParliamentService.reveal(currentUser.id, id, "manual");
+      return json(result);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Close proposal (with optional owner override)
+  if (path.startsWith("/api/parliament/proposals/") && path.endsWith("/close") && method === "POST") {
+    const id = path.slice("/api/parliament/proposals/".length, -"/close".length);
+    try {
+      const body = await req.json().catch(() => ({}));
+      const actor = await ParliamentService.getOrCreateOwnerActor(currentUser.id, currentUser.username);
+      const result = await ParliamentService.close(currentUser.id, id, {
+        reason: body.reason,
+        actor,
+        override: body.override,
+      });
+      return json(result);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Cast vote on proposal
+  if (path.startsWith("/api/parliament/proposals/") && path.endsWith("/vote") && method === "POST") {
+    const id = path.slice("/api/parliament/proposals/".length, -"/vote".length);
+    try {
+      const body = await req.json();
+      const actor = await ParliamentService.getOrCreateOwnerActor(currentUser.id, currentUser.username);
+      const result = await ParliamentService.castVote(currentUser.id, actor, id, body.choice, body.reason);
+      return json(result);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Add round-2 discussion argument
+  if (path.startsWith("/api/parliament/proposals/") && path.endsWith("/arguments") && method === "POST") {
+    const id = path.slice("/api/parliament/proposals/".length, -"/arguments".length);
+    try {
+      const body = await req.json();
+      const actor = await ParliamentService.getOrCreateOwnerActor(currentUser.id, currentUser.username);
+      const result = await ParliamentService.addArgument(currentUser.id, actor, id, {
+        text: body.text,
+        stance: body.stance,
+        reply_to: body.reply_to,
+      });
+      return json(result, 201);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
+    }
+  }
+
+  // Get proposal detail
+  if (path.startsWith("/api/parliament/proposals/") && !path.includes("/", "/api/parliament/proposals/".length) && method === "GET") {
+    const id = decodeURIComponent(path.substring("/api/parliament/proposals/".length));
+    try {
+      const proposal = await ParliamentService.getProposal(currentUser.id, id);
+      return json({ proposal });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 404);
+    }
+  }
+
+  // List registered parliament agents
+  if (path === "/api/parliament/agents" && method === "GET") {
+    try {
+      const agents = await ParliamentService.listAgents(currentUser.id);
+      return json({ agents });
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
+    }
+  }
+
+  // Register a new parliament agent
+  if (path === "/api/parliament/agents" && method === "POST") {
+    try {
+      const body = await req.json();
+      const res = await ParliamentService.registerAgent(currentUser.id, {
+        name: body.name,
+        role: body.role,
+        weight: body.weight ? parseFloat(body.weight) : undefined,
+        tags: body.tags,
+        owner_key: body.owner_key,
+      });
+      return json(res, 201);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 400);
     }
   }
 

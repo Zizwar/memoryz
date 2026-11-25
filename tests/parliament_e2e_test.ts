@@ -2,7 +2,7 @@ import { initDb } from "../src/db/schema.ts";
 import { MCP_TOOLS } from "../src/mcp/server.ts";
 import { executeParliamentTool as x, PARLIAMENT_TOOLS } from "../src/parliament/tools.ts";
 import { ParliamentService as P } from "../src/parliament/service.ts";
-const U = "u1";
+const U = "u_test_" + Date.now();
 const ok = (c: boolean, m: string) => { console.log(c ? "PASS" : "FAIL", m); if (!c) Deno.exitCode = 1; };
 const rej = async (f: () => Promise<unknown>, m: string) => { try { await f(); ok(false, m); } catch (e) { ok(true, m + " -> " + (e as Error).message.slice(0, 60)); } };
 const shaHex = async (s: string) => {
@@ -37,11 +37,15 @@ ok(g.opposition_brief === BRIEF && g.brief_status === "submitted", "brief visibl
 await rej(() => x(U, "vote_cast", { agent: da, token: T[da], id, choice: "approve" }), "devil's advocate can't approve");
 await rej(() => x(U, "vote_cast", { agent: da, token: T[da], id, choice: "reject", reason: "no" }), "short DA reason rejected");
 await x(U, "vote_cast", { agent: da, token: T[da], id, choice: "reject", reason: BRIEF });
-for (const n of ["miz", "gemini", "claude"].filter((n) => n !== da)) await x(U, "vote_cast", { agent: n, token: T[n], id, choice: "approve" });
+const allInvited = ["miz", "gemini", "claude", "zizwar"];
+const holdout = allInvited.find((n) => n !== da)!;
+for (const n of allInvited.filter((n) => n !== da && n !== holdout)) {
+  await x(U, "vote_cast", { agent: n, token: T[n], id, choice: "approve" });
+}
 g = await x(U, "proposal_get", { id });
 ok(g.ballots.length === 0 && g.waiting_for.length === 1 && g.devils_advocate === "hidden-until-reveal", "sealed: no ballots visible, 1 waiting");
 await rej(() => x(U, "argument_add", { agent: "miz", token: T.miz, id, text: "x" }), "no arguments before reveal");
-await x(U, "vote_cast", { agent: "zizwar", token: T.zizwar, id, choice: "approve" });
+await x(U, "vote_cast", { agent: holdout, token: T[holdout], id, choice: "approve" });
 g = await x(U, "proposal_get", { id });
 ok(g.status === "revealed" && g.round === 2 && g.ballots.length === 4, "auto-reveal when all voted");
 ok(g.da_seed && (await shaHex(g.da_seed)) === g.da_commitment, "seed matches commitment");

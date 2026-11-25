@@ -89,6 +89,12 @@ export function renderNavbar(): string {
           <!-- System & Account Links -->
           <template x-if="currentUser">
             <li>
+              <a @click="switchTab('parliament')" class="flex items-center gap-2.5 py-2 rounded-lg">
+                <i class="fa-solid fa-landmark text-primary text-xs w-4 text-center"></i>
+                <span class="font-medium" x-text="t('tabParliament')"></span>
+              </a>
+            </li>
+            <li>
               <a @click="switchTab('connect')" class="flex items-center gap-2.5 py-2 rounded-lg">
                 <i class="fa-solid fa-key text-primary text-xs w-4 text-center"></i>
                 <span class="font-medium" x-text="t('apiKeyAndConnect')"></span>

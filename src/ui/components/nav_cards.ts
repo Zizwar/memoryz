@@ -2,7 +2,7 @@
 export function renderNavCards(): string {
   return `
     <!-- NAVIGATION CARDS (Responsive Grid, Mobile-Friendly, No Horizontal Overflow) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2">
       <!-- 1. Live Memories -->
       <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-start flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
               :class="activeTab === 'memories' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
@@ -57,6 +57,25 @@ export function renderNavCards(): string {
         <div>
           <div class="font-bold text-xs sm:text-sm tracking-tight" x-text="t('tabTasks')"></div>
           <div class="text-[10px] text-base-content/60 truncate" x-text="t('tabTasksSub')"></div>
+        </div>
+      </button>
+
+      <!-- 4. Parliament & Deliberations -->
+      <button class="card bg-base-200/90 border p-2.5 sm:p-3 rounded-xl transition-all duration-200 text-start flex flex-col justify-between gap-1.5 shadow-sm hover:shadow active:scale-[0.98]"
+              :class="activeTab === 'parliament' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40'"
+              @click="switchTab('parliament')">
+        <div class="flex items-center justify-between w-full">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+               :class="activeTab === 'parliament' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70'">
+            <i class="fa-solid fa-landmark"></i>
+          </div>
+          <span class="badge badge-xs font-mono font-medium"
+                :class="activeTab === 'parliament' ? 'badge-primary' : (openProposalsCount > 0 ? 'badge-warning' : 'badge-ghost')"
+                x-text="openProposalsCount"></span>
+        </div>
+        <div>
+          <div class="font-bold text-xs sm:text-sm tracking-tight" x-text="t('tabParliament')"></div>
+          <div class="text-[10px] text-base-content/60 truncate" x-text="t('tabParliamentSub')"></div>
         </div>
       </button>
 
@@ -219,6 +238,7 @@ export function renderNavCards(): string {
           activeTab === 'memories' ? t('tabMemories') + ' — Vector & Meaning' :
           activeTab === 'graph' ? t('tabGraph') + ' — Interactive Network' :
           activeTab === 'tasks' ? t('tabTasks') + ' — Multi-Agent Tree' :
+          activeTab === 'parliament' ? t('tabParliament') + ' — Multi-Agent Deliberations' :
           activeTab === 'webhooks' ? t('tabWebhooks') + ' — Event Dispatcher' :
           activeTab === 'context' ? t('tabContext') + ' — Packs & Logs' :
           activeTab === 'agent' ? t('tabAgent') + ' — Memory Simulator' :
@@ -250,6 +270,17 @@ export function renderNavCards(): string {
           <button class="btn btn-success btn-xs sm:btn-sm text-success-content gap-1 shadow-sm" @click="openTaskModal()">
             <i class="fa-solid fa-plus text-xs"></i> <span x-text="t('addTask')"></span>
           </button>
+        </template>
+
+        <template x-if="activeTab === 'parliament'">
+          <div class="flex items-center gap-1.5">
+            <button class="btn btn-primary btn-xs sm:btn-sm gap-1 shadow-sm shadow-primary/20" @click="openNewProposalModal()">
+              <i class="fa-solid fa-plus text-xs"></i> <span x-text="t('newProposal')"></span>
+            </button>
+            <button class="btn btn-ghost btn-xs sm:btn-sm gap-1" @click="loadProposals()" :disabled="loadingProposals" :title="t('refresh')">
+              <i class="fa-solid fa-rotate text-xs" :class="loadingProposals ? 'fa-spin text-primary' : ''"></i>
+            </button>
+          </div>
         </template>
 
         <template x-if="activeTab === 'webhooks'">
