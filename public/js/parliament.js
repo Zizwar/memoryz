@@ -9,10 +9,12 @@ MZ.parliament = {
   loadingProposals: false,
   loadingDetail: false,
   submittingAction: false,
-  parliamentFilter: 'active', // 'all' | 'active' | 'open' | 'revealed' | 'closed'
+  parliamentFilter: 'all', // 'all' | 'active' | 'open' | 'revealed' | 'closed'
   parliamentViewMode: 'proposals', // 'proposals' | 'vibing' | 'agents'
   parliamentAgents: [],
   parliamentSearch: '',
+  proposalsVisible: 10,
+  vibingVisible: 10,
   nowSeconds: Math.floor(Date.now() / 1000),
   _parliamentTimer: null,
   _parliamentClockTimer: null,
@@ -95,7 +97,7 @@ MZ.parliament = {
   },
 
   async loadProposals(silent = false) {
-    if (!silent) this.loadingProposals = true;
+    if (!silent) { this.loadingProposals = true; this.proposalsVisible = 10; this.vibingVisible = 10; }
     try {
       const nsParam = this.currentNamespace !== 'all' ? '?namespace=' + encodeURIComponent(this.currentNamespace) : '';
       const headers = this.authToken ? { 'Authorization': 'Bearer ' + this.authToken } : {};
@@ -161,6 +163,26 @@ MZ.parliament = {
       );
     }
     return list;
+  },
+
+  get vibingProposals() {
+    return this.proposals.filter(item => item.status === 'revealed' || item.status === 'closed');
+  },
+
+  get visibleProposals() {
+    return this.filteredProposals.slice(0, this.proposalsVisible);
+  },
+
+  get visibleVibingProposals() {
+    return this.vibingProposals.slice(0, this.vibingVisible);
+  },
+
+  showMoreProposals() {
+    this.proposalsVisible += 10;
+  },
+
+  showMoreVibing() {
+    this.vibingVisible += 10;
   },
 
   get activeSessionsCount() {

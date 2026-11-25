@@ -235,16 +235,16 @@ export function renderNavCards(): string {
     <div class="flex items-center justify-between gap-2 bg-base-200/60 border border-base-300 px-3.5 py-2.5 rounded-xl">
       <div class="flex items-center gap-2 min-w-0">
         <span class="text-xs sm:text-sm font-bold text-base-content/90 truncate" x-text="
-          activeTab === 'memories' ? t('tabMemories') + ' — Vector & Meaning' :
-          activeTab === 'graph' ? t('tabGraph') + ' — Interactive Network' :
-          activeTab === 'tasks' ? t('tabTasks') + ' — Multi-Agent Tree' :
-          activeTab === 'parliament' ? t('tabParliament') + ' — Multi-Agent Deliberations' :
-          activeTab === 'webhooks' ? t('tabWebhooks') + ' — Event Dispatcher' :
-          activeTab === 'context' ? t('tabContext') + ' — Packs & Logs' :
-          activeTab === 'agent' ? t('tabAgent') + ' — Memory Simulator' :
-          activeTab === 'vault' ? t('tabVault') + ' — Zero-Knowledge Secrets' :
-          activeTab === 'r2' ? t('tabR2') + ' — Cloud Storage' :
-          activeTab === 'connect' ? t('tabConnect') + ' — MCP & Tools' : t('tabAdmin')
+          activeTab === 'memories' ? t('tabMemories') + ' — ' + t('tabMemoriesSub') :
+          activeTab === 'graph' ? t('tabGraph') + ' — ' + t('tabGraphSub') :
+          activeTab === 'tasks' ? t('tabTasks') + ' — ' + t('tabTasksSub') :
+          activeTab === 'parliament' ? t('tabParliament') + ' — ' + t('tabParliamentSub') :
+          activeTab === 'webhooks' ? t('tabWebhooks') + ' — ' + t('tabWebhooksSub') :
+          activeTab === 'context' ? t('tabContext') + ' — ' + t('tabContextSub') :
+          activeTab === 'agent' ? t('tabAgent') + ' — ' + t('tabAgentSub') :
+          activeTab === 'vault' ? t('tabVault') + ' — ' + t('tabVaultSub') :
+          activeTab === 'r2' ? t('tabR2') + ' — ' + t('tabR2Sub') :
+          activeTab === 'connect' ? t('tabConnect') + ' — ' + t('tabConnectSub') : t('tabAdmin')
         "></span>
       </div>
 

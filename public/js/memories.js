@@ -7,6 +7,7 @@ MZ.memories = {
   memoryQuery: '',
   loadingMemories: false,
   totalMemories: 0,
+  memoriesVisible: 10,
   formMemory: { type: 'preference', title: '', content: '', namespace: 'vibzcode' },
 
   async loadMemories() {
@@ -40,6 +41,7 @@ MZ.memories = {
         const data = await res.json();
         this.memories = data.memories || [];
         this.totalMemories = this.memories.length;
+        this.memoriesVisible = 10;
       }
     } catch (_e) {}
     this.loadingMemories = false;
@@ -51,11 +53,20 @@ MZ.memories = {
 
   setMemoryFilter(type) {
     this.memoryFilter = type;
+    this.memoriesVisible = 10;
   },
 
   get filteredMemories() {
     if (this.memoryFilter === 'all') return this.memories;
     return this.memories.filter(m => m.type === this.memoryFilter);
+  },
+
+  get visibleMemories() {
+    return this.filteredMemories.slice(0, this.memoriesVisible);
+  },
+
+  showMoreMemories() {
+    this.memoriesVisible += 10;
   },
 
   openMemoryModal() {

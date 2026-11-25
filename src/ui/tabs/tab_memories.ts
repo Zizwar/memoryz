@@ -33,7 +33,7 @@ export function renderMemoriesTab(): string {
 
       <!-- Memories Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-        <template x-for="m in filteredMemories" :key="m.hash">
+        <template x-for="m in visibleMemories" :key="m.hash">
           <div class="card bg-base-200 border border-base-300 hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
             <div class="card-body p-4 flex flex-col justify-between gap-2.5">
               <!-- Card Header -->
@@ -91,6 +91,13 @@ export function renderMemoriesTab(): string {
             </div>
           </div>
         </template>
+      </div>
+
+      <div x-show="visibleMemories.length < filteredMemories.length" class="text-center pt-1">
+        <button class="btn btn-outline btn-sm gap-2" @click="showMoreMemories()">
+          <span x-text="t('showMore')"></span>
+          <span class="badge badge-ghost badge-sm" x-text="filteredMemories.length - visibleMemories.length"></span>
+        </button>
       </div>
 
       <div x-show="filteredMemories.length === 0 && !loadingMemories" class="card bg-base-200 border border-base-300 p-8 text-center text-base-content/60">

@@ -16,7 +16,7 @@ export function renderParliamentTab(): string {
               <div class="text-[11px] opacity-80" x-text="(MZ.i18n.currentLang === 'ar' ? 'هناك ' : 'There are ') + proposalsNeedingDecision.length + (MZ.i18n.currentLang === 'ar' ? ' مقترح(ات) جاهزة للمراجعة أو كشف الأصوات أو الحسم.' : ' proposal(s) ready for review, reveal or owner decision.')"></div>
             </div>
           </div>
-          <button class="btn btn-warning btn-xs font-bold gap-1 shrink-0" @click="parliamentFilter = 'revealed'">
+          <button class="btn btn-warning btn-xs font-bold gap-1 shrink-0" @click="parliamentFilter = 'revealed'; proposalsVisible = 10">
             <i class="fa-solid fa-eye text-[10px]"></i>
             <span x-text="MZ.i18n.currentLang === 'ar' ? 'عرض الجاهزة' : 'View Ready'"></span>
           </button>
@@ -82,7 +82,7 @@ export function renderParliamentTab(): string {
         <div class="flex-1 space-y-1">
           <div class="font-bold text-[12px] text-base-content flex items-center gap-2">
             <span x-text="t('secrecyRule')"></span>
-            <span class="badge badge-outline badge-xs font-mono font-normal">Ariadne Thread</span>
+            <span class="badge badge-outline badge-xs font-mono font-normal" x-text="t('ariadneThread')"></span>
           </div>
           <p class="text-[11px] leading-relaxed text-base-content/70" x-text="t('secrecyDesc')"></p>
         </div>
@@ -171,7 +171,7 @@ export function renderParliamentTab(): string {
                   <div class="text-[11px] opacity-80 leading-relaxed" x-text="t('secrecyDesc')"></div>
                   <template x-if="selectedProposal.da_commitment">
                     <div class="text-[10px] font-mono opacity-70 mt-1 break-all">
-                      <span>Commitment: </span><span x-text="selectedProposal.da_commitment"></span>
+                      <span x-text="t('daCommitment') + ': '"></span><span x-text="selectedProposal.da_commitment"></span>
                     </div>
                   </template>
                 </div>
@@ -186,11 +186,11 @@ export function renderParliamentTab(): string {
                   <div class="text-[11px] opacity-90 flex items-center gap-2 flex-wrap">
                     <span>محامي الشيطان المعتمد:</span>
                     <span class="badge badge-success badge-sm font-bold font-mono" x-text="'@' + selectedProposal.devils_advocate"></span>
-                    <span class="badge badge-outline badge-xs font-mono">Seed Verified ✓</span>
+                    <span class="badge badge-outline badge-xs font-mono" x-text="t('seedVerified')"></span>
                   </div>
                   <template x-if="selectedProposal.da_seed">
                     <div class="text-[10px] font-mono opacity-80 mt-1 break-all">
-                      <span>Seed: </span><span x-text="selectedProposal.da_seed"></span>
+                      <span x-text="t('daSeed') + ': '"></span><span x-text="selectedProposal.da_seed"></span>
                     </div>
                   </template>
                 </div>
@@ -389,19 +389,19 @@ export function renderParliamentTab(): string {
                 <template x-if="selectedProposal.outcome.tally">
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center font-mono">
                     <div class="bg-success/15 border border-success/30 p-2 rounded-xl">
-                      <div class="text-[10px] text-success font-bold uppercase">Yes</div>
+                      <div class="text-[10px] text-success font-bold uppercase" x-text="t('tallyYes')"></div>
                       <div class="text-base font-black text-success" x-text="selectedProposal.outcome.tally.yes"></div>
                     </div>
                     <div class="bg-error/15 border border-error/30 p-2 rounded-xl">
-                      <div class="text-[10px] text-error font-bold uppercase">No</div>
+                      <div class="text-[10px] text-error font-bold uppercase" x-text="t('tallyNo')"></div>
                       <div class="text-base font-black text-error" x-text="selectedProposal.outcome.tally.no"></div>
                     </div>
                     <div class="bg-warning/15 border border-warning/30 p-2 rounded-xl">
-                      <div class="text-[10px] text-warning font-bold uppercase">Amend</div>
+                      <div class="text-[10px] text-warning font-bold uppercase" x-text="t('tallyAmend')"></div>
                       <div class="text-base font-black text-warning" x-text="selectedProposal.outcome.tally.amend"></div>
                     </div>
                     <div class="bg-base-300/60 border border-base-300 p-2 rounded-xl">
-                      <div class="text-[10px] text-base-content/60 font-bold uppercase">Abstain</div>
+                      <div class="text-[10px] text-base-content/60 font-bold uppercase" x-text="t('tallyAbstain')"></div>
                       <div class="text-base font-black text-base-content/70" x-text="selectedProposal.outcome.tally.abstain"></div>
                     </div>
                   </div>
@@ -539,8 +539,8 @@ export function renderParliamentTab(): string {
                             <div class="form-control">
                               <label class="label"><span class="label-text text-xs font-bold" x-text="MZ.i18n.currentLang === 'ar' ? 'قرار الحسم:' : 'Override Decision:'"></span></label>
                               <select class="select select-sm select-bordered font-mono" x-model="formClose.overrideDecision">
-                                <option value="passed">passed</option>
-                                <option value="rejected">rejected</option>
+                                <option value="passed" x-text="t('passed')"></option>
+                                <option value="rejected" x-text="t('rejected')"></option>
                               </select>
                             </div>
                             <div class="form-control">
@@ -572,27 +572,27 @@ export function renderParliamentTab(): string {
               <div class="flex items-center gap-1.5 flex-wrap">
                 <button class="btn btn-xs rounded-lg"
                         :class="parliamentFilter === 'active' ? 'btn-primary font-bold' : 'btn-ghost'"
-                        @click="parliamentFilter = 'active'">
+                        @click="parliamentFilter = 'active'; proposalsVisible = 10">
                   <span x-text="t('activeProposals')"></span>
                   <span class="badge badge-xs font-mono" x-text="activeSessionsCount"></span>
                 </button>
                 <button class="btn btn-xs rounded-lg"
                         :class="parliamentFilter === 'open' ? 'btn-primary font-bold' : 'btn-ghost'"
-                        @click="parliamentFilter = 'open'"
+                        @click="parliamentFilter = 'open'; proposalsVisible = 10"
                         x-text="t('openProposals')"></button>
                 <button class="btn btn-xs rounded-lg"
                         :class="parliamentFilter === 'revealed' ? 'btn-primary font-bold' : 'btn-ghost'"
-                        @click="parliamentFilter = 'revealed'"
+                        @click="parliamentFilter = 'revealed'; proposalsVisible = 10"
                         x-text="t('revealedProposals')"></button>
                 <button class="btn btn-xs rounded-lg"
                         :class="parliamentFilter === 'closed' ? 'btn-primary font-bold' : 'btn-ghost'"
-                        @click="parliamentFilter = 'closed'">
+                        @click="parliamentFilter = 'closed'; proposalsVisible = 10">
                   <span x-text="t('closedProposals')"></span>
                   <span class="badge badge-xs font-mono" x-text="closedSessionsCount"></span>
                 </button>
                 <button class="btn btn-xs rounded-lg"
                         :class="parliamentFilter === 'all' ? 'btn-primary font-bold' : 'btn-ghost'"
-                        @click="parliamentFilter = 'all'"
+                        @click="parliamentFilter = 'all'; proposalsVisible = 10"
                         x-text="t('allProposals')"></button>
               </div>
 
@@ -621,7 +621,7 @@ export function renderParliamentTab(): string {
             </template>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <template x-for="p in filteredProposals" :key="p.id">
+              <template x-for="p in visibleProposals" :key="p.id">
                 <div class="card bg-base-200/90 hover:bg-base-200 border border-base-300 hover:border-primary/50 transition-all p-4 rounded-2xl shadow-sm flex flex-col justify-between gap-3 group cursor-pointer"
                      @click="loadProposalDetail(p.id)">
                   <div class="space-y-2">
@@ -682,6 +682,12 @@ export function renderParliamentTab(): string {
                   </div>
                 </div>
               </template>
+              <div class="col-span-full text-center pt-1" x-show="visibleProposals.length < filteredProposals.length">
+                <button class="btn btn-outline btn-sm gap-2" @click="showMoreProposals()">
+                  <span x-text="t('showMore')"></span>
+                  <span class="badge badge-ghost badge-sm" x-text="filteredProposals.length - visibleProposals.length"></span>
+                </button>
+              </div>
             </div>
           </div>
         </template>
@@ -703,7 +709,7 @@ export function renderParliamentTab(): string {
           </div>
 
           <div class="space-y-3">
-            <template x-for="p in proposals.filter(item => item.status === 'revealed' || item.status === 'closed')" :key="p.id">
+            <template x-for="p in visibleVibingProposals" :key="p.id">
               <div class="p-3.5 rounded-xl border border-base-300 bg-base-100/60 hover:bg-base-100 transition-colors cursor-pointer flex items-center justify-between gap-3"
                    @click="loadProposalDetail(p.id)">
                 <div class="min-w-0">
@@ -719,6 +725,12 @@ export function renderParliamentTab(): string {
                 </button>
               </div>
             </template>
+            <div class="text-center pt-1" x-show="visibleVibingProposals.length < vibingProposals.length">
+              <button class="btn btn-outline btn-sm gap-2" @click="showMoreVibing()">
+                <span x-text="t('showMore')"></span>
+                <span class="badge badge-ghost badge-sm" x-text="vibingProposals.length - visibleVibingProposals.length"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -763,7 +775,7 @@ export function renderParliamentTab(): string {
                       </div>
                     </div>
                   </div>
-                  <span class="badge badge-success badge-xs font-mono">Active</span>
+                  <span class="badge badge-success badge-xs font-mono" x-text="t('statusActive')"></span>
                 </div>
               </template>
             </div>
@@ -781,7 +793,7 @@ export function renderParliamentTab(): string {
               <div class="alert bg-success/15 border border-success/40 text-success text-xs p-3 rounded-xl space-y-1.5">
                 <div class="font-bold flex items-center gap-1.5">
                   <i class="fa-solid fa-key"></i>
-                  <span>Secret Token (Issued ONCE)</span>
+                  <span x-text="t('secretTokenOnce')"></span>
                 </div>
                 <div class="p-2 bg-base-100 rounded border border-success/30 font-mono text-[11px] break-all select-all text-base-content"
                      x-text="newAgentSecretToken"></div>
@@ -794,7 +806,7 @@ export function renderParliamentTab(): string {
 
             <form @submit.prevent="registerParliamentAgentAction()" class="space-y-3 text-xs">
               <div class="form-control">
-                <label class="label"><span class="label-text font-bold text-xs">Agent Name (a-z, 0-9, _ -)</span></label>
+                <label class="label"><span class="label-text font-bold text-xs" x-text="t('agentNameLabel')"></span></label>
                 <input type="text" class="input input-sm input-bordered font-mono"
                        placeholder="e.g. claude, miz, deepseek"
                        x-model="formAgentRegister.name" required />
@@ -807,7 +819,7 @@ export function renderParliamentTab(): string {
                          x-model.number="formAgentRegister.weight" required />
                 </div>
                 <div class="form-control">
-                  <label class="label"><span class="label-text font-bold text-xs">Role</span></label>
+                  <label class="label"><span class="label-text font-bold text-xs" x-text="t('roleLabel')"></span></label>
                   <select class="select select-sm select-bordered font-mono" x-model="formAgentRegister.role">
                     <option value="agent">agent</option>
                     <option value="owner">owner</option>
@@ -880,11 +892,11 @@ export function renderParliamentTab(): string {
           <!-- Kind, Majority, Quorum, Rounds -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div class="form-control">
-              <label class="label"><span class="label-text font-bold">Kind</span></label>
+              <label class="label"><span class="label-text font-bold" x-text="t('kindLabel')"></span></label>
               <select class="select select-sm select-bordered font-mono" x-model="formProposal.kind">
-                <option value="vote">vote</option>
-                <option value="project_decision">project_decision</option>
-                <option value="discussion">discussion</option>
+                <option value="vote" x-text="t('kindVote')"></option>
+                <option value="project_decision" x-text="t('kindProjectDecision')"></option>
+                <option value="discussion" x-text="t('kindDiscussion')"></option>
               </select>
             </div>
 
@@ -904,15 +916,15 @@ export function renderParliamentTab(): string {
             <div class="form-control">
               <label class="label"><span class="label-text font-bold" x-text="t('roundsCount')"></span></label>
               <select class="select select-sm select-bordered font-mono" x-model.number="formProposal.rounds">
-                <option value="2">2 rounds (Sealed -> Dialogue)</option>
-                <option value="1">1 round (Single sealed)</option>
+                <option value="2" x-text="t('roundsTwoSealedDialogue')"></option>
+                <option value="1" x-text="t('roundsSingleSealed')"></option>
               </select>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div class="form-control">
-              <label class="label"><span class="label-text font-bold">Deadline (hours)</span></label>
+              <label class="label"><span class="label-text font-bold" x-text="t('deadlineHours')"></span></label>
               <input type="number" min="1" max="720" class="input input-sm input-bordered font-mono" x-model.number="formProposal.deadline_hours" />
             </div>
             <div class="form-control">

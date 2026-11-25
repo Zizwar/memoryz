@@ -2,7 +2,8 @@
 window.MZ = window.MZ || {};
 
 document.addEventListener('alpine:init', () => {
-  Alpine.data('memoryzApp', () => ({
+  Alpine.data('memoryzApp', () => {
+    const app = {
     // Spread all specialized modules
     ...MZ.utils,
     ...MZ.auth,
@@ -142,5 +143,21 @@ document.addEventListener('alpine:init', () => {
       await this.loadR2Files();
       await this.loadR2Buckets();
     }
-  }));
+    };
+
+    // Object spread evaluates module getters once and freezes them as
+    // static values (filteredMemories, filteredProposals, counters),
+    // which left the dashboard lists permanently empty. Restore the
+    // live getters from every MZ module onto the component.
+    for (const mod of Object.values(MZ)) {
+      if (!mod || typeof mod !== 'object') continue;
+      for (const key of Object.keys(mod)) {
+        const desc = Object.getOwnPropertyDescriptor(mod, key);
+        if (desc && typeof desc.get === 'function') {
+          Object.defineProperty(app, key, { get: desc.get, enumerable: true, configurable: true });
+        }
+      }
+    }
+    return app;
+  });
 });
