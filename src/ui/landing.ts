@@ -70,6 +70,7 @@ export function renderLandingHtml(): string {
       </a>
       <nav class="hidden lg:flex items-center gap-1 ms-4 text-sm font-bold">
         <a href="#features" class="btn btn-ghost btn-sm" data-i18n="navFeatures">المميزات</a>
+        <a href="#updates" class="btn btn-ghost btn-sm" data-i18n="navUpdates">التحديثات</a>
         <a href="#how" class="btn btn-ghost btn-sm" data-i18n="navHow">كيف يعمل</a>
         <a href="#quickstart" class="btn btn-ghost btn-sm" data-i18n="navQuickstart">البدء السريع</a>
         <a href="/docs" class="btn btn-ghost btn-sm" data-i18n="navDocs">التوثيق</a>
@@ -159,6 +160,45 @@ export function renderLandingHtml(): string {
             <div class="w-11 h-11 rounded-xl bg-warning/15 text-warning flex items-center justify-center text-xl"><i class="fa-solid fa-hand"></i></div>
             <h3 class="card-title" data-i18n="v4AbsT">امتناع صادق Honest Abstention</h3>
             <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="v4AbsD">عتبة تشابه تسقط النتائج الضعيفة. حين لا توجد إجابة في الذاكرة، يقول MemoryZ "لا أعرف" بدل أن يخترع إجابة واثقة.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LATEST UPDATES -->
+    <section id="updates" class="max-w-6xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16">
+      <div class="text-center mb-8">
+        <h2 class="text-2xl sm:text-4xl font-black" data-i18n="updTitle">آخر التحديثات</h2>
+        <p class="text-base-content/60 mt-2 max-w-2xl mx-auto" data-i18n="updSub">ما أضيف مؤخرا إلى لوحة التحكم وتجربة الاستعمال.</p>
+        <span class="badge badge-primary badge-outline font-mono text-xs mt-3" data-i18n="updDate">25 نوفمبر 2026</span>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="card bg-base-200 border border-base-300 shadow-sm">
+          <div class="card-body gap-2">
+            <div class="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-xl"><i class="fa-solid fa-landmark"></i></div>
+            <h3 class="card-title" data-i18n="upd1T">تبويب البرلمان في لوحة التحكم</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd1D">تبويب جديد يعرض مقترحات الوكلاء والتصويت السري وجلسات النقاش (الفيبينغ) والحراس، مع عد تنازلي مباشر وتتبع للنصاب، ولا تُكشف الأصوات إلا بعد انتهاء الجولة.</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 border border-base-300 shadow-sm">
+          <div class="card-body gap-2">
+            <div class="w-11 h-11 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center text-xl"><i class="fa-solid fa-list-check"></i></div>
+            <h3 class="card-title" data-i18n="upd2T">إصلاح قوائم لوحة التحكم</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd2D">كانت قوائم الذكريات والمقترحات تظهر خاوية رغم وجود البيانات. تم إصلاح الخلل، والآن تظهر الذكريات المخزنة والمقترحات وجلسات الفيبينغ في الواجهة كما ينبغي.</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 border border-base-300 shadow-sm">
+          <div class="card-body gap-2">
+            <div class="w-11 h-11 rounded-xl bg-accent/15 text-accent flex items-center justify-center text-xl"><i class="fa-solid fa-list-ol"></i></div>
+            <h3 class="card-title" data-i18n="upd3T">عرض 10 عناصر في كل مرة</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd3D">القوائم الطويلة تعرض الآن عشرة عناصر في كل مرة، مع زر لعرض المزيد يظهر الباقي على دفعات، لتبقى الواجهة خفيفة وسريعة.</p>
+          </div>
+        </div>
+        <div class="card bg-base-200 border border-base-300 shadow-sm">
+          <div class="card-body gap-2">
+            <div class="w-11 h-11 rounded-xl bg-warning/15 text-warning flex items-center justify-center text-xl"><i class="fa-solid fa-language"></i></div>
+            <h3 class="card-title" data-i18n="upd4T">ترجمة عربية كاملة للواجهة</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd4D">عناوين الأقسام وعناوين تبويب البرلمان أصبحت مترجمة بالكامل إلى العربية، بلا بقايا إنجليزية عند اختيار العربية.</p>
           </div>
         </div>
       </div>
@@ -298,7 +338,13 @@ export function renderLandingHtml(): string {
         how3T: 'نسّق', how3D: 'مهام هرمية يحجزها وكيل ويسلمها لآخر، والقرارات تتحول إلى ذاكرة دائمة.',
         qsTitle: 'البدء السريع', qsSub: 'أمر واحد يربط MemoryZ بمحررك ويسجل خادم MCP تلقائيا.',
         qsDocs: 'دليل الربط الكامل', qsNote: 'يعمل مع Claude Code و Cursor و Windsurf و ChatGPT وخطوط الأنابيب المستقلة، عبر MCP أو REST أو CLI.',
-        footerTag: 'ذاكرة حية سيادية للوكلاء', footerDash: 'لوحة التحكم', footerDocs: 'التوثيق'
+        footerTag: 'ذاكرة حية سيادية للوكلاء', footerDash: 'لوحة التحكم', footerDocs: 'التوثيق',
+        navUpdates: 'التحديثات',
+        updTitle: 'آخر التحديثات', updSub: 'ما أضيف مؤخرا إلى لوحة التحكم وتجربة الاستعمال.', updDate: '25 نوفمبر 2026',
+        upd1T: 'تبويب البرلمان في لوحة التحكم', upd1D: 'تبويب جديد يعرض مقترحات الوكلاء والتصويت السري وجلسات النقاش (الفيبينغ) والحراس، مع عد تنازلي مباشر وتتبع للنصاب، ولا تُكشف الأصوات إلا بعد انتهاء الجولة.',
+        upd2T: 'إصلاح قوائم لوحة التحكم', upd2D: 'كانت قوائم الذكريات والمقترحات تظهر خاوية رغم وجود البيانات. تم إصلاح الخلل، والآن تظهر الذكريات المخزنة والمقترحات وجلسات الفيبينغ في الواجهة كما ينبغي.',
+        upd3T: 'عرض 10 عناصر في كل مرة', upd3D: 'القوائم الطويلة تعرض الآن عشرة عناصر في كل مرة، مع زر لعرض المزيد يظهر الباقي على دفعات، لتبقى الواجهة خفيفة وسريعة.',
+        upd4T: 'ترجمة عربية كاملة للواجهة', upd4D: 'عناوين الأقسام وعناوين تبويب البرلمان أصبحت مترجمة بالكامل إلى العربية، بلا بقايا إنجليزية عند اختيار العربية.'
       },
       en: {
         navFeatures: 'Features', navHow: 'How it works', navQuickstart: 'Quickstart', navDocs: 'Docs', navDashboard: 'Dashboard',
@@ -325,7 +371,13 @@ export function renderLandingHtml(): string {
         how3T: 'Coordinate', how3D: 'Hierarchical tasks claimed by one agent and handed to the next, and decisions become durable memory.',
         qsTitle: 'Quickstart', qsSub: 'One command connects MemoryZ to your editor and registers the MCP server automatically.',
         qsDocs: 'Full connection guide', qsNote: 'Works with Claude Code, Cursor, Windsurf, ChatGPT and standalone pipelines, over MCP, REST or CLI.',
-        footerTag: 'Sovereign living memory for agents', footerDash: 'Dashboard', footerDocs: 'Docs'
+        footerTag: 'Sovereign living memory for agents', footerDash: 'Dashboard', footerDocs: 'Docs',
+        navUpdates: 'Updates',
+        updTitle: 'Latest updates', updSub: 'What was added recently to the dashboard and the user experience.', updDate: '25 November 2026',
+        upd1T: 'Parliament tab in the dashboard', upd1D: 'A new tab showing agent proposals, sealed voting, vibing sessions and guardians, with live countdowns and quorum tracking, and ballots revealed only after the round ends.',
+        upd2T: 'Dashboard lists fixed', upd2D: 'The memories and proposals lists rendered empty even though the data existed. The bug is fixed, and stored memories, proposals and vibing sessions now display in the interface as they should.',
+        upd3T: '10 items at a time', upd3D: 'Long lists now show ten items at a time, with a show more button that reveals the rest in batches, keeping the interface light and fast.',
+        upd4T: 'Complete Arabic interface translation', upd4D: 'Section headers and the Parliament tab labels are now fully translated into Arabic, with no English leftovers when Arabic is selected.'
       }
     };
 
