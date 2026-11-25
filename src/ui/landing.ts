@@ -119,7 +119,7 @@ export function renderLandingHtml(): string {
           </a>
         </div>
         <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-4 text-xs sm:text-sm">
-          <span class="badge badge-neutral gap-1.5 py-3"><i class="fa-solid fa-plug-circle-bolt text-primary"></i><span class="mono font-bold">27</span>&nbsp;<span data-i18n="statTools">أداة MCP</span></span>
+          <span class="badge badge-neutral gap-1.5 py-3"><i class="fa-solid fa-plug-circle-bolt text-primary"></i><span class="mono font-bold">38</span>&nbsp;<span data-i18n="statTools">أداة MCP</span></span>
           <span class="badge badge-neutral gap-1.5 py-3"><i class="fa-solid fa-vector-square text-primary"></i><span class="mono font-bold">768</span>&nbsp;<span data-i18n="statEmbed">بُعد تضمين دلالي</span></span>
           <span class="badge badge-neutral gap-1.5 py-3"><i class="fa-solid fa-vault text-primary"></i><span data-i18n="statVault">خزنة AES-256-GCM</span></span>
           <span class="badge badge-neutral gap-1.5 py-3"><i class="fa-solid fa-layer-group text-primary"></i><span data-i18n="statNs">مجالات معزولة</span></span>
