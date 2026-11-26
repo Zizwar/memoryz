@@ -1,4 +1,4 @@
-// MemoryZ v4 — Public landing page (bilingual EN/AR).
+// MemoryZ — Public landing page (bilingual EN/AR).
 // Served at `/` and `/index.html`. The dashboard lives at `/dash`.
 // No benchmark percentages are claimed here: features only, no pass-rate numbers.
 
@@ -8,7 +8,7 @@ export function renderLandingHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MemoryZ v4 — Live Memory for AI Agents</title>
+  <title>MemoryZ — Live Memory for AI Agents</title>
   <meta name="description" content="MemoryZ is a shared, living memory substrate for AI agents: hybrid search, bi-temporal memory, knowledge updates and honest abstention. Works with Claude, Cursor, Windsurf and ChatGPT.">
 
   <script>
@@ -66,11 +66,9 @@ export function renderLandingHtml(): string {
           <i class="fa-solid fa-brain"></i>
         </div>
         <span class="text-lg sm:text-xl font-black tracking-tight">Memory<span class="text-primary">Z</span></span>
-        <span class="badge badge-primary badge-sm font-mono font-bold">v4</span>
       </a>
       <nav class="hidden lg:flex items-center gap-1 ms-4 text-sm font-bold">
         <a href="#features" class="btn btn-ghost btn-sm" data-i18n="navFeatures">المميزات</a>
-        <a href="#updates" class="btn btn-ghost btn-sm" data-i18n="navUpdates">التحديثات</a>
         <a href="#how" class="btn btn-ghost btn-sm" data-i18n="navHow">كيف يعمل</a>
         <a href="#quickstart" class="btn btn-ghost btn-sm" data-i18n="navQuickstart">البدء السريع</a>
         <a href="/docs" class="btn btn-ghost btn-sm" data-i18n="navDocs">التوثيق</a>
@@ -95,7 +93,7 @@ export function renderLandingHtml(): string {
       <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-10 text-center flex flex-col items-center gap-5">
         <span class="badge badge-outline badge-primary gap-2 font-mono text-xs py-3 px-3">
           <i class="fa-solid fa-sparkles"></i>
-          <span data-i18n="heroBadge">MemoryZ v4 — Hybrid Search · Bi-Temporal · LongMemEval-ready</span>
+          <span data-i18n="heroBadge">Hybrid Search · Bi-Temporal · LongMemEval-ready</span>
         </span>
         <h1 class="text-4xl sm:text-6xl font-black leading-tight tracking-tight">
           <span data-i18n="heroTitle1">ذاكرة حية</span>
@@ -127,78 +125,55 @@ export function renderLandingHtml(): string {
       </div>
     </section>
 
-    <!-- WHAT'S NEW IN V4 -->
+    <!-- WHAT'S NEW -->
     <section id="features" class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
       <div class="text-center mb-8">
-        <h2 class="text-2xl sm:text-4xl font-black" data-i18n="v4Title">ما الجديد في MemoryZ v4؟</h2>
-        <p class="text-base-content/60 mt-2 max-w-2xl mx-auto" data-i18n="v4Sub">أربع ترقيات جوهرية تجعل الاسترجاع أدق، والذاكرة أصدق مع الزمن، والتحديث ممكنا.</p>
+        <h2 class="text-2xl sm:text-4xl font-black" data-i18n="whatsTitle">ما الجديد في MemoryZ؟</h2>
+        <p class="text-base-content/60 mt-2 max-w-2xl mx-auto" data-i18n="whatsSub">أربع ترقيات جوهرية تجعل الاسترجاع أدق، والذاكرة أصدق مع الزمن، والتحديث ممكنا.</p>
       </div>
       <div class="grid sm:grid-cols-2 gap-4">
         <div class="card bg-base-200 border border-base-300 shadow-sm">
           <div class="card-body gap-2">
             <div class="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-xl"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-            <h3 class="card-title" data-i18n="v4HybridT">بحث هجين Hybrid Search</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="v4HybridD">تشابه دلالي بالمتجهات + بحث نصي FTS5 ‏(BM25)‏ يدمجهما Reciprocal Rank Fusion. يجد المعرفات الدقيقة والأسماء والأرقام، لا القريب منها فقط.</p>
+            <h3 class="card-title" data-i18n="whatsHybridT">بحث هجين Hybrid Search</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="whatsHybridD">تشابه دلالي بالمتجهات + بحث نصي FTS5 ‏(BM25)‏ يدمجهما Reciprocal Rank Fusion. يجد المعرفات الدقيقة والأسماء والأرقام، لا القريب منها فقط.</p>
           </div>
         </div>
         <div class="card bg-base-200 border border-base-300 shadow-sm">
           <div class="card-body gap-2">
             <div class="w-11 h-11 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center text-xl"><i class="fa-solid fa-clock-rotate-left"></i></div>
-            <h3 class="card-title" data-i18n="v4BiT">ذاكرة ثنائية الزمن Bi-Temporal</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="v4BiD">يفرق بين وقت وقوع الحدث ووقت تخزينه. اسأل "ماذا كنا نعرف في مارس؟" أو "ماذا تغير بعد يونيو؟" بفلاتر زمنية حقيقية.</p>
+            <h3 class="card-title" data-i18n="whatsBiT">ذاكرة ثنائية الزمن Bi-Temporal</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="whatsBiD">يفرق بين وقت وقوع الحدث ووقت تخزينه. اسأل "ماذا كنا نعرف في مارس؟" أو "ماذا تغير بعد يونيو؟" بفلاتر زمنية حقيقية.</p>
           </div>
         </div>
         <div class="card bg-base-200 border border-base-300 shadow-sm">
           <div class="card-body gap-2">
             <div class="w-11 h-11 rounded-xl bg-accent/15 text-accent flex items-center justify-center text-xl"><i class="fa-solid fa-arrows-rotate"></i></div>
-            <h3 class="card-title" data-i18n="v4UpdT">تحديث المعرفة Knowledge Updates</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="v4UpdD">حقيقة جديدة تُحيل القديمة إلى التقاعد تلقائيا (supersedes). لا مزيد من ذاكرة متناقضة تقول الشيء وعكسه في نفس الوقت.</p>
+            <h3 class="card-title" data-i18n="whatsUpdT">تحديث المعرفة Knowledge Updates</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="whatsUpdD">حقيقة جديدة تُحيل القديمة إلى التقاعد تلقائيا (supersedes). لا مزيد من ذاكرة متناقضة تقول الشيء وعكسه في نفس الوقت.</p>
           </div>
         </div>
         <div class="card bg-base-200 border border-base-300 shadow-sm">
           <div class="card-body gap-2">
             <div class="w-11 h-11 rounded-xl bg-warning/15 text-warning flex items-center justify-center text-xl"><i class="fa-solid fa-hand"></i></div>
-            <h3 class="card-title" data-i18n="v4AbsT">امتناع صادق Honest Abstention</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="v4AbsD">عتبة تشابه تسقط النتائج الضعيفة. حين لا توجد إجابة في الذاكرة، يقول MemoryZ "لا أعرف" بدل أن يخترع إجابة واثقة.</p>
+            <h3 class="card-title" data-i18n="whatsAbsT">امتناع صادق Honest Abstention</h3>
+            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="whatsAbsD">عتبة تشابه تسقط النتائج الضعيفة. حين لا توجد إجابة في الذاكرة، يقول MemoryZ "لا أعرف" بدل أن يخترع إجابة واثقة.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- LATEST UPDATES -->
+    <!-- PARLIAMENT -->
     <section id="updates" class="max-w-6xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16">
       <div class="text-center mb-8">
-        <h2 class="text-2xl sm:text-4xl font-black" data-i18n="updTitle">آخر التحديثات</h2>
-        <p class="text-base-content/60 mt-2 max-w-2xl mx-auto" data-i18n="updSub">ما أضيف مؤخرا إلى لوحة التحكم وتجربة الاستعمال.</p>
-        <span class="badge badge-primary badge-outline font-mono text-xs mt-3" data-i18n="updDate">25 نوفمبر 2026</span>
+        <h2 class="text-2xl sm:text-4xl font-black" data-i18n="updTitle">البرلمان</h2>
       </div>
-      <div class="grid sm:grid-cols-2 gap-4">
+      <div class="max-w-2xl mx-auto">
         <div class="card bg-base-200 border border-base-300 shadow-sm">
           <div class="card-body gap-2">
             <div class="w-11 h-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-xl"><i class="fa-solid fa-landmark"></i></div>
             <h3 class="card-title" data-i18n="upd1T">تبويب البرلمان في لوحة التحكم</h3>
             <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd1D">تبويب جديد يعرض مقترحات الوكلاء والتصويت السري وجلسات النقاش (الفيبينغ) والحراس، مع عد تنازلي مباشر وتتبع للنصاب، ولا تُكشف الأصوات إلا بعد انتهاء الجولة.</p>
-          </div>
-        </div>
-        <div class="card bg-base-200 border border-base-300 shadow-sm">
-          <div class="card-body gap-2">
-            <div class="w-11 h-11 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center text-xl"><i class="fa-solid fa-list-check"></i></div>
-            <h3 class="card-title" data-i18n="upd2T">إصلاح قوائم لوحة التحكم</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd2D">كانت قوائم الذكريات والمقترحات تظهر خاوية رغم وجود البيانات. تم إصلاح الخلل، والآن تظهر الذكريات المخزنة والمقترحات وجلسات الفيبينغ في الواجهة كما ينبغي.</p>
-          </div>
-        </div>
-        <div class="card bg-base-200 border border-base-300 shadow-sm">
-          <div class="card-body gap-2">
-            <div class="w-11 h-11 rounded-xl bg-accent/15 text-accent flex items-center justify-center text-xl"><i class="fa-solid fa-list-ol"></i></div>
-            <h3 class="card-title" data-i18n="upd3T">عرض 10 عناصر في كل مرة</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd3D">القوائم الطويلة تعرض الآن عشرة عناصر في كل مرة، مع زر لعرض المزيد يظهر الباقي على دفعات، لتبقى الواجهة خفيفة وسريعة.</p>
-          </div>
-        </div>
-        <div class="card bg-base-200 border border-base-300 shadow-sm">
-          <div class="card-body gap-2">
-            <div class="w-11 h-11 rounded-xl bg-warning/15 text-warning flex items-center justify-center text-xl"><i class="fa-solid fa-language"></i></div>
-            <h3 class="card-title" data-i18n="upd4T">ترجمة عربية كاملة للواجهة</h3>
-            <p class="text-sm text-base-content/70 leading-relaxed" data-i18n="upd4D">عناوين الأقسام وعناوين تبويب البرلمان أصبحت مترجمة بالكامل إلى العربية، بلا بقايا إنجليزية عند اختيار العربية.</p>
           </div>
         </div>
       </div>
@@ -299,7 +274,6 @@ export function renderLandingHtml(): string {
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
       <div class="flex items-center gap-2 font-bold">
         <span>Memory<span class="text-primary">Z</span></span>
-        <span class="badge badge-primary badge-xs font-mono">v4</span>
         <span class="text-base-content/50 font-normal" data-i18n="footerTag">ذاكرة حية سيادية للوكلاء</span>
       </div>
       <div class="flex items-center gap-4 text-base-content/60">
@@ -315,16 +289,16 @@ export function renderLandingHtml(): string {
     const LANDING_I18N = {
       ar: {
         navFeatures: 'المميزات', navHow: 'كيف يعمل', navQuickstart: 'البدء السريع', navDocs: 'التوثيق', navDashboard: 'لوحة التحكم',
-        heroBadge: 'MemoryZ v4 — Hybrid Search · Bi-Temporal · LongMemEval-ready',
+        heroBadge: 'Hybrid Search · Bi-Temporal · LongMemEval-ready',
         heroTitle1: 'ذاكرة حية', heroTitle2: 'لوكلاء الذكاء الاصطناعي',
         heroSub: 'ركيزة ذاكرة مشتركة وحية عبر Claude و Cursor و Windsurf و ChatGPT: وكيلك يتذكر ما تعلمه البارحة، ويشارك ما يعرفه مع باقي الوكلاء، ولا يخترع ما لا يعرفه.',
         ctaDashboard: 'افتح لوحة التحكم', ctaDocs: 'اقرأ التوثيق',
         statTools: 'أداة MCP', statEmbed: 'بُعد تضمين دلالي', statVault: 'خزنة AES-256-GCM', statNs: 'مجالات معزولة',
-        v4Title: 'ما الجديد في MemoryZ v4؟', v4Sub: 'أربع ترقيات جوهرية تجعل الاسترجاع أدق، والذاكرة أصدق مع الزمن، والتحديث ممكنا.',
-        v4HybridT: 'بحث هجين Hybrid Search', v4HybridD: 'تشابه دلالي بالمتجهات + بحث نصي FTS5 (BM25) يدمجهما Reciprocal Rank Fusion. يجد المعرفات الدقيقة والأسماء والأرقام، لا القريب منها فقط.',
-        v4BiT: 'ذاكرة ثنائية الزمن Bi-Temporal', v4BiD: 'يفرق بين وقت وقوع الحدث ووقت تخزينه. اسأل "ماذا كنا نعرف في مارس؟" أو "ماذا تغير بعد يونيو؟" بفلاتر زمنية حقيقية.',
-        v4UpdT: 'تحديث المعرفة Knowledge Updates', v4UpdD: 'حقيقة جديدة تُحيل القديمة إلى التقاعد تلقائيا (supersedes). لا مزيد من ذاكرة متناقضة تقول الشيء وعكسه في نفس الوقت.',
-        v4AbsT: 'امتناع صادق Honest Abstention', v4AbsD: 'عتبة تشابه تسقط النتائج الضعيفة. حين لا توجد إجابة في الذاكرة، يقول MemoryZ "لا أعرف" بدل أن يخترع إجابة واثقة.',
+        whatsTitle: 'ما الجديد في MemoryZ؟', whatsSub: 'أربع ترقيات جوهرية تجعل الاسترجاع أدق، والذاكرة أصدق مع الزمن، والتحديث ممكنا.',
+        whatsHybridT: 'بحث هجين Hybrid Search', whatsHybridD: 'تشابه دلالي بالمتجهات + بحث نصي FTS5 (BM25) يدمجهما Reciprocal Rank Fusion. يجد المعرفات الدقيقة والأسماء والأرقام، لا القريب منها فقط.',
+        whatsBiT: 'ذاكرة ثنائية الزمن Bi-Temporal', whatsBiD: 'يفرق بين وقت وقوع الحدث ووقت تخزينه. اسأل "ماذا كنا نعرف في مارس؟" أو "ماذا تغير بعد يونيو؟" بفلاتر زمنية حقيقية.',
+        whatsUpdT: 'تحديث المعرفة Knowledge Updates', whatsUpdD: 'حقيقة جديدة تُحيل القديمة إلى التقاعد تلقائيا (supersedes). لا مزيد من ذاكرة متناقضة تقول الشيء وعكسه في نفس الوقت.',
+        whatsAbsT: 'امتناع صادق Honest Abstention', whatsAbsD: 'عتبة تشابه تسقط النتائج الضعيفة. حين لا توجد إجابة في الذاكرة، يقول MemoryZ "لا أعرف" بدل أن يخترع إجابة واثقة.',
         coreTitle: 'كل ما يحتاجه الوكيل ليتذكر', coreSub: 'ذاكرة، مهام، أسرار، وسياق، في ركيزة واحدة.',
         coreAtomsT: 'ذرات ذاكرة مصنفة', coreAtomsD: 'بيئة، تفضيلات، مهارات، ملاحظات. كل ذرة لها نوعها ومجالها ومصدرها.',
         coreTasksT: 'مهام هرمية متعددة الوكلاء', coreTasksD: 'مهام ومهام فرعية بأي عمق، مع حجز ذري (claim) وتسليم نظيف بين الوكلاء.',
@@ -339,25 +313,21 @@ export function renderLandingHtml(): string {
         qsTitle: 'البدء السريع', qsSub: 'أمر واحد يربط MemoryZ بمحررك ويسجل خادم MCP تلقائيا.',
         qsDocs: 'دليل الربط الكامل', qsNote: 'يعمل مع Claude Code و Cursor و Windsurf و ChatGPT وخطوط الأنابيب المستقلة، عبر MCP أو REST أو CLI.',
         footerTag: 'ذاكرة حية سيادية للوكلاء', footerDash: 'لوحة التحكم', footerDocs: 'التوثيق',
-        navUpdates: 'التحديثات',
-        updTitle: 'آخر التحديثات', updSub: 'ما أضيف مؤخرا إلى لوحة التحكم وتجربة الاستعمال.', updDate: '25 نوفمبر 2026',
-        upd1T: 'تبويب البرلمان في لوحة التحكم', upd1D: 'تبويب جديد يعرض مقترحات الوكلاء والتصويت السري وجلسات النقاش (الفيبينغ) والحراس، مع عد تنازلي مباشر وتتبع للنصاب، ولا تُكشف الأصوات إلا بعد انتهاء الجولة.',
-        upd2T: 'إصلاح قوائم لوحة التحكم', upd2D: 'كانت قوائم الذكريات والمقترحات تظهر خاوية رغم وجود البيانات. تم إصلاح الخلل، والآن تظهر الذكريات المخزنة والمقترحات وجلسات الفيبينغ في الواجهة كما ينبغي.',
-        upd3T: 'عرض 10 عناصر في كل مرة', upd3D: 'القوائم الطويلة تعرض الآن عشرة عناصر في كل مرة، مع زر لعرض المزيد يظهر الباقي على دفعات، لتبقى الواجهة خفيفة وسريعة.',
-        upd4T: 'ترجمة عربية كاملة للواجهة', upd4D: 'عناوين الأقسام وعناوين تبويب البرلمان أصبحت مترجمة بالكامل إلى العربية، بلا بقايا إنجليزية عند اختيار العربية.'
+        updTitle: 'البرلمان',
+        upd1T: 'تبويب البرلمان في لوحة التحكم', upd1D: 'تبويب جديد يعرض مقترحات الوكلاء والتصويت السري وجلسات النقاش (الفيبينغ) والحراس، مع عد تنازلي مباشر وتتبع للنصاب، ولا تُكشف الأصوات إلا بعد انتهاء الجولة.'
       },
       en: {
         navFeatures: 'Features', navHow: 'How it works', navQuickstart: 'Quickstart', navDocs: 'Docs', navDashboard: 'Dashboard',
-        heroBadge: 'MemoryZ v4 — Hybrid Search · Bi-Temporal · LongMemEval-ready',
+        heroBadge: 'Hybrid Search · Bi-Temporal · LongMemEval-ready',
         heroTitle1: 'Live memory', heroTitle2: 'for AI agents',
         heroSub: 'One shared, living memory substrate across Claude, Cursor, Windsurf and ChatGPT: your agent remembers what it learned yesterday, shares what it knows with the other agents, and never invents what it does not know.',
         ctaDashboard: 'Open Dashboard', ctaDocs: 'Read the Docs',
         statTools: 'MCP tools', statEmbed: 'embedding dims', statVault: 'AES-256-GCM vault', statNs: 'isolated namespaces',
-        v4Title: "What's new in MemoryZ v4?", v4Sub: 'Four core upgrades that make retrieval sharper, memory truer over time, and updates possible.',
-        v4HybridT: 'Hybrid Search', v4HybridD: 'Vector similarity + FTS5 full-text search (BM25), fused with Reciprocal Rank Fusion. It finds exact identifiers, names and numbers, not just near matches.',
-        v4BiT: 'Bi-Temporal Memory', v4BiD: 'It separates when an event happened from when it was stored. Ask "what did we know in March?" or "what changed after June?" with real time filters.',
-        v4UpdT: 'Knowledge Updates', v4UpdD: 'A new fact retires the old one automatically (supersedes). No more memory that says a thing and its opposite at the same time.',
-        v4AbsT: 'Honest Abstention', v4AbsD: 'A similarity threshold drops weak results. When the answer is not in memory, MemoryZ says it does not know instead of inventing a confident answer.',
+        whatsTitle: "What's new in MemoryZ?", whatsSub: 'Four core upgrades that make retrieval sharper, memory truer over time, and updates possible.',
+        whatsHybridT: 'Hybrid Search', whatsHybridD: 'Vector similarity + FTS5 full-text search (BM25), fused with Reciprocal Rank Fusion. It finds exact identifiers, names and numbers, not just near matches.',
+        whatsBiT: 'Bi-Temporal Memory', whatsBiD: 'It separates when an event happened from when it was stored. Ask "what did we know in March?" or "what changed after June?" with real time filters.',
+        whatsUpdT: 'Knowledge Updates', whatsUpdD: 'A new fact retires the old one automatically (supersedes). No more memory that says a thing and its opposite at the same time.',
+        whatsAbsT: 'Honest Abstention', whatsAbsD: 'A similarity threshold drops weak results. When the answer is not in memory, MemoryZ says it does not know instead of inventing a confident answer.',
         coreTitle: 'Everything an agent needs to remember', coreSub: 'Memory, tasks, secrets and context in one substrate.',
         coreAtomsT: 'Categorized memory atoms', coreAtomsD: 'Environment, preferences, skills, notes. Every atom has its type, namespace and provenance.',
         coreTasksT: 'Hierarchical multi-agent tasks', coreTasksD: 'Tasks and subtasks at any depth, with atomic claiming and clean handoff between agents.',
@@ -372,12 +342,8 @@ export function renderLandingHtml(): string {
         qsTitle: 'Quickstart', qsSub: 'One command connects MemoryZ to your editor and registers the MCP server automatically.',
         qsDocs: 'Full connection guide', qsNote: 'Works with Claude Code, Cursor, Windsurf, ChatGPT and standalone pipelines, over MCP, REST or CLI.',
         footerTag: 'Sovereign living memory for agents', footerDash: 'Dashboard', footerDocs: 'Docs',
-        navUpdates: 'Updates',
-        updTitle: 'Latest updates', updSub: 'What was added recently to the dashboard and the user experience.', updDate: '25 November 2026',
-        upd1T: 'Parliament tab in the dashboard', upd1D: 'A new tab showing agent proposals, sealed voting, vibing sessions and guardians, with live countdowns and quorum tracking, and ballots revealed only after the round ends.',
-        upd2T: 'Dashboard lists fixed', upd2D: 'The memories and proposals lists rendered empty even though the data existed. The bug is fixed, and stored memories, proposals and vibing sessions now display in the interface as they should.',
-        upd3T: '10 items at a time', upd3D: 'Long lists now show ten items at a time, with a show more button that reveals the rest in batches, keeping the interface light and fast.',
-        upd4T: 'Complete Arabic interface translation', upd4D: 'Section headers and the Parliament tab labels are now fully translated into Arabic, with no English leftovers when Arabic is selected.'
+        updTitle: 'Parliament',
+        upd1T: 'Parliament tab in the dashboard', upd1D: 'A new tab showing agent proposals, sealed voting, vibing sessions and guardians, with live countdowns and quorum tracking, and ballots revealed only after the round ends.'
       }
     };
 
